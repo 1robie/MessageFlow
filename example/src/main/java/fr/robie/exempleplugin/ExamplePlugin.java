@@ -1,7 +1,7 @@
 package fr.robie.exempleplugin;
 
 import fr.robie.messageflow.configuration.ConfigurationOptions;
-import fr.robie.messageflow.configuration.EnumLanguageConfiguration;
+import fr.robie.messageflow.configuration.lang.EnumLanguageConfiguration;
 import fr.robie.messageflow.impl.MessageManager;
 import org.bukkit.plugin.java.JavaPlugin;
 

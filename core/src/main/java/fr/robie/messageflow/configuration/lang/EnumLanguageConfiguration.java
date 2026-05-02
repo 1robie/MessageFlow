@@ -1,4 +1,4 @@
-package fr.robie.messageflow.configuration;
+package fr.robie.messageflow.configuration.lang;
 
 import org.jetbrains.annotations.NotNull;
 import org.jspecify.annotations.NonNull;

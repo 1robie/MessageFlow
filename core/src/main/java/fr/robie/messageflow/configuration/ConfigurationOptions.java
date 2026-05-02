@@ -1,5 +1,7 @@
 package fr.robie.messageflow.configuration;
 
+import fr.robie.messageflow.configuration.lang.LanguageConfiguration;
+import fr.robie.messageflow.configuration.lang.NormalLanguageConfiguration;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
