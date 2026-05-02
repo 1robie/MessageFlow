@@ -11,8 +11,8 @@
 
     <name>Message-Flow</name>
     <modules>
-        <module>Exemple-Plugin</module>
-        <module>Core</module>
+        <module>example</module>
+        <module>core</module>
     </modules>
 
     <profiles>

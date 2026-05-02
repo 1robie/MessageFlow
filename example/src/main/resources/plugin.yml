@@ -1,0 +1,6 @@
+name: ExamplePlugin
+version: 0.0.1
+main: fr.robie.exempleplugin.ExamplePlugin
+api-version: "1.21"
+authors: [ "robie" ]
+description: Example plugin showing how to use MessageFlow
