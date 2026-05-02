@@ -1,0 +1,11 @@
+prefix: "&7[&bExample&7]&r "
+
+# A simple chat message can be a single string
+hello: "&aHello from MessageFlow (EN)!"
+
+# You can also provide multiple lines as a list (still treated as a chat/simple message)
+# hello:
+#   - "&aHello line 1"
+#   - "&aHello line 2"
+
+only-french: "&cThis one is overridden in FR."
