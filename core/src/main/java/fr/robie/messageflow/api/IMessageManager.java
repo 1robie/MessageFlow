@@ -9,7 +9,7 @@ import java.util.List;
 
 public interface IMessageManager<T extends Plugin> {
 
-    @NotNull MessageFormatter<T> formatter();
+    @NotNull MessageFormatter<T, ?> formatter();
 
     void reload();
 

@@ -18,6 +18,14 @@ public class ConfigurationOptions {
     private boolean backupBeforeRemovingObsoleteKeys = true;
     private @NotNull String backupFolder = "messageflow/backup";
 
+    private long cacheMaximumSize = 512;
+    private long cacheExpireAfterAccessMinutes = 10;
+    private long cacheExpireAfterWriteMinutes = -1;
+    private int cacheInitialCapacity = -1;
+    private int cacheConcurrencyLevel = -1;
+    private boolean cacheRecordStats = false;
+    private boolean cacheSoftValues = false;
+
     public ConfigurationOptions() {
     }
 
@@ -108,6 +116,69 @@ public class ConfigurationOptions {
 
     public @NotNull String backupFolder() {
         return this.backupFolder;
+    }
+
+    public @NotNull ConfigurationOptions cacheMaximumSize(long maximumSize) {
+        this.cacheMaximumSize = maximumSize;
+        return this;
+    }
+
+    public long cacheMaximumSize() {
+        return this.cacheMaximumSize;
+    }
+
+    public @NotNull ConfigurationOptions cacheExpireAfterAccessMinutes(long minutes) {
+        this.cacheExpireAfterAccessMinutes = minutes;
+        return this;
+    }
+
+    public long cacheExpireAfterAccessMinutes() {
+        return this.cacheExpireAfterAccessMinutes;
+    }
+
+    public @NotNull ConfigurationOptions cacheExpireAfterWriteMinutes(long minutes) {
+        this.cacheExpireAfterWriteMinutes = minutes;
+        return this;
+    }
+
+    public long cacheExpireAfterWriteMinutes() {
+        return this.cacheExpireAfterWriteMinutes;
+    }
+
+    public @NotNull ConfigurationOptions cacheInitialCapacity(int initialCapacity) {
+        this.cacheInitialCapacity = initialCapacity;
+        return this;
+    }
+
+    public int cacheInitialCapacity() {
+        return this.cacheInitialCapacity;
+    }
+
+    public @NotNull ConfigurationOptions cacheConcurrencyLevel(int concurrencyLevel) {
+        this.cacheConcurrencyLevel = concurrencyLevel;
+        return this;
+    }
+
+    public int cacheConcurrencyLevel() {
+        return this.cacheConcurrencyLevel;
+    }
+
+    public @NotNull ConfigurationOptions cacheRecordStats(boolean recordStats) {
+        this.cacheRecordStats = recordStats;
+        return this;
+    }
+
+    public boolean cacheRecordStats() {
+        return this.cacheRecordStats;
+    }
+
+    public @NotNull ConfigurationOptions cacheSoftValues(boolean softValues) {
+        this.cacheSoftValues = softValues;
+        return this;
+    }
+
+    public boolean cacheSoftValues() {
+        return this.cacheSoftValues;
     }
 
     public static @NotNull String normalizeLanguage(@NotNull String languageCode) {

@@ -33,7 +33,7 @@ public class MessageManager<T extends Plugin> implements IMessageManager<T> {
     private final T plugin;
     private final ConfigurationOptions options;
     private final Supplier<? extends Iterable<? extends Message>> messages;
-    private final MessageFormatter<T> messageFormatter;
+    private final MessageFormatter<T, ?> messageFormatter;
 
     private String activeLanguage;
 
@@ -43,8 +43,8 @@ public class MessageManager<T extends Plugin> implements IMessageManager<T> {
         this.messages = () -> messages;
         this.activeLanguage = options.defaultLanguage();
         this.messageFormatter = PlatformType.hasComponent()
-                ? new AdventureMessageFormatter<>(plugin)
-                : new LegacyMessageFormatter<>(plugin);
+                ? new AdventureMessageFormatter<>(plugin, options)
+                : new LegacyMessageFormatter<>(plugin, options);
     }
 
     public <E extends Enum<E> & Message> MessageManager(@NotNull T plugin, @NotNull ConfigurationOptions options, @NotNull Class<E> messageEnumClass) {
@@ -53,12 +53,12 @@ public class MessageManager<T extends Plugin> implements IMessageManager<T> {
         this.messages = () -> iterableEnum(messageEnumClass);
         this.activeLanguage = options.defaultLanguage();
         this.messageFormatter = PlatformType.hasComponent()
-                ? new AdventureMessageFormatter<>(plugin)
-                : new LegacyMessageFormatter<>(plugin);
+                ? new AdventureMessageFormatter<>(plugin, options)
+                : new LegacyMessageFormatter<>(plugin, options);
     }
 
     @Override
-    public @NotNull MessageFormatter<T> formatter() {
+    public @NotNull MessageFormatter<T, ?> formatter() {
         return this.messageFormatter;
     }
 

@@ -1,5 +1,9 @@
 package fr.robie.messageflow.formatter;
 
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
+import fr.robie.messageflow.configuration.ConfigurationOptions;
 import fr.robie.messageflow.model.Message;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
@@ -10,17 +14,49 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.concurrent.TimeUnit;
 
-public abstract class MessageFormatter<T extends Plugin> implements TextFormatter {
+public abstract class MessageFormatter<T extends Plugin, V> implements TextFormatter {
     protected final T plugin;
+    protected final LoadingCache<String, V> cache;
 
     @NotNull
     protected String prefix = "";
 
-    public MessageFormatter(@NotNull T plugin) {
+    public MessageFormatter(@NotNull T plugin, @NotNull ConfigurationOptions options) {
         assert plugin != null : "Plugin cannot be null";
         this.plugin = plugin;
+        CacheBuilder<Object, Object> builder = CacheBuilder.newBuilder()
+                .maximumSize(options.cacheMaximumSize());
+
+        if (options.cacheInitialCapacity() > 0) {
+            builder.initialCapacity(options.cacheInitialCapacity());
+        }
+
+        if (options.cacheConcurrencyLevel() > 0) {
+            builder.concurrencyLevel(options.cacheConcurrencyLevel());
+        }
+
+        if (options.cacheExpireAfterAccessMinutes() > 0) {
+            builder.expireAfterAccess(options.cacheExpireAfterAccessMinutes(), TimeUnit.MINUTES);
+        }
+
+        if (options.cacheExpireAfterWriteMinutes() > 0) {
+            builder.expireAfterWrite(options.cacheExpireAfterWriteMinutes(), TimeUnit.MINUTES);
+        }
+
+        if (options.cacheRecordStats()) {
+            builder.recordStats();
+        }
+
+        if (options.cacheSoftValues()) {
+            builder.softValues();
+        }
+
+        this.cache = builder.build(CacheLoader.from(this::load));
     }
+
+    protected abstract V load(@NotNull String message);
 
     public @NotNull T getPlugin() {
         return this.plugin;

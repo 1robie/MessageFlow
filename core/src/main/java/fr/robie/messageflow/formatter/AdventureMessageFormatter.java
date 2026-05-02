@@ -1,9 +1,7 @@
 package fr.robie.messageflow.formatter;
 
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
 import fr.robie.messageflow.api.MessageTypeAdapter;
+import fr.robie.messageflow.configuration.ConfigurationOptions;
 import fr.robie.messageflow.model.AdventureBossBarMessage;
 import fr.robie.messageflow.model.Message;
 import fr.robie.messageflow.model.SimpleMessage;
@@ -31,7 +29,7 @@ import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatter<T> {
+public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatter<T, Component> {
 
     private static final Pattern LEGACY_HEX_PATTERN = Pattern.compile("§x(§[0-9a-fA-F]){6}");
     private static final Pattern HEX_SHORT_PATTERN = Pattern.compile("(?<!<)(?<!:)(?<!</)#([a-fA-F0-9]{6})");
@@ -66,14 +64,14 @@ public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatte
             .tags(TagResolver.builder().resolver(StandardTags.defaults()).build())
             .build();
 
-    private static final LoadingCache<String, Component> CACHE = CacheBuilder.newBuilder()
-            .maximumSize(512)
-            .expireAfterAccess(10, TimeUnit.MINUTES)
-            .build(CacheLoader.from(msg -> MINI_MESSAGE.deserialize(colorMiniMessage(msg))));
 
+    public AdventureMessageFormatter(@NotNull T plugin, @NotNull ConfigurationOptions options) {
+        super(plugin, options);
+    }
 
-    public AdventureMessageFormatter(@NotNull T plugin) {
-        super(plugin);
+    @Override
+    protected Component load(@NotNull String message) {
+        return MINI_MESSAGE.deserialize(colorMiniMessage(message));
     }
 
     private static String colorMiniMessage(@NotNull String message) {
@@ -121,7 +119,7 @@ public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatte
 
     @NotNull
     public Component getComponent(@NotNull String message) {
-        return CACHE.getUnchecked(message);
+        return this.cache.getUnchecked(message);
     }
 
     private Component getComponentWithPlaceholders(@Nullable String message, @NotNull Object... placeholders) {

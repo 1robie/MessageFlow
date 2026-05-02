@@ -1,8 +1,7 @@
 package fr.robie.messageflow.formatter;
 
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
 import fr.robie.messageflow.api.MessageTypeAdapter;
+import fr.robie.messageflow.configuration.ConfigurationOptions;
 import fr.robie.messageflow.model.LegacyBossBarMessage;
 import fr.robie.messageflow.model.Message;
 import fr.robie.messageflow.model.SimpleMessage;
@@ -23,38 +22,35 @@ import org.jspecify.annotations.NonNull;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @SuppressWarnings("deprecation")
-public class LegacyMessageFormatter<T extends Plugin> extends MessageFormatter<T> {
+public class LegacyMessageFormatter<T extends Plugin> extends MessageFormatter<T, String> {
 
     private static final Pattern HEX_PATTERN = Pattern.compile("#([a-fA-F0-9]{6})");
     private static final Pattern MINI_MESSAGE_TAG_PATTERN = Pattern.compile("<[^>]+>");
-    private static final com.google.common.cache.LoadingCache<String, String> COLORIZE_CACHE =
-            CacheBuilder.newBuilder()
-                    .maximumSize(512)
-                    .expireAfterAccess(10, TimeUnit.MINUTES)
-                    .build(CacheLoader.from(msg -> {
-                        String result = MINI_MESSAGE_TAG_PATTERN.matcher(msg).replaceAll("");
-                        Matcher matcher = HEX_PATTERN.matcher(result);
-                        StringBuilder sb = new StringBuilder();
-                        while (matcher.find()) {
-                            matcher.appendReplacement(sb, Matcher.quoteReplacement(
-                                    String.valueOf(ChatColor.of("#" + matcher.group(1)))
-                            ));
-                        }
-                        matcher.appendTail(sb);
-                        return ChatColor.translateAlternateColorCodes('&', sb.toString());
-                    }));
 
-    public LegacyMessageFormatter(@NotNull T plugin) {
-        super(plugin);
+    public LegacyMessageFormatter(@NotNull T plugin, @NotNull ConfigurationOptions options) {
+        super(plugin, options);
+    }
+
+    @Override
+    protected String load(@NotNull String msg) {
+        String result = MINI_MESSAGE_TAG_PATTERN.matcher(msg).replaceAll("");
+        Matcher matcher = HEX_PATTERN.matcher(result);
+        StringBuilder sb = new StringBuilder();
+        while (matcher.find()) {
+            matcher.appendReplacement(sb, Matcher.quoteReplacement(
+                    String.valueOf(ChatColor.of("#" + matcher.group(1)))
+            ));
+        }
+        matcher.appendTail(sb);
+        return ChatColor.translateAlternateColorCodes('&', sb.toString());
     }
 
     public @NotNull String colorize(@NotNull String message) {
-        return COLORIZE_CACHE.getUnchecked(message);
+        return this.cache.getUnchecked(message);
     }
 
     private @NotNull String colorizeWithPlaceholders(@Nullable String message, @NotNull Object... placeholders) {
