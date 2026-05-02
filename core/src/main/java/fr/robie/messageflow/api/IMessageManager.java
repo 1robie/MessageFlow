@@ -12,7 +12,7 @@ import java.util.List;
  *
  * @param <T> the type of the plugin using this manager
  */
-public interface IMessageManager<T extends Plugin> {
+public interface IMessageManager<T extends Plugin, E> {
 
     /**
      * Gets the message formatter used by this message manager. The formatter is responsible for adapting
@@ -32,14 +32,7 @@ public interface IMessageManager<T extends Plugin> {
      *
      * @param languageCode the language code to load (e.g., "en_us")
      */
-    void loadLanguage(@NotNull String languageCode);
-
-    /**
-     * Gets the currently active language code.
-     *
-     * @return the active language code
-     */
-    @NotNull String activeLanguage();
+    void loadLanguage(E language);
 
     /**
      * Returns the parsed message entries for the given key.

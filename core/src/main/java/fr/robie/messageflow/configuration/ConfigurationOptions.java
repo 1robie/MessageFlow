@@ -1,17 +1,16 @@
 package fr.robie.messageflow.configuration;
 
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
+import java.util.Objects;
 
 /**
  * Represents the configuration options for the MessageFlow library.
  * Allows customizing how language files are handled and how the message cache is built.
  */
-public class ConfigurationOptions {
-    private final Map<String, String> languageToRelativeFile = new LinkedHashMap<>();
-    private @Nullable String defaultLanguage = null;
+public class ConfigurationOptions<E> {
+    private final LanguageConfiguration<E> languageConfiguration;
+
     private boolean autoCreateFiles = true;
     private boolean autoAddMissingKeys = true;
     private boolean autoRemoveObsoleteKeys = false;
@@ -32,63 +31,12 @@ public class ConfigurationOptions {
         return this.backupDateFormat;
     }
 
-    public @NotNull ConfigurationOptions backupDateFormat(@NotNull String format) {
+    public ConfigurationOptions(@NotNull LanguageConfiguration<E> languageConfiguration) {
+        this.languageConfiguration = Objects.requireNonNull(languageConfiguration, "languageConfiguration");
+    }
+
+    public @NotNull ConfigurationOptions<E> backupDateFormat(@NotNull String format) {
         this.backupDateFormat = Objects.requireNonNull(format, "backupDateFormat");
-        return this;
-    }
-
-    public ConfigurationOptions() {
-    }
-
-    /**
-     * Creates a new ConfigurationOptions instance for a single language file.
-     * The language code becomes {@code "default"}.
-     *
-     * @param relativeFile the path to the language file relative to the plugin data folder
-     * @return a new ConfigurationOptions instance
-     */
-    public static @NotNull ConfigurationOptions singleFile(@NotNull String relativeFile) {
-        return new ConfigurationOptions()
-                .clearLanguages()
-                .addLanguage("default", relativeFile)
-                .defaultLanguage("default");
-    }
-
-    /**
-     * Adds a language file mapping.
-     *
-     * @param languageCode the code of the language (e.g., "en_us")
-     * @param relativeFile the path to the language file relative to the plugin data folder
-     * @return this instance for fluent chaining
-     */
-    public @NotNull ConfigurationOptions addLanguage(@NotNull String languageCode, @NotNull String relativeFile) {
-        String lang = normalizeLanguage(languageCode);
-        this.languageToRelativeFile.put(lang, Objects.requireNonNull(relativeFile, "relativeFile"));
-        if (this.defaultLanguage == null) {
-            this.defaultLanguage = lang;
-        }
-        return this;
-    }
-
-    /**
-     * Clears all registered language files.
-     *
-     * @return this instance for fluent chaining
-     */
-    public @NotNull ConfigurationOptions clearLanguages() {
-        this.languageToRelativeFile.clear();
-        this.defaultLanguage = null;
-        return this;
-    }
-
-    /**
-     * Sets the default language to use when the requested language is not found.
-     *
-     * @param languageCode the code of the default language
-     * @return this instance for fluent chaining
-     */
-    public @NotNull ConfigurationOptions defaultLanguage(@NotNull String languageCode) {
-        this.defaultLanguage = normalizeLanguage(languageCode);
         return this;
     }
 
@@ -98,7 +46,7 @@ public class ConfigurationOptions {
      * @param enabled {@code true} to enable automatic file creation
      * @return this instance for fluent chaining
      */
-    public @NotNull ConfigurationOptions autoCreateFiles(boolean enabled) {
+    public @NotNull ConfigurationOptions<E> autoCreateFiles(boolean enabled) {
         this.autoCreateFiles = enabled;
         return this;
     }
@@ -109,7 +57,7 @@ public class ConfigurationOptions {
      * @param enabled {@code true} to enable automatic adding of missing keys
      * @return this instance for fluent chaining
      */
-    public @NotNull ConfigurationOptions autoAddMissingKeys(boolean enabled) {
+    public @NotNull ConfigurationOptions<E> autoAddMissingKeys(boolean enabled) {
         this.autoAddMissingKeys = enabled;
         return this;
     }
@@ -120,7 +68,7 @@ public class ConfigurationOptions {
      * @param enabled {@code true} to enable automatic removal of obsolete keys
      * @return this instance for fluent chaining
      */
-    public @NotNull ConfigurationOptions autoRemoveObsoleteKeys(boolean enabled) {
+    public @NotNull ConfigurationOptions<E> autoRemoveObsoleteKeys(boolean enabled) {
         this.autoRemoveObsoleteKeys = enabled;
         return this;
     }
@@ -131,7 +79,7 @@ public class ConfigurationOptions {
      * @param enabled {@code true} to enable backups before removing keys
      * @return this instance for fluent chaining
      */
-    public @NotNull ConfigurationOptions backupBeforeRemovingObsoleteKeys(boolean enabled) {
+    public @NotNull ConfigurationOptions<E> backupBeforeRemovingObsoleteKeys(boolean enabled) {
         this.backupBeforeRemovingObsoleteKeys = enabled;
         return this;
     }
@@ -142,31 +90,9 @@ public class ConfigurationOptions {
      * @param relativeFolder the relative path to the backup folder
      * @return this instance for fluent chaining
      */
-    public @NotNull ConfigurationOptions backupFolder(@NotNull String relativeFolder) {
+    public @NotNull ConfigurationOptions<E> backupFolder(@NotNull String relativeFolder) {
         this.backupFolder = Objects.requireNonNull(relativeFolder, "relativeFolder");
         return this;
-    }
-
-    /**
-     * Gets an unmodifiable map of registered language codes to their relative file paths.
-     *
-     * @return a map of language files
-     */
-    public @NotNull Map<String, String> languageFiles() {
-        return Collections.unmodifiableMap(this.languageToRelativeFile);
-    }
-
-    /**
-     * Gets the code of the default language.
-     *
-     * @return the default language code
-     * @throws IllegalStateException if no default language has been set
-     */
-    public @NotNull String defaultLanguage() {
-        if (this.defaultLanguage == null) {
-            throw new IllegalStateException("No defaultLanguage set. Call addLanguage(...) or use singleFile(...).");
-        }
-        return this.defaultLanguage;
     }
 
     /**
@@ -220,7 +146,7 @@ public class ConfigurationOptions {
      * @param maximumSize the maximum cache size
      * @return this instance for fluent chaining
      */
-    public @NotNull ConfigurationOptions cacheMaximumSize(long maximumSize) {
+    public @NotNull ConfigurationOptions<E> cacheMaximumSize(long maximumSize) {
         this.cacheMaximumSize = maximumSize;
         return this;
     }
@@ -240,7 +166,7 @@ public class ConfigurationOptions {
      * @param minutes the expiration time in minutes
      * @return this instance for fluent chaining
      */
-    public @NotNull ConfigurationOptions cacheExpireAfterAccessMinutes(long minutes) {
+    public @NotNull ConfigurationOptions<E> cacheExpireAfterAccessMinutes(long minutes) {
         this.cacheExpireAfterAccessMinutes = minutes;
         return this;
     }
@@ -260,7 +186,7 @@ public class ConfigurationOptions {
      * @param minutes the expiration time in minutes
      * @return this instance for fluent chaining
      */
-    public @NotNull ConfigurationOptions cacheExpireAfterWriteMinutes(long minutes) {
+    public @NotNull ConfigurationOptions<E> cacheExpireAfterWriteMinutes(long minutes) {
         this.cacheExpireAfterWriteMinutes = minutes;
         return this;
     }
@@ -280,7 +206,7 @@ public class ConfigurationOptions {
      * @param initialCapacity the initial capacity
      * @return this instance for fluent chaining
      */
-    public @NotNull ConfigurationOptions cacheInitialCapacity(int initialCapacity) {
+    public @NotNull ConfigurationOptions<E> cacheInitialCapacity(int initialCapacity) {
         this.cacheInitialCapacity = initialCapacity;
         return this;
     }
@@ -300,7 +226,7 @@ public class ConfigurationOptions {
      * @param concurrencyLevel the concurrency level
      * @return this instance for fluent chaining
      */
-    public @NotNull ConfigurationOptions cacheConcurrencyLevel(int concurrencyLevel) {
+    public @NotNull ConfigurationOptions<E> cacheConcurrencyLevel(int concurrencyLevel) {
         this.cacheConcurrencyLevel = concurrencyLevel;
         return this;
     }
@@ -320,7 +246,7 @@ public class ConfigurationOptions {
      * @param recordStats {@code true} to record statistics
      * @return this instance for fluent chaining
      */
-    public @NotNull ConfigurationOptions cacheRecordStats(boolean recordStats) {
+    public @NotNull ConfigurationOptions<E> cacheRecordStats(boolean recordStats) {
         this.cacheRecordStats = recordStats;
         return this;
     }
@@ -340,7 +266,7 @@ public class ConfigurationOptions {
      * @param softValues {@code true} to use soft references
      * @return this instance for fluent chaining
      */
-    public @NotNull ConfigurationOptions cacheSoftValues(boolean softValues) {
+    public @NotNull ConfigurationOptions<E> cacheSoftValues(boolean softValues) {
         this.cacheSoftValues = softValues;
         return this;
     }
@@ -355,19 +281,17 @@ public class ConfigurationOptions {
     }
 
     /**
-     * Normalizes a language code (e.g., converts to lowercase and replaces '-' with '_').
+     * Gets the language configuration used by this MessageFlow instance.
      *
-     * @param languageCode the language code to normalize
-     * @return the normalized language code
+     * @return the language configuration
      */
-    public static @NotNull String normalizeLanguage(@NotNull String languageCode) {
-        String raw = Objects.requireNonNull(languageCode, "languageCode").trim();
-        if (raw.isEmpty()) {
-            return "default";
-        }
-        // allow "en_US", "en-US", "fr", etc.
-        raw = raw.replace('-', '_');
-        // keep case stable for file keys / configs
-        return raw.toLowerCase(Locale.ROOT);
+    public LanguageConfiguration<E> languageConfiguration() {
+        return this.languageConfiguration;
+    }
+
+    public static ConfigurationOptions<String> singleFile(String fileName) {
+        NormalLanguageConfiguration normalLanguageConfiguration = new NormalLanguageConfiguration("default");
+        normalLanguageConfiguration.addLanguage("default", fileName);
+        return new ConfigurationOptions<>(normalLanguageConfiguration);
     }
 }

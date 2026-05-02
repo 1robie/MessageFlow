@@ -3,6 +3,8 @@ package fr.robie.messageflow.impl;
 import fr.robie.messageflow.api.IMessageManager;
 import fr.robie.messageflow.api.MessageTypeAdapter;
 import fr.robie.messageflow.configuration.ConfigurationOptions;
+import fr.robie.messageflow.configuration.LanguageConfiguration;
+import fr.robie.messageflow.configuration.LanguageEntry;
 import fr.robie.messageflow.formatter.AdventureMessageFormatter;
 import fr.robie.messageflow.formatter.LegacyMessageFormatter;
 import fr.robie.messageflow.formatter.MessageFormatter;
@@ -24,35 +26,36 @@ import java.util.*;
 import java.util.function.Supplier;
 
 @SuppressWarnings("ResultOfMethodCallIgnored")
-public class MessageManager<T extends Plugin> implements IMessageManager<T> {
+public class MessageManager<T extends Plugin, E> implements IMessageManager<T, E> {
     private final T plugin;
-    private final ConfigurationOptions options;
+    private final ConfigurationOptions<E> options;
     private final Supplier<? extends Iterable<? extends Message>> messages;
     private final MessageFormatter<T, ?> messageFormatter;
 
     private final DateTimeFormatter BACKUP_DATE_FORMAT;
-    private String activeLanguage;
 
-    public MessageManager(@NotNull T plugin, @NotNull ConfigurationOptions options, @NotNull Iterable<? extends Message> messages) {
+    private final LanguageConfiguration<E> languageConfiguration;
+
+    public MessageManager(@NotNull T plugin, @NotNull ConfigurationOptions<E> options, @NotNull Iterable<? extends Message> messages) {
         this.plugin = plugin;
         this.options = options;
         this.messages = () -> messages;
-        this.activeLanguage = options.defaultLanguage();
         this.messageFormatter = PlatformType.hasComponent()
                 ? new AdventureMessageFormatter<>(plugin, options)
                 : new LegacyMessageFormatter<>(plugin, options);
         this.BACKUP_DATE_FORMAT = DateTimeFormatter.ofPattern(options.backupDateFormat());
+        this.languageConfiguration = options.languageConfiguration();
     }
 
-    public <E extends Enum<E> & Message> MessageManager(@NotNull T plugin, @NotNull ConfigurationOptions options, @NotNull Class<E> messageEnumClass) {
+    public <En extends Enum<En> & Message> MessageManager(@NotNull T plugin, @NotNull ConfigurationOptions<E> options, @NotNull Class<En> messageEnumClass) {
         this.plugin = plugin;
         this.options = options;
         this.messages = () -> iterableEnum(messageEnumClass);
-        this.activeLanguage = options.defaultLanguage();
         this.messageFormatter = PlatformType.hasComponent()
                 ? new AdventureMessageFormatter<>(plugin, options)
                 : new LegacyMessageFormatter<>(plugin, options);
         this.BACKUP_DATE_FORMAT = DateTimeFormatter.ofPattern(options.backupDateFormat());
+        this.languageConfiguration = options.languageConfiguration();
     }
 
     @Override
@@ -62,9 +65,9 @@ public class MessageManager<T extends Plugin> implements IMessageManager<T> {
 
     @Override
     public void reload() {
-        for (Map.Entry<String, String> e : this.options.languageFiles().entrySet()) {
-            String lang = e.getKey();
-            String relFile = e.getValue();
+        for (LanguageEntry languageEntry : this.languageConfiguration.getLanguagesEntries()) {
+            String lang = languageEntry.language();
+            String relFile = languageEntry.path();
             File file = new File(this.plugin.getDataFolder(), relFile);
 
             if (!file.exists() && this.options.autoCreateFiles()) {
@@ -81,16 +84,17 @@ public class MessageManager<T extends Plugin> implements IMessageManager<T> {
             }
         }
 
-        this.loadLanguage(this.activeLanguage);
+
+        this.loadLanguage(this.languageConfiguration.getActiveLanguage());
     }
 
     @Override
-    public void loadLanguage(@NotNull String languageCode) {
-        String lang = ConfigurationOptions.normalizeLanguage(languageCode);
-        String rel = this.options.languageFiles().get(lang);
+    public void loadLanguage(@NotNull E language) {
+        String lang = this.languageConfiguration.getNormalizedLanguage(language);
+        String rel = this.languageConfiguration.getRelativePath(language);
         if (rel == null) {
-            lang = this.options.defaultLanguage();
-            rel = this.options.languageFiles().get(lang);
+            lang = this.languageConfiguration.getNormalizedLanguage(language = this.languageConfiguration.getDefaultLanguage());
+            rel = this.languageConfiguration.getRelativePath(language);
             if (rel == null) {
                 return;
             }
@@ -109,15 +113,8 @@ public class MessageManager<T extends Plugin> implements IMessageManager<T> {
         if (file.exists()) {
             this.updateKeysIfNeeded(lang, rel, file);
             this.loadLanguageFileIntoMessages(file);
-            this.activeLanguage = lang;
-        } else {
-            this.activeLanguage = this.options.defaultLanguage();
         }
-    }
-
-    @Override
-    public @NotNull String activeLanguage() {
-        return this.activeLanguage;
+        this.languageConfiguration.setActiveLanguage(language);
     }
 
     @Override
