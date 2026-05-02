@@ -6,12 +6,7 @@ import fr.robie.messageflow.configuration.ConfigurationOptions;
 import fr.robie.messageflow.formatter.AdventureMessageFormatter;
 import fr.robie.messageflow.formatter.LegacyMessageFormatter;
 import fr.robie.messageflow.formatter.MessageFormatter;
-import fr.robie.messageflow.model.AdventureBossBarMessage;
-import fr.robie.messageflow.model.LegacyBossBarMessage;
-import fr.robie.messageflow.model.Message;
-import fr.robie.messageflow.model.MessageType;
-import fr.robie.messageflow.model.SimpleMessage;
-import fr.robie.messageflow.model.TitleMessage;
+import fr.robie.messageflow.model.*;
 import fr.robie.messageflow.util.PlatformType;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -35,6 +30,7 @@ public class MessageManager<T extends Plugin> implements IMessageManager<T> {
     private final Supplier<? extends Iterable<? extends Message>> messages;
     private final MessageFormatter<T, ?> messageFormatter;
 
+    private final DateTimeFormatter BACKUP_DATE_FORMAT;
     private String activeLanguage;
 
     public MessageManager(@NotNull T plugin, @NotNull ConfigurationOptions options, @NotNull Iterable<? extends Message> messages) {
@@ -45,6 +41,7 @@ public class MessageManager<T extends Plugin> implements IMessageManager<T> {
         this.messageFormatter = PlatformType.hasComponent()
                 ? new AdventureMessageFormatter<>(plugin, options)
                 : new LegacyMessageFormatter<>(plugin, options);
+        this.BACKUP_DATE_FORMAT = DateTimeFormatter.ofPattern(options.backupDateFormat());
     }
 
     public <E extends Enum<E> & Message> MessageManager(@NotNull T plugin, @NotNull ConfigurationOptions options, @NotNull Class<E> messageEnumClass) {
@@ -55,6 +52,7 @@ public class MessageManager<T extends Plugin> implements IMessageManager<T> {
         this.messageFormatter = PlatformType.hasComponent()
                 ? new AdventureMessageFormatter<>(plugin, options)
                 : new LegacyMessageFormatter<>(plugin, options);
+        this.BACKUP_DATE_FORMAT = DateTimeFormatter.ofPattern(options.backupDateFormat());
     }
 
     @Override
@@ -131,8 +129,6 @@ public class MessageManager<T extends Plugin> implements IMessageManager<T> {
         }
         return loaded.stream().map(m -> (MessageTypeAdapter) m).toList();
     }
-
-    private static final DateTimeFormatter BACKUP_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss");
 
     private void updateKeysIfNeeded(@NotNull String lang, @NotNull String relPath, @NotNull File file) {
         YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
@@ -260,7 +256,7 @@ public class MessageManager<T extends Plugin> implements IMessageManager<T> {
         }
 
         String baseName = file.getName().replaceAll("\\.yml$", "");
-        String stamp = LocalDateTime.now().format(BACKUP_DATE_FORMAT);
+        String stamp = LocalDateTime.now().format(this.BACKUP_DATE_FORMAT);
         File dest = new File(backupDir, lang + "_" + baseName + "_" + stamp + ".yml");
 
         try {

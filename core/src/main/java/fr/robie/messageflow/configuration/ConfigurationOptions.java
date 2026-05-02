@@ -18,6 +18,8 @@ public class ConfigurationOptions {
     private boolean backupBeforeRemovingObsoleteKeys = true;
     private @NotNull String backupFolder = "messageflow/backup";
 
+    private @NotNull String backupDateFormat = "yyyy-MM-dd_HH-mm-ss";
+
     private long cacheMaximumSize = 512;
     private long cacheExpireAfterAccessMinutes = 10;
     private long cacheExpireAfterWriteMinutes = -1;
@@ -25,6 +27,15 @@ public class ConfigurationOptions {
     private int cacheConcurrencyLevel = -1;
     private boolean cacheRecordStats = false;
     private boolean cacheSoftValues = false;
+
+    public @NotNull String backupDateFormat() {
+        return this.backupDateFormat;
+    }
+
+    public @NotNull ConfigurationOptions backupDateFormat(@NotNull String format) {
+        this.backupDateFormat = Objects.requireNonNull(format, "backupDateFormat");
+        return this;
+    }
 
     public ConfigurationOptions() {
     }
