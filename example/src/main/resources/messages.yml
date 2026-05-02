@@ -1,5 +1,3 @@
 prefix: "&7[&bExemple&7]&r "
 
-hello: "&aBonjour depuis MessageFlow (FR) !"
-
-only-french: "&dCe message existe seulement en FR."
+hello: "&cHello, from Messages.yml!"
