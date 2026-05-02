@@ -13,7 +13,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-public record BukkitBossBarMessage(
+public record LegacyBossBarMessage(
         @NotNull String title, @NotNull BarColor color, @NotNull BarStyle style,
         @Nullable BarFlag[] flags, long duration, float progress
         ) implements MessageTypeAdapter {
@@ -34,7 +34,7 @@ public record BukkitBossBarMessage(
         );
     }
 
-    public static BukkitBossBarMessage deserialize(Map<String, Object> map) {
+    public static LegacyBossBarMessage deserialize(Map<String, Object> map) {
         String title = (String) map.getOrDefault("title", "");
 
         BarColor color;
@@ -69,6 +69,6 @@ public record BukkitBossBarMessage(
 
         long duration = ((Number) map.getOrDefault("duration", 100L)).longValue();
         float progress = ((Number) map.getOrDefault("progress", 1.0f)).floatValue();
-        return new BukkitBossBarMessage(title, color, style, flags, duration, progress);
+        return new LegacyBossBarMessage(title, color, style, flags, duration, progress);
     }
 }

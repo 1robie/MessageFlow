@@ -4,7 +4,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import fr.robie.messageflow.Message;
 import fr.robie.messageflow.MessageTypeAdapter;
-import fr.robie.messageflow.message.BukkitBossBarMessage;
+import fr.robie.messageflow.message.LegacyBossBarMessage;
 import fr.robie.messageflow.message.SimpleMessage;
 import fr.robie.messageflow.message.TitleMessage;
 import net.md_5.bungee.api.ChatColor;
@@ -182,7 +182,7 @@ public class LegacyMessageFormatter<T extends Plugin> extends MessageFormatter<T
                     }
                 }
                 case BOSS_BAR -> {
-                    if (messageAdapter instanceof BukkitBossBarMessage(
+                    if (messageAdapter instanceof LegacyBossBarMessage(
                             String title, BarColor color, BarStyle style,
                             BarFlag[] flags, long duration, float progress
                     )) {

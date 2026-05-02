@@ -1,33 +1,28 @@
 package fr.robie.messageflow;
 
 public enum PlatformType {
-    PAPER,
-    SPIGOT;
+    COMPONENTS,
+    LEGACY;
 
-    private static PlatformType detectedType;
+    private static final PlatformType DETECTED;
 
-    public static PlatformType detect() {
-        if (detectedType == null) {
-            try {
-                Class.forName("io.papermc.paper.text.PaperComponents");
-                detectedType = PAPER;
-            } catch (ClassNotFoundException e) {
-                detectedType = SPIGOT;
-            }
+    static {
+        PlatformType type;
+        try {
+            Class.forName("net.kyori.adventure.text.Component");
+            type = COMPONENTS;
+        } catch (ClassNotFoundException e) {
+            type = LEGACY;
         }
-        return detectedType;
+        DETECTED = type;
     }
 
     public static PlatformType get() {
-        return detect();
+        return DETECTED;
     }
 
-    public static boolean isPaper() {
-        return get() == PAPER;
-    }
-
-    public static boolean isSpigot() {
-        return get() == SPIGOT;
+    public static boolean hasComponent() {
+        return DETECTED == COMPONENTS;
     }
 
 }

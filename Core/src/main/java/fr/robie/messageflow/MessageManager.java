@@ -3,8 +3,8 @@ package fr.robie.messageflow;
 import fr.robie.messageflow.format.AdventureMessageFormatter;
 import fr.robie.messageflow.format.LegacyMessageFormatter;
 import fr.robie.messageflow.format.MessageFormatter;
-import fr.robie.messageflow.message.BukkitBossBarMessage;
-import fr.robie.messageflow.message.PaperBossBarMessage;
+import fr.robie.messageflow.message.AdventureBossBarMessage;
+import fr.robie.messageflow.message.LegacyBossBarMessage;
 import fr.robie.messageflow.message.SimpleMessage;
 import fr.robie.messageflow.message.TitleMessage;
 import org.bukkit.configuration.ConfigurationSection;
@@ -36,29 +36,19 @@ public class MessageManager<T extends Plugin> implements IMessageManager<T> {
         this.options = options;
         this.messages = () -> messages;
         this.activeLanguage = options.defaultLanguage();
-        MessageFormatter<T> formatter;
-        try {
-            Class.forName("net.kyori.adventure.text.Component");
-            formatter = new AdventureMessageFormatter<>(plugin);
-        } catch (ClassNotFoundException e) {
-            formatter = new LegacyMessageFormatter<>(plugin);
-        }
-        this.messageFormatter = formatter;
+        this.messageFormatter = PlatformType.hasComponent()
+                ? new AdventureMessageFormatter<>(plugin)
+                : new LegacyMessageFormatter<>(plugin);
     }
 
     public <E extends Enum<E> & Message> MessageManager(@NotNull T plugin, @NotNull ConfigurationOptions options, @NotNull Class<E> messageEnumClass) {
-        MessageFormatter<T> formatter;
         this.plugin = plugin;
         this.options = options;
         this.messages = () -> iterableEnum(messageEnumClass);
         this.activeLanguage = options.defaultLanguage();
-        try {
-            Class.forName("net.kyori.adventure.text.Component");
-            formatter = new AdventureMessageFormatter<>(plugin);
-        } catch (ClassNotFoundException e) {
-            formatter = new LegacyMessageFormatter<>(plugin);
-        }
-        this.messageFormatter = formatter;
+        this.messageFormatter = PlatformType.hasComponent()
+                ? new AdventureMessageFormatter<>(plugin)
+                : new LegacyMessageFormatter<>(plugin);
     }
 
     @Override
@@ -370,7 +360,7 @@ public class MessageManager<T extends Plugin> implements IMessageManager<T> {
         return switch (type) {
             case TITLE -> TitleMessage.deserialize(values);
             case BOSS_BAR ->
-                    PlatformType.isPaper() ? PaperBossBarMessage.deserialize(values) : BukkitBossBarMessage.deserialize(values);
+                    PlatformType.hasComponent() ? AdventureBossBarMessage.deserialize(values) : LegacyBossBarMessage.deserialize(values);
             case ACTION_BAR, TCHAT, NONE, WITHOUT_PREFIX, BROADCAST -> SimpleMessage.deserialize(type, values);
         };
     }

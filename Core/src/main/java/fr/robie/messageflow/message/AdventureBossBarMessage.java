@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public record PaperBossBarMessage(@NotNull String title, @NotNull BossBar.Color color, @NotNull BossBar.Overlay overlay,
+public record AdventureBossBarMessage(@NotNull String title, @NotNull BossBar.Color color, @NotNull BossBar.Overlay overlay,
                                   @NotNull Set<BossBar.Flag> flags, long duration,
                                   float progress) implements MessageTypeAdapter {
 
@@ -32,7 +32,7 @@ public record PaperBossBarMessage(@NotNull String title, @NotNull BossBar.Color 
         );
     }
 
-    public static PaperBossBarMessage deserialize(Map<String, Object> map) {
+    public static AdventureBossBarMessage deserialize(Map<String, Object> map) {
         String title = (String) map.getOrDefault("title", "");
 
         BossBar.Color color;
@@ -72,6 +72,6 @@ public record PaperBossBarMessage(@NotNull String title, @NotNull BossBar.Color 
 
         long duration = ((Number) map.getOrDefault("duration", 100L)).longValue();
         float progress = ((Number) map.getOrDefault("progress", 1.0f)).floatValue();
-        return new PaperBossBarMessage(title, color, overlay, flags == null ? Collections.emptySet() : flags, duration, progress);
+        return new AdventureBossBarMessage(title, color, overlay, flags == null ? Collections.emptySet() : flags, duration, progress);
     }
 }

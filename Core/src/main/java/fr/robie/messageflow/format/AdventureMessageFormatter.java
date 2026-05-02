@@ -5,7 +5,7 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import fr.robie.messageflow.Message;
 import fr.robie.messageflow.MessageTypeAdapter;
-import fr.robie.messageflow.message.PaperBossBarMessage;
+import fr.robie.messageflow.message.AdventureBossBarMessage;
 import fr.robie.messageflow.message.SimpleMessage;
 import fr.robie.messageflow.message.TitleMessage;
 import net.kyori.adventure.audience.Audience;
@@ -260,7 +260,7 @@ public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatte
                     }
                 }
                 case BOSS_BAR -> {
-                    if (messageAdapter instanceof PaperBossBarMessage(
+                    if (messageAdapter instanceof AdventureBossBarMessage(
                             String title, BossBar.Color color, BossBar.Overlay overlay,
                             Set<BossBar.Flag> flags, long duration, float progress
                     )) {
