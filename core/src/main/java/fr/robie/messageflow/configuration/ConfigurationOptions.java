@@ -3,11 +3,7 @@ package fr.robie.messageflow.configuration;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * Represents the configuration options for the MessageFlow library.
@@ -355,7 +351,9 @@ public class ConfigurationOptions {
      */
     public static @NotNull String normalizeLanguage(@NotNull String languageCode) {
         String raw = Objects.requireNonNull(languageCode, "languageCode").trim();
-        if (raw.isEmpty()) return "default";
+        if (raw.isEmpty()) {
+            return "default";
+        }
         // allow "en_US", "en-US", "fr", etc.
         raw = raw.replace('-', '_');
         // keep case stable for file keys / configs

@@ -11,9 +11,10 @@ import java.util.Map;
 public interface MessageTypeAdapter {
 
     /**
-     * Gets the type of the message.
+     * Retrieves the specific type of this message handled by the adapter. This type determines
+     * how the message will be serialized or presented to the system or end-user.
      *
-     * @return the message type
+     * @return the type of the message represented as {@link MessageType}
      */
     @NotNull
     MessageType messageType();

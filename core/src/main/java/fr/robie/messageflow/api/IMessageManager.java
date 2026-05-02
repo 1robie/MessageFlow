@@ -15,9 +15,10 @@ import java.util.List;
 public interface IMessageManager<T extends Plugin> {
 
     /**
-     * Gets the message formatter used by this manager.
+     * Gets the message formatter used by this message manager. The formatter is responsible for adapting
+     * messages for presentation depending on features like Adventure or Legacy formatting.
      *
-     * @return the message formatter
+     * @return the message formatter instance
      */
     @NotNull MessageFormatter<T, ?> formatter();
 

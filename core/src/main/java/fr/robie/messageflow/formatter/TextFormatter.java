@@ -18,12 +18,13 @@ public interface TextFormatter {
     Pattern PLACEHOLDER_PATTERN = Pattern.compile("%[^%]+%");
 
     /**
-     * Parses the given message by replacing placeholders with their corresponding values.
+     * Parses the given message string by replacing all placeholders, indicated with `%`, 
+     * with their corresponding values provided as arguments.
      *
-     * @param message the message containing placeholders
-     * @param args an even number of arguments (key, value pairs)
-     * @return the formatted message
-     * @throws IllegalArgumentException if the number of arguments is not even or if a key is null
+     * @param message the message containing placeholders in `%key%` format
+     * @param args key-value pairs where keys map to placeholders and values replace them
+     * @return the formatted message with placeholders resolved
+     * @throws IllegalArgumentException if the number of arguments is uneven or if any key is null
      */
     @SuppressWarnings("ConstantValue")
     default @NotNull String parseText(@NotNull String message, @NotNull Object... args) {
