@@ -12,6 +12,17 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+/**
+ * A message adapter for boss bar messages using the legacy Bukkit API.
+ * Contains title, color, style, flags, duration, and progress settings.
+ *
+ * @param title    the boss bar text
+ * @param color    the boss bar color
+ * @param style    the boss bar style
+ * @param flags    optional boss bar flags
+ * @param duration the display duration in milliseconds
+ * @param progress the progress value (0.0 to 1.0)
+ */
 public record LegacyBossBarMessage(
         @NotNull String title, @NotNull BarColor color, @NotNull BarStyle style,
         @Nullable BarFlag[] flags, long duration, float progress
@@ -21,6 +32,11 @@ public record LegacyBossBarMessage(
         return MessageType.BOSS_BAR;
     }
 
+    /**
+     * Serializes this boss bar message to a map for YAML storage.
+     *
+     * @return the serialized map containing boss bar configuration
+     */
     @Override
     public @NotNull Map<String, Object> serialize() {
         return Map.of(
@@ -33,6 +49,12 @@ public record LegacyBossBarMessage(
         );
     }
 
+    /**
+     * Deserializes a LegacyBossBarMessage from a YAML map.
+     *
+     * @param map the map containing boss bar data
+     * @return the deserialized boss bar message
+     */
     public static LegacyBossBarMessage deserialize(Map<String, Object> map) {
         String title = (String) map.getOrDefault("title", "");
 

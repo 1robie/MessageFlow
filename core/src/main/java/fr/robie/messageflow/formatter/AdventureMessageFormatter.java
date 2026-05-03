@@ -29,6 +29,14 @@ import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * Message formatter implementation that uses Adventure's MiniMessage for modern text formatting.
+ * <p>
+ * This formatter supports hex colors, legacy color codes, and MiniMessage tags.
+ * It is automatically selected when the Adventure API is available on the platform.
+ *
+ * @param <T> the type of the plugin using this formatter
+ */
 public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatter<T, Component> {
 
     private static final Pattern LEGACY_HEX_PATTERN = Pattern.compile("§x(§[0-9a-fA-F]){6}");

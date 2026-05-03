@@ -33,6 +33,11 @@ public class ConfigurationOptions<E> {
         return this.backupDateFormat;
     }
 
+    /**
+     * Creates a new ConfigurationOptions with the specified language configuration.
+     *
+     * @param languageConfiguration the language configuration to use
+     */
     public ConfigurationOptions(@NotNull LanguageConfiguration<E> languageConfiguration) {
         this.languageConfiguration = Objects.requireNonNull(languageConfiguration, "languageConfiguration");
     }
@@ -291,6 +296,12 @@ public class ConfigurationOptions<E> {
         return this.languageConfiguration;
     }
 
+    /**
+     * Creates a ConfigurationOptions with a single language file using the default configuration.
+     *
+     * @param fileName the name of the single language file
+     * @return a new ConfigurationOptions instance configured for a single file
+     */
     public static ConfigurationOptions<String> singleFile(String fileName) {
         NormalLanguageConfiguration normalLanguageConfiguration = new NormalLanguageConfiguration("default");
         normalLanguageConfiguration.addLanguage("default", fileName);

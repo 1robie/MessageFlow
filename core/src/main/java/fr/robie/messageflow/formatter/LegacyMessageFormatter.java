@@ -25,6 +25,14 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * Message formatter implementation that uses legacy Bukkit color codes for text formatting.
+ * <p>
+ * This formatter supports hex colors (converted to legacy format) and ampersand color codes.
+ * It is automatically selected when the Adventure API is not available on the platform.
+ *
+ * @param <T> the type of the plugin using this formatter
+ */
 @SuppressWarnings("deprecation")
 public class LegacyMessageFormatter<T extends Plugin> extends MessageFormatter<T, String> {
 

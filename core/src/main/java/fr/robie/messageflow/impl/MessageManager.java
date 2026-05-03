@@ -25,6 +25,17 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.function.Supplier;
 
+/**
+ * Default implementation of {@link IMessageManager} that handles message loading, reloading,
+ * and resolution from YAML-based language files.
+ * <p>
+ * This manager supports automatic file creation, key synchronization (adding missing keys,
+ * removing obsolete keys), and backup management. It automatically selects the appropriate
+ * {@link MessageFormatter} (Adventure or Legacy) based on platform capabilities.
+ *
+ * @param <T> the type of the plugin using this manager
+ * @param <E> the type used to represent languages (e.g., String or an Enum)
+ */
 @SuppressWarnings("ResultOfMethodCallIgnored")
 public class MessageManager<T extends Plugin, E> implements IMessageManager<T, E> {
     private final T plugin;
@@ -36,6 +47,13 @@ public class MessageManager<T extends Plugin, E> implements IMessageManager<T, E
 
     private final LanguageConfiguration<E> languageConfiguration;
 
+    /**
+     * Creates a new MessageManager with the specified plugin, configuration options, and message provider.
+     *
+     * @param plugin    the plugin instance
+     * @param options   the configuration options for this manager
+     * @param messages  an iterable collection of message definitions
+     */
     public MessageManager(@NotNull T plugin, @NotNull ConfigurationOptions<E> options, @NotNull Iterable<? extends Message> messages) {
         this.plugin = plugin;
         this.options = options;
@@ -47,6 +65,13 @@ public class MessageManager<T extends Plugin, E> implements IMessageManager<T, E
         this.languageConfiguration = options.languageConfiguration();
     }
 
+    /**
+     * Creates a new MessageManager with an enum-based message provider.
+     *
+     * @param plugin            the plugin instance
+     * @param options           the configuration options for this manager
+     * @param messageEnumClass  the enum class containing message definitions (must implement {@link Message})
+     */
     public <En extends Enum<En> & Message> MessageManager(@NotNull T plugin, @NotNull ConfigurationOptions<E> options, @NotNull Class<En> messageEnumClass) {
         this.plugin = plugin;
         this.options = options;
@@ -127,6 +152,15 @@ public class MessageManager<T extends Plugin, E> implements IMessageManager<T, E
         return loaded.stream().map(m -> (MessageTypeAdapter) m).toList();
     }
 
+    /**
+     * Updates the keys in a language file by adding missing keys and/or removing obsolete keys
+     * based on the current configuration options. Creates a backup before removing obsolete keys
+     * if configured to do so.
+     *
+     * @param lang     the language code
+     * @param relPath  the relative path to the language file
+     * @param file     the language file to update
+     */
     private void updateKeysIfNeeded(@NotNull String lang, @NotNull String relPath, @NotNull File file) {
         YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
         YamlConfiguration bundled = this.loadBundledYaml(relPath);
@@ -175,6 +209,12 @@ public class MessageManager<T extends Plugin, E> implements IMessageManager<T, E
         }
     }
 
+    /**
+     * Loads a language file into all registered messages, parsing the YAML configuration
+     * and populating the loaded state of each message.
+     *
+     * @param file the language file to load
+     */
     private void loadLanguageFileIntoMessages(@NotNull File file) {
         YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
         for (Message m : this.messages.get()) {
@@ -186,12 +226,24 @@ public class MessageManager<T extends Plugin, E> implements IMessageManager<T, E
         }
     }
 
+    /**
+     * Writes all default message values to the given YAML configuration.
+     *
+     * @param config the configuration to populate with default values
+     */
     private void writeAllDefaults(YamlConfiguration config) {
         for (Message m : this.messages.get()) {
             config.set(m.key(), toYamlValue(m.defaults()));
         }
     }
 
+    /**
+     * Checks whether a given key is under a valid root key from the registered messages.
+     *
+     * @param key         the key to check
+     * @param validRoots  the set of valid root keys
+     * @return true if the key is under a valid root, false otherwise
+     */
     private static boolean isUnderValidRoot(String key, Set<String> validRoots) {
         if (validRoots.contains(key)) {
             return true;
@@ -207,6 +259,11 @@ public class MessageManager<T extends Plugin, E> implements IMessageManager<T, E
         return false;
     }
 
+    /**
+     * Ensures that the parent directory of the given file exists, creating it if necessary.
+     *
+     * @param file the file whose parent directory should exist
+     */
     private static void ensureParentExists(File file) {
         File parent = file.getParentFile();
         if (parent != null && !parent.exists()) {
@@ -214,6 +271,12 @@ public class MessageManager<T extends Plugin, E> implements IMessageManager<T, E
         }
     }
 
+    /**
+     * Saves a YAML configuration to a file, silently ignoring any IO exceptions.
+     *
+     * @param config the configuration to save
+     * @param file   the file to save to
+     */
     private static void saveQuietly(YamlConfiguration config, File file) {
         try {
             config.save(file);
@@ -221,6 +284,12 @@ public class MessageManager<T extends Plugin, E> implements IMessageManager<T, E
         }
     }
 
+    /**
+     * Attempts to copy a bundled resource from the plugin's JAR to the plugin data folder.
+     *
+     * @param relativePath the relative path of the resource to copy
+     * @return true if the resource was found and copied, false otherwise
+     */
     private boolean tryCopyBundledResource(@NotNull String relativePath) {
         try {
             if (this.plugin.getResource(relativePath) == null) {
@@ -233,6 +302,12 @@ public class MessageManager<T extends Plugin, E> implements IMessageManager<T, E
         }
     }
 
+    /**
+     * Loads a YAML configuration from a bundled resource in the plugin's JAR.
+     *
+     * @param relativePath the relative path of the resource to load
+     * @return the loaded configuration, or null if the resource was not found or could not be loaded
+     */
     private @Nullable YamlConfiguration loadBundledYaml(@NotNull String relativePath) {
         try (InputStream is = this.plugin.getResource(relativePath)) {
             if (is == null) {
@@ -246,6 +321,12 @@ public class MessageManager<T extends Plugin, E> implements IMessageManager<T, E
         }
     }
 
+    /**
+     * Creates a backup of the given file in the configured backup directory.
+     *
+     * @param file the file to backup
+     * @param lang the language code used in the backup filename
+     */
     private void backupFile(@NotNull File file, @NotNull String lang) {
         File backupDir = new File(this.plugin.getDataFolder(), this.options.backupFolder());
         if (!backupDir.exists() && !backupDir.mkdirs()) {
@@ -262,6 +343,14 @@ public class MessageManager<T extends Plugin, E> implements IMessageManager<T, E
         }
     }
 
+    /**
+     * Converts a list of message type adapters to a YAML-compatible value.
+     * Single simple messages with one line are serialized as a plain string,
+     * while complex messages are serialized as a list of maps.
+     *
+     * @param defaults the list of message type adapters to convert
+     * @return a YAML-compatible value (String, List, or Map)
+     */
     private static Object toYamlValue(List<? extends MessageTypeAdapter> defaults) {
         if (defaults == null || defaults.isEmpty()) {
             return List.of();
@@ -283,6 +372,14 @@ public class MessageManager<T extends Plugin, E> implements IMessageManager<T, E
         return list.size() == 1 ? list.getFirst() : list;
     }
 
+    /**
+     * Parses a raw YAML value into a list of message type adapters.
+     * Handles various input formats: plain strings, string lists, and structured message maps.
+     *
+     * @param config the YAML configuration containing the value
+     * @param key    the key to read from the configuration
+     * @return a list of parsed message type adapters
+     */
     private List<MessageTypeAdapter> parseMessageList(YamlConfiguration config, String key) {
         Object raw = config.get(key);
         switch (raw) {
@@ -336,6 +433,12 @@ public class MessageManager<T extends Plugin, E> implements IMessageManager<T, E
         return List.of();
     }
 
+    /**
+     * Parses a single message type adapter from a map of values.
+     *
+     * @param map the map containing message data (type, message content, etc.)
+     * @return the parsed message type adapter, or null if parsing failed
+     */
     private @Nullable MessageTypeAdapter parseAdapterFromMap(Map<?, ?> map) {
         Object rawType = map.get("type");
         MessageType type = MessageType.TCHAT;
@@ -364,6 +467,13 @@ public class MessageManager<T extends Plugin, E> implements IMessageManager<T, E
         };
     }
 
+    /**
+     * Creates an iterable view of an enum class.
+     *
+     * @param enumClass the enum class to create an iterable for
+     * @return an iterable over the enum constants
+     * @throws IllegalArgumentException if the class is not an enum
+     */
     private static <E extends Enum<E> & Message> @NotNull Iterable<E> iterableEnum(@NotNull Class<E> enumClass) {
         E[] constants = enumClass.getEnumConstants();
         if (constants == null) {

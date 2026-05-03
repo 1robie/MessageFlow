@@ -7,6 +7,16 @@ import org.jspecify.annotations.NonNull;
 
 import java.util.Map;
 
+/**
+ * A message adapter for title messages displayed in the center of the screen.
+ * Contains a title, optional subtitle, and timing parameters.
+ *
+ * @param title    the main title text
+ * @param subtitle the optional subtitle text
+ * @param fadeIn   the fade-in time in ticks
+ * @param stay     the stay time in ticks
+ * @param fadeOut  the fade-out time in ticks
+ */
 public record TitleMessage(@NotNull String title, @Nullable String subtitle, int fadeIn, int stay,
                            int fadeOut) implements MessageTypeAdapter {
 
@@ -15,6 +25,11 @@ public record TitleMessage(@NotNull String title, @Nullable String subtitle, int
         return MessageType.TITLE;
     }
 
+    /**
+     * Serializes this title message to a map for YAML storage.
+     *
+     * @return the serialized map containing title, subtitle, and timing values
+     */
     @Override
     public @NonNull Map<String, Object> serialize() {
         return Map.of(
@@ -26,6 +41,12 @@ public record TitleMessage(@NotNull String title, @Nullable String subtitle, int
         );
     }
 
+    /**
+     * Deserializes a TitleMessage from a YAML map.
+     *
+     * @param map the map containing title data
+     * @return the deserialized title message
+     */
     public static TitleMessage deserialize(Map<String, Object> map) {
         String title = (String) map.getOrDefault("title", "");
         String subtitle = (String) map.getOrDefault("subtitle", null);

@@ -1,51 +1,70 @@
 package fr.robie.messageflow.configuration.lang;
 
 import org.jetbrains.annotations.NotNull;
-import org.jspecify.annotations.NonNull;
 
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Language configuration implementation that uses an enum to define available languages.
+ * <p>
+ * This configuration automatically generates file paths based on a format string
+ * and the enum constant names.
+ *
+ * @param <E> the enum type representing available languages
+ */
 public class EnumLanguageConfiguration<E extends Enum<E>> implements LanguageConfiguration<E> {
-
     private final Class<E> availableLanguages;
-
     private final E defaultLanguage;
-
-    private final String languagePathFormat = "lang/%s.yml";
+    private String languagePathFormat = "lang/%s.yml";
 
     private E activeLanguage;
 
-    public EnumLanguageConfiguration(Class<E> availableLanguages, E defaultLanguage) {
+    /**
+     * Creates a new EnumLanguageConfiguration with the specified enum class and default language.
+     *
+     * @param availableLanguages the enum class containing available languages
+     * @param defaultLanguage    the default language
+     */
+    public EnumLanguageConfiguration(@NotNull Class<E> availableLanguages, @NotNull E defaultLanguage) {
         this.availableLanguages = availableLanguages;
         this.defaultLanguage = defaultLanguage;
         this.activeLanguage = defaultLanguage;
+    }
+
+    public EnumLanguageConfiguration<E> languagePathFormat(@NotNull String languagePathFormat) {
+        this.languagePathFormat = languagePathFormat;
+        return this;
     }
 
     public Class<E> getAvailableLanguages() {
         return this.availableLanguages;
     }
 
-    public @NonNull E getDefaultLanguage() {
+    public @NotNull E getDefaultLanguage() {
         return this.defaultLanguage;
     }
 
-    public @NonNull E getActiveLanguage() {
+    public @NotNull E getActiveLanguage() {
         return this.activeLanguage;
     }
 
+    public @NotNull String getLanguagePathFormat() {
+        return this.languagePathFormat;
+    }
+
     @Override
-    public String getNormalizedLanguage(E language) {
+    public String getNormalizedLanguage(@NotNull E language) {
         return language.name().toLowerCase();
     }
 
     @Override
-    public String getRelativePath(E language) {
+    public String getRelativePath(@NotNull E language) {
         return String.format(this.languagePathFormat, language.name().toLowerCase());
     }
 
     @Override
-    public void setActiveLanguage(E language) {
+    public void setActiveLanguage(@NotNull E language) {
         this.activeLanguage = language;
     }
 
