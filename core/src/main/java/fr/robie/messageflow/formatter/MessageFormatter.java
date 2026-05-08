@@ -27,12 +27,18 @@ import java.util.concurrent.TimeUnit;
  * @param <V> the type of the formatted message object (e.g., Component for Adventure, String for Legacy)
  */
 public abstract class MessageFormatter<T extends Plugin, V> implements TextFormatter {
-    /** The plugin instance using this formatter. */
+    /**
+     * The plugin instance using this formatter.
+     */
     protected final T plugin;
-    /** Cache for storing formatted messages to avoid repeated parsing. */
+    /**
+     * Cache for storing formatted messages to avoid repeated parsing.
+     */
     protected final LoadingCache<String, V> cache;
 
-    /** The prefix prepended to messages when enabled. */
+    /**
+     * The prefix prepended to messages when enabled.
+     */
     @NotNull
     protected String prefix = "";
 
@@ -42,7 +48,7 @@ public abstract class MessageFormatter<T extends Plugin, V> implements TextForma
      * @param plugin  the plugin instance
      * @param options the configuration options for the message cache
      */
-    public MessageFormatter(@NotNull T plugin, @NotNull ConfigurationOptions options) {
+    public MessageFormatter(@NotNull T plugin, @NotNull ConfigurationOptions<?> options) {
         assert plugin != null : "Plugin cannot be null";
         this.plugin = plugin;
         CacheBuilder<Object, Object> builder = CacheBuilder.newBuilder()
@@ -114,12 +120,12 @@ public abstract class MessageFormatter<T extends Plugin, V> implements TextForma
     /**
      * Sends a title to a single player.
      *
-     * @param player    the player to send the title to
-     * @param title     the main title text
-     * @param subtitle  the subtitle text
-     * @param fadeIn    fade-in time in ticks
-     * @param stay      stay time in ticks
-     * @param fadeOut   fade-out time in ticks
+     * @param player       the player to send the title to
+     * @param title        the main title text
+     * @param subtitle     the subtitle text
+     * @param fadeIn       fade-in time in ticks
+     * @param stay         stay time in ticks
+     * @param fadeOut      fade-out time in ticks
      * @param placeholders key-value pairs for placeholder replacement
      */
     public void sendTitle(@Nullable Player player, @Nullable String title, @Nullable String subtitle, int fadeIn, int stay, int fadeOut, @NotNull Object... placeholders) {
@@ -132,12 +138,12 @@ public abstract class MessageFormatter<T extends Plugin, V> implements TextForma
     /**
      * Sends a title to multiple players.
      *
-     * @param players   the players to send the title to
-     * @param title     the main title text
-     * @param subtitle  the subtitle text
-     * @param fadeIn    fade-in time in ticks
-     * @param stay      stay time in ticks
-     * @param fadeOut   fade-out time in ticks
+     * @param players      the players to send the title to
+     * @param title        the main title text
+     * @param subtitle     the subtitle text
+     * @param fadeIn       fade-in time in ticks
+     * @param stay         stay time in ticks
+     * @param fadeOut      fade-out time in ticks
      * @param placeholders key-value pairs for placeholder replacement
      */
     public abstract void sendTitle(@NotNull Collection<? extends @NotNull Player> players, @Nullable String title, @Nullable String subtitle, int fadeIn, int stay, int fadeOut, @NotNull Object... placeholders);
@@ -145,8 +151,8 @@ public abstract class MessageFormatter<T extends Plugin, V> implements TextForma
     /**
      * Sends an action bar message to a single player without prefix.
      *
-     * @param player    the player to send the action bar to
-     * @param message   the action bar text
+     * @param player       the player to send the action bar to
+     * @param message      the action bar text
      * @param placeholders key-value pairs for placeholder replacement
      */
     public void sendActionBar(@Nullable Player player, @Nullable String message, @NotNull Object... placeholders) {
@@ -159,8 +165,8 @@ public abstract class MessageFormatter<T extends Plugin, V> implements TextForma
     /**
      * Sends an action bar message to multiple players without prefix.
      *
-     * @param players   the players to send the action bar to
-     * @param message   the action bar text
+     * @param players      the players to send the action bar to
+     * @param message      the action bar text
      * @param placeholders key-value pairs for placeholder replacement
      */
     public abstract void sendActionBar(@NotNull Collection<? extends @NotNull Player> players, @Nullable String message, @NotNull Object... placeholders);
@@ -168,9 +174,9 @@ public abstract class MessageFormatter<T extends Plugin, V> implements TextForma
     /**
      * Sends an action bar message to a single player with optional prefix.
      *
-     * @param player    the player to send the action bar to
-     * @param message   the action bar text
-     * @param prefix    whether to prepend the configured prefix
+     * @param player       the player to send the action bar to
+     * @param message      the action bar text
+     * @param prefix       whether to prepend the configured prefix
      * @param placeholders key-value pairs for placeholder replacement
      */
     public void sendActionBar(@Nullable Player player, @Nullable String message, boolean prefix, @NotNull Object... placeholders) {
@@ -183,9 +189,9 @@ public abstract class MessageFormatter<T extends Plugin, V> implements TextForma
     /**
      * Sends an action bar message to multiple players with optional prefix.
      *
-     * @param players   the players to send the action bar to
-     * @param message   the action bar text
-     * @param prefix    whether to prepend the configured prefix
+     * @param players      the players to send the action bar to
+     * @param message      the action bar text
+     * @param prefix       whether to prepend the configured prefix
      * @param placeholders key-value pairs for placeholder replacement
      */
     public abstract void sendActionBar(@NotNull Collection<? extends @NotNull Player> players, @Nullable String message, boolean prefix, @NotNull Object... placeholders);
@@ -193,7 +199,7 @@ public abstract class MessageFormatter<T extends Plugin, V> implements TextForma
     /**
      * Broadcasts an action bar message to all online players with prefix enabled.
      *
-     * @param message   the action bar text
+     * @param message      the action bar text
      * @param placeholders key-value pairs for placeholder replacement
      */
     public void broadcastActionBar(@Nullable String message, @NotNull Object... placeholders) {
@@ -203,8 +209,8 @@ public abstract class MessageFormatter<T extends Plugin, V> implements TextForma
     /**
      * Broadcasts an action bar message to all online players with optional prefix.
      *
-     * @param message   the action bar text
-     * @param prefix    whether to prepend the configured prefix
+     * @param message      the action bar text
+     * @param prefix       whether to prepend the configured prefix
      * @param placeholders key-value pairs for placeholder replacement
      */
     public abstract void broadcastActionBar(@Nullable String message, boolean prefix, @NotNull Object... placeholders);
@@ -212,11 +218,11 @@ public abstract class MessageFormatter<T extends Plugin, V> implements TextForma
     /**
      * Broadcasts a title to all online players.
      *
-     * @param title     the main title text
-     * @param subtitle  the subtitle text
-     * @param fadeIn    fade-in time in ticks
-     * @param stay      stay time in ticks
-     * @param fadeOut   fade-out time in ticks
+     * @param title        the main title text
+     * @param subtitle     the subtitle text
+     * @param fadeIn       fade-in time in ticks
+     * @param stay         stay time in ticks
+     * @param fadeOut      fade-out time in ticks
      * @param placeholders key-value pairs for placeholder replacement
      */
     public void broadcastTitle(@Nullable String title, @Nullable String subtitle, int fadeIn, int stay, int fadeOut, @NotNull Object... placeholders) {
@@ -226,8 +232,8 @@ public abstract class MessageFormatter<T extends Plugin, V> implements TextForma
     /**
      * Sends a chat message to a single command sender with prefix enabled.
      *
-     * @param sender    the command sender to send the message to
-     * @param message   the chat message text
+     * @param sender       the command sender to send the message to
+     * @param message      the chat message text
      * @param placeholders key-value pairs for placeholder replacement
      */
     public void sendMessage(@Nullable CommandSender sender, @Nullable String message, @NotNull Object... placeholders) {
@@ -237,9 +243,9 @@ public abstract class MessageFormatter<T extends Plugin, V> implements TextForma
     /**
      * Sends a chat message to a single command sender with optional prefix.
      *
-     * @param sender    the command sender to send the message to
-     * @param message   the chat message text
-     * @param prefix    whether to prepend the configured prefix
+     * @param sender       the command sender to send the message to
+     * @param message      the chat message text
+     * @param prefix       whether to prepend the configured prefix
      * @param placeholders key-value pairs for placeholder replacement
      */
     public void sendMessage(@Nullable CommandSender sender, @Nullable String message, boolean prefix, @NotNull Object... placeholders) {
@@ -252,8 +258,8 @@ public abstract class MessageFormatter<T extends Plugin, V> implements TextForma
     /**
      * Sends a chat message to multiple command senders with prefix enabled.
      *
-     * @param senders   the command senders to send the message to
-     * @param message   the chat message text
+     * @param senders      the command senders to send the message to
+     * @param message      the chat message text
      * @param placeholders key-value pairs for placeholder replacement
      */
     public void sendMessage(@NotNull Collection<? extends CommandSender> senders, @Nullable String message, @NotNull Object... placeholders) {
@@ -263,9 +269,9 @@ public abstract class MessageFormatter<T extends Plugin, V> implements TextForma
     /**
      * Sends a chat message to multiple command senders with optional prefix.
      *
-     * @param senders   the command senders to send the message to
-     * @param message   the chat message text
-     * @param prefix    whether to prepend the configured prefix
+     * @param senders      the command senders to send the message to
+     * @param message      the chat message text
+     * @param prefix       whether to prepend the configured prefix
      * @param placeholders key-value pairs for placeholder replacement
      */
     public abstract void sendMessage(@NotNull Collection<? extends CommandSender> senders, @Nullable String message, boolean prefix, @NotNull Object... placeholders);
@@ -273,7 +279,7 @@ public abstract class MessageFormatter<T extends Plugin, V> implements TextForma
     /**
      * Broadcasts a chat message to all online players with prefix enabled.
      *
-     * @param message   the chat message text
+     * @param message      the chat message text
      * @param placeholders key-value pairs for placeholder replacement
      */
     public void broadcast(@Nullable String message, @NotNull Object... placeholders) {
@@ -283,8 +289,8 @@ public abstract class MessageFormatter<T extends Plugin, V> implements TextForma
     /**
      * Broadcasts a chat message to all online players with optional prefix.
      *
-     * @param message   the chat message text
-     * @param prefix    whether to prepend the configured prefix
+     * @param message      the chat message text
+     * @param prefix       whether to prepend the configured prefix
      * @param placeholders key-value pairs for placeholder replacement
      */
     public abstract void broadcast(@Nullable String message, boolean prefix, @NotNull Object... placeholders);
@@ -292,8 +298,8 @@ public abstract class MessageFormatter<T extends Plugin, V> implements TextForma
     /**
      * Sends a chat message to a single command sender without prefix.
      *
-     * @param sender    the command sender to send the message to
-     * @param message   the chat message text
+     * @param sender       the command sender to send the message to
+     * @param message      the chat message text
      * @param placeholders key-value pairs for placeholder replacement
      */
     public void sendMessageWithoutPrefix(@Nullable CommandSender sender, @Nullable String message, @NotNull Object... placeholders) {
@@ -303,8 +309,8 @@ public abstract class MessageFormatter<T extends Plugin, V> implements TextForma
     /**
      * Sends a resolved message to a single command sender with prefix enabled.
      *
-     * @param message   the message definition to resolve and send
-     * @param sender    the command sender to send the message to
+     * @param message      the message definition to resolve and send
+     * @param sender       the command sender to send the message to
      * @param placeholders key-value pairs for placeholder replacement
      */
     public void sendMessage(@NotNull Message message, @NotNull CommandSender sender, @NotNull Object... placeholders) {
@@ -314,20 +320,20 @@ public abstract class MessageFormatter<T extends Plugin, V> implements TextForma
     /**
      * Sends a resolved message to multiple command senders with prefix enabled.
      *
-     * @param message   the message definition to resolve and send
-     * @param senders   the command senders to send the message to
+     * @param message      the message definition to resolve and send
+     * @param senders      the command senders to send the message to
      * @param placeholders key-value pairs for placeholder replacement
      */
-    public void sendMessage(@NotNull Message message, @NotNull Collection<CommandSender> senders, @NotNull Object... placeholders) {
+    public void sendMessage(@NotNull Message message, @NotNull Collection<? extends CommandSender> senders, @NotNull Object... placeholders) {
         this.sendMessage(message, senders, true, placeholders);
     }
 
     /**
      * Sends a resolved message to a single command sender with optional prefix.
      *
-     * @param message   the message definition to resolve and send
-     * @param sender    the command sender to send the message to
-     * @param prefix    whether to prepend the configured prefix
+     * @param message      the message definition to resolve and send
+     * @param sender       the command sender to send the message to
+     * @param prefix       whether to prepend the configured prefix
      * @param placeholders key-value pairs for placeholder replacement
      */
     public void sendMessage(@NotNull Message message, @NotNull CommandSender sender, boolean prefix, @NotNull Object... placeholders) {
@@ -337,11 +343,11 @@ public abstract class MessageFormatter<T extends Plugin, V> implements TextForma
     /**
      * Sends a resolved message to multiple command senders with optional prefix.
      *
-     * @param message   the message definition to resolve and send
-     * @param senders   the command senders to send the message to
-     * @param prefix    whether to prepend the configured prefix
+     * @param message      the message definition to resolve and send
+     * @param senders      the command senders to send the message to
+     * @param prefix       whether to prepend the configured prefix
      * @param placeholders key-value pairs for placeholder replacement
      */
-    public abstract void sendMessage(@NotNull Message message, @NotNull Collection<CommandSender> senders, boolean prefix, @NotNull Object... placeholders);
+    public abstract void sendMessage(@NotNull Message message, @NotNull Collection<? extends CommandSender> senders, boolean prefix, @NotNull Object... placeholders);
 }
 

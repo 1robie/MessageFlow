@@ -50,9 +50,9 @@ public class MessageManager<T extends Plugin, E> implements IMessageManager<T, E
     /**
      * Creates a new MessageManager with the specified plugin, configuration options, and message provider.
      *
-     * @param plugin    the plugin instance
-     * @param options   the configuration options for this manager
-     * @param messages  an iterable collection of message definitions
+     * @param plugin   the plugin instance
+     * @param options  the configuration options for this manager
+     * @param messages an iterable collection of message definitions
      */
     public MessageManager(@NotNull T plugin, @NotNull ConfigurationOptions<E> options, @NotNull Iterable<? extends Message> messages) {
         this.plugin = plugin;
@@ -68,9 +68,9 @@ public class MessageManager<T extends Plugin, E> implements IMessageManager<T, E
     /**
      * Creates a new MessageManager with an enum-based message provider.
      *
-     * @param plugin            the plugin instance
-     * @param options           the configuration options for this manager
-     * @param messageEnumClass  the enum class containing message definitions (must implement {@link Message})
+     * @param plugin           the plugin instance
+     * @param options          the configuration options for this manager
+     * @param messageEnumClass the enum class containing message definitions (must implement {@link Message})
      */
     public <En extends Enum<En> & Message> MessageManager(@NotNull T plugin, @NotNull ConfigurationOptions<E> options, @NotNull Class<En> messageEnumClass) {
         this.plugin = plugin;
@@ -86,6 +86,11 @@ public class MessageManager<T extends Plugin, E> implements IMessageManager<T, E
     @Override
     public @NotNull MessageFormatter<T, ?> formatter() {
         return this.messageFormatter;
+    }
+
+    @Override
+    public @NotNull LanguageConfiguration<E> languageConfiguration() {
+        return this.languageConfiguration;
     }
 
     @Override
@@ -157,9 +162,9 @@ public class MessageManager<T extends Plugin, E> implements IMessageManager<T, E
      * based on the current configuration options. Creates a backup before removing obsolete keys
      * if configured to do so.
      *
-     * @param lang     the language code
-     * @param relPath  the relative path to the language file
-     * @param file     the language file to update
+     * @param lang    the language code
+     * @param relPath the relative path to the language file
+     * @param file    the language file to update
      */
     private void updateKeysIfNeeded(@NotNull String lang, @NotNull String relPath, @NotNull File file) {
         YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
@@ -240,8 +245,8 @@ public class MessageManager<T extends Plugin, E> implements IMessageManager<T, E
     /**
      * Checks whether a given key is under a valid root key from the registered messages.
      *
-     * @param key         the key to check
-     * @param validRoots  the set of valid root keys
+     * @param key        the key to check
+     * @param validRoots the set of valid root keys
      * @return true if the key is under a valid root, false otherwise
      */
     private static boolean isUnderValidRoot(String key, Set<String> validRoots) {

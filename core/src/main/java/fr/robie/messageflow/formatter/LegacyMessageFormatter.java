@@ -39,7 +39,7 @@ public class LegacyMessageFormatter<T extends Plugin> extends MessageFormatter<T
     private static final Pattern HEX_PATTERN = Pattern.compile("#([a-fA-F0-9]{6})");
     private static final Pattern MINI_MESSAGE_TAG_PATTERN = Pattern.compile("<[^>]+>");
 
-    public LegacyMessageFormatter(@NotNull T plugin, @NotNull ConfigurationOptions options) {
+    public LegacyMessageFormatter(@NotNull T plugin, @NotNull ConfigurationOptions<?> options) {
         super(plugin, options);
     }
 
@@ -84,12 +84,12 @@ public class LegacyMessageFormatter<T extends Plugin> extends MessageFormatter<T
                 .toList();
     }
 
-    private void sendLines(@NotNull Collection<CommandSender> senders, @NotNull List<String> lines) {
+    private void sendLines(@NotNull Collection<? extends CommandSender> senders, @NotNull List<String> lines) {
         senders.forEach(sender -> lines.forEach(sender::sendMessage));
     }
 
     private void sendComponents(
-            @NotNull Collection<CommandSender> senders,
+            @NotNull Collection<? extends CommandSender> senders,
             @NotNull SimpleMessage message,
             boolean prefix,
             @NotNull Object[] placeholders
@@ -147,7 +147,7 @@ public class LegacyMessageFormatter<T extends Plugin> extends MessageFormatter<T
 
     public void sendMessage(
             @NotNull Message message,
-            @NotNull Collection<CommandSender> senders,
+            @NotNull Collection<? extends CommandSender> senders,
             boolean prefix,
             @NotNull Object... placeholders
     ) {

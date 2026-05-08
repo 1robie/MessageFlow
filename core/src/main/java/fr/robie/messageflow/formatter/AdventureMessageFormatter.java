@@ -73,7 +73,7 @@ public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatte
             .build();
 
 
-    public AdventureMessageFormatter(@NotNull T plugin, @NotNull ConfigurationOptions options) {
+    public AdventureMessageFormatter(@NotNull T plugin, @NotNull ConfigurationOptions<?> options) {
         super(plugin, options);
     }
 
@@ -237,7 +237,7 @@ public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatte
         Audience.audience(Bukkit.getOnlinePlayers()).sendMessage(component);
     }
 
-    public void sendMessage(@NotNull Message message, @NotNull Collection<CommandSender> audiences, boolean prefix, @NotNull Object... placeholders) {
+    public void sendMessage(@NotNull Message message, @NotNull Collection<? extends CommandSender> audiences, boolean prefix, @NotNull Object... placeholders) {
         if (audiences.isEmpty()) {
             return;
         }
