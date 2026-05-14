@@ -9,6 +9,8 @@ import fr.robie.messageflow.configuration.lang.LanguageEntry;
 import fr.robie.messageflow.formatter.AdventureMessageFormatter;
 import fr.robie.messageflow.formatter.LegacyMessageFormatter;
 import fr.robie.messageflow.formatter.MessageFormatter;
+import fr.robie.messageflow.logger.ComponentLogger;
+import fr.robie.messageflow.logger.LegacyLogger;
 import fr.robie.messageflow.model.*;
 import fr.robie.messageflow.util.PlatformType;
 import org.bukkit.configuration.ConfigurationSection;
@@ -38,7 +40,7 @@ import java.util.function.Supplier;
  * @param <E> the type used to represent languages (e.g., String or an Enum)
  */
 @SuppressWarnings("ResultOfMethodCallIgnored")
-public class MessageManager<T extends Plugin, E> implements IMessageManager<T, E> {
+public final class MessageManager<T extends Plugin, E> implements IMessageManager<T, E> {
     private final T plugin;
     private final ConfigurationOptions<E> options;
     private final Supplier<? extends Iterable<? extends Message>> messages;
@@ -56,17 +58,10 @@ public class MessageManager<T extends Plugin, E> implements IMessageManager<T, E
      * @param messages an iterable collection of message definitions
      */
     public MessageManager(@NotNull T plugin, @NotNull ConfigurationOptions<E> options, @NotNull Iterable<? extends Message> messages) {
-        Preconditions.checkNotNull(plugin, "Plugin cannot be null");
-        Preconditions.checkNotNull(options, "Configuration options cannot be null");
-        Preconditions.checkNotNull(messages, "Messages iterable cannot be null");
-        this.plugin = plugin;
-        this.options = options;
-        this.messages = () -> messages;
-        this.messageFormatter = PlatformType.hasComponent()
-                ? new AdventureMessageFormatter<>(plugin, options)
-                : new LegacyMessageFormatter<>(plugin, options);
-        this.BACKUP_DATE_FORMAT = DateTimeFormatter.ofPattern(options.backupDateFormat());
-        this.languageConfiguration = options.languageConfiguration();
+        this(plugin, options, () -> {
+            Preconditions.checkNotNull(messages, "Messages iterable cannot be null");
+            return messages;
+        });
     }
 
     /**
@@ -79,15 +74,35 @@ public class MessageManager<T extends Plugin, E> implements IMessageManager<T, E
      * @throws IllegalArgumentException if the provided class is not a valid enum or does not implement Message
      */
     public <En extends Enum<En> & Message> MessageManager(@NotNull T plugin, @NotNull ConfigurationOptions<E> options, @NotNull Class<En> messageEnumClass) throws IllegalArgumentException {
+        this(plugin, options, () -> iterableEnum(Preconditions.checkNotNull(messageEnumClass, "Message enum class cannot be null")));
+    }
+
+    private MessageManager(@NotNull T plugin, @NotNull ConfigurationOptions<E> options, @NotNull Supplier<? extends Iterable<? extends Message>> messages) {
         Preconditions.checkNotNull(plugin, "Plugin cannot be null");
         Preconditions.checkNotNull(options, "Configuration options cannot be null");
-        Preconditions.checkNotNull(messageEnumClass, "Message enum class cannot be null");
         this.plugin = plugin;
         this.options = options;
-        this.messages = () -> iterableEnum(messageEnumClass);
+        this.messages = messages;
         this.messageFormatter = PlatformType.hasComponent()
                 ? new AdventureMessageFormatter<>(plugin, options)
                 : new LegacyMessageFormatter<>(plugin, options);
+
+        String loggerPrefix = options.loggerPrefix();
+        if (loggerPrefix == null) {
+            try {
+                loggerPrefix = "<gray>[</gray>" + this.plugin.getPluginMeta().getName() + " " + this.plugin.getPluginMeta().getVersion() + "<gray>]</gray>";
+            } catch (Throwable ignored) {
+                loggerPrefix = "§8[" + this.plugin.getDescription().getFullName() + "§8]";
+            }
+        }
+
+        if (this.messageFormatter instanceof AdventureMessageFormatter<?> adventureFormatter) {
+            new ComponentLogger(loggerPrefix, adventureFormatter);
+        } else {
+            LegacyMessageFormatter<?> legacyFormatter = (LegacyMessageFormatter<?>) this.messageFormatter;
+            new LegacyLogger(loggerPrefix, legacyFormatter);
+        }
+
         this.BACKUP_DATE_FORMAT = DateTimeFormatter.ofPattern(options.backupDateFormat());
         this.languageConfiguration = options.languageConfiguration();
     }

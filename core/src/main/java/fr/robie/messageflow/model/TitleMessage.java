@@ -21,13 +21,8 @@ import java.util.Map;
 public record TitleMessage(@NotNull String title, @Nullable String subtitle, int fadeIn, int stay,
                            int fadeOut) implements MessageTypeAdapter {
 
-    public TitleMessage(@NotNull String title, @Nullable String subtitle, int fadeIn, int stay, int fadeOut) {
+    public TitleMessage {
         Preconditions.checkNotNull(title, "Title cannot be null");
-        this.title = title;
-        this.subtitle = subtitle;
-        this.fadeIn = fadeIn;
-        this.stay = stay;
-        this.fadeOut = fadeOut;
     }
 
     @Override

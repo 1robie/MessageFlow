@@ -30,16 +30,10 @@ public record LegacyBossBarMessage(
         @Nullable BarFlag[] flags, long duration, float progress
         ) implements MessageTypeAdapter {
 
-    public LegacyBossBarMessage(@NotNull String title, @NotNull BarColor color, @NotNull BarStyle style, @Nullable BarFlag[] flags, long duration, float progress) {
+    public LegacyBossBarMessage {
         Preconditions.checkNotNull(title, "Title cannot be null");
         Preconditions.checkNotNull(color, "Color cannot be null");
         Preconditions.checkNotNull(style, "Style cannot be null");
-        this.title = title;
-        this.color = color;
-        this.style = style;
-        this.flags = flags;
-        this.duration = duration;
-        this.progress = progress;
     }
 
     @Override

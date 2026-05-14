@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import fr.robie.messageflow.configuration.lang.LanguageConfiguration;
 import fr.robie.messageflow.configuration.lang.NormalLanguageConfiguration;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Represents the configuration options for the MessageFlow library.
@@ -19,6 +20,8 @@ public class ConfigurationOptions<E> {
     private @NotNull String backupFolder = "messageflow/backup";
 
     private @NotNull String backupDateFormat = "yyyy-MM-dd_HH-mm-ss";
+
+    private @Nullable String loggerPrefix = null;
 
     private long cacheMaximumSize = 512;
     private long cacheExpireAfterAccessMinutes = 10;
@@ -147,6 +150,26 @@ public class ConfigurationOptions<E> {
      */
     public @NotNull String backupFolder() {
         return this.backupFolder;
+    }
+
+    /**
+     * Gets the logger prefix to use for log messages. If null, the library will use the plugin name + version as the prefix.
+     *
+     * @return the logger prefix, or null to use the default plugin name + version prefix
+     */
+    public @Nullable String loggerPrefix() {
+        return this.loggerPrefix;
+    }
+
+    /**
+     * Sets the logger prefix to use for log messages. If set to null, the library will use the plugin name + version as the prefix.
+     *
+     * @param prefix the logger prefix to use, or null to use the default plugin name + version prefix
+     * @return this instance for fluent chaining
+     */
+    public @NotNull ConfigurationOptions<E> loggerPrefix(@Nullable String prefix) {
+        this.loggerPrefix = prefix;
+        return this;
     }
 
     /**

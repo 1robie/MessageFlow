@@ -26,17 +26,11 @@ public record AdventureBossBarMessage(@NotNull String title, @NotNull BossBar.Co
                                   @NotNull Set<BossBar.Flag> flags, long duration,
                                   float progress) implements MessageTypeAdapter {
 
-    public AdventureBossBarMessage(@NotNull String title, @NotNull BossBar.Color color, @NotNull BossBar.Overlay overlay, @NotNull Set<BossBar.Flag> flags, long duration, float progress) {
+    public AdventureBossBarMessage {
         Preconditions.checkNotNull(title, "Title cannot be null");
         Preconditions.checkNotNull(color, "Color cannot be null");
         Preconditions.checkNotNull(overlay, "Overlay cannot be null");
         Preconditions.checkNotNull(flags, "Flags cannot be null");
-        this.title = title;
-        this.color = color;
-        this.overlay = overlay;
-        this.flags = flags;
-        this.duration = duration;
-        this.progress = progress;
     }
 
     @Override

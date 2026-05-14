@@ -19,11 +19,9 @@ import java.util.Map;
 public record SimpleMessage(@NotNull MessageType messageType,
                             @NotNull List<String> messages) implements MessageTypeAdapter {
 
-    public SimpleMessage(@NotNull MessageType messageType, @NotNull List<String> messages) {
+    public SimpleMessage {
         Preconditions.checkNotNull(messageType, "Message type cannot be null");
         Preconditions.checkNotNull(messages, "Messages list cannot be null");
-        this.messageType = messageType;
-        this.messages = messages;
     }
 
     /**
