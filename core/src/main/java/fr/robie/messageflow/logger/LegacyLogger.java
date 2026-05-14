@@ -39,17 +39,7 @@ public final class LegacyLogger extends Logger {
     @Override
     @NotNull
     protected String prefixe(@NotNull LogType type) {
-        String colorForLogType = this.getColorForLogType(type);
+        String colorForLogType = type.getLegacyColorCode();
         return colorForLogType + "[" + type.name() + "] &r" + this.prefix + " " + (this.colorWholeMessage || type.isColorWholeMessage() ? colorForLogType : "");
-    }
-
-    @Override
-    protected @NotNull String getColorForLogType(@NotNull LogType type) {
-        return switch (type) {
-            case INFO -> "&9";
-            case WARNING -> "&6";
-            case ERROR -> "&c";
-            case DEBUG -> "&d";
-        };
     }
 }

@@ -310,15 +310,6 @@ public abstract class Logger implements TextFormatter {
     protected abstract String prefixe(@NotNull LogType type);
 
     /**
-     * Gets the color code associated with a log type.
-     *
-     * @param type the log type
-     * @return the color string
-     */
-    @NotNull
-    protected abstract String getColorForLogType(@NotNull LogType type);
-
-    /**
      * Checks if debug mode is enabled.
      *
      * @return true if debug mode is enabled
@@ -390,21 +381,28 @@ public abstract class Logger implements TextFormatter {
         /**
          * Informational messages.
          */
-        INFO,
+        INFO("<blue>", "&9"),
         /**
          * Warning messages.
          */
-        WARNING,
+        WARNING("<gold>", "&6"),
         /**
          * Error messages.
          */
-        ERROR,
+        ERROR("<red>", "&c"),
         /**
          * Debugging messages.
          */
-        DEBUG;
+        DEBUG("<light_purple>", "&d");
+        private String adventureColorCode;
+        private String legacyColorCode;
 
         private boolean colorWholeMessage = false;
+
+        LogType(@NotNull String adventureColorCode, @NotNull String legacyColorCode) {
+            this.adventureColorCode = adventureColorCode;
+            this.legacyColorCode = legacyColorCode;
+        }
 
         /**
          * Checks if the entire log message should be colored for this log type.
@@ -436,6 +434,26 @@ public abstract class Logger implements TextFormatter {
          */
         public void resetColorWholeMessage() {
             this.colorWholeMessage = false;
+        }
+
+        @NotNull
+        public String getLegacyColorCode() {
+            return this.legacyColorCode;
+        }
+
+        @NotNull
+        public String getAdventureColorCode() {
+            return this.adventureColorCode;
+        }
+
+        public void setLegacyColorCode(@NotNull String legacyColorCode) {
+            Preconditions.checkNotNull(legacyColorCode, "Legacy color code cannot be null");
+            this.legacyColorCode = legacyColorCode;
+        }
+
+        public void setAdventureColorCode(@NotNull String adventureColorCode) {
+            Preconditions.checkNotNull(adventureColorCode, "Adventure color code cannot be null");
+            this.adventureColorCode = adventureColorCode;
         }
     }
 }

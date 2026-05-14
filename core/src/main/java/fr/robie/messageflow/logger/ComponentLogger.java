@@ -39,17 +39,7 @@ public final class ComponentLogger extends Logger {
     @Override
     @NotNull
     protected String prefixe(@NotNull LogType type) {
-        String colorForLogType = this.getColorForLogType(type);
+        String colorForLogType = type.getAdventureColorCode();
         return colorForLogType + "[" + type.name() + "] <reset>" + this.prefix + " " + (this.colorWholeMessage || type.isColorWholeMessage() ? colorForLogType : "");
-    }
-
-    @Override
-    protected @NotNull String getColorForLogType(@NotNull LogType type) {
-        return switch (type) {
-            case INFO -> "<blue>";
-            case WARNING -> "<gold>";
-            case ERROR -> "<red>";
-            case DEBUG -> "<light_purple>";
-        };
     }
 }
