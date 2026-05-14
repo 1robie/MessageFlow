@@ -1,5 +1,6 @@
 package fr.robie.messageflow.configuration.lang;
 
+import com.google.common.base.Preconditions;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -10,6 +11,8 @@ import org.jetbrains.annotations.NotNull;
  */
 public record LanguageEntry(String language, String path) {
     public LanguageEntry(@NotNull String language, @NotNull String path) {
+        Preconditions.checkNotNull(language, "Language cannot be null");
+        Preconditions.checkNotNull(path, "Path cannot be null");
         this.language = language;
         this.path = path;
     }

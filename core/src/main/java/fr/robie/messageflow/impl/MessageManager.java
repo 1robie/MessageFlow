@@ -1,5 +1,6 @@
 package fr.robie.messageflow.impl;
 
+import com.google.common.base.Preconditions;
 import fr.robie.messageflow.api.IMessageManager;
 import fr.robie.messageflow.api.MessageTypeAdapter;
 import fr.robie.messageflow.configuration.ConfigurationOptions;
@@ -55,6 +56,9 @@ public class MessageManager<T extends Plugin, E> implements IMessageManager<T, E
      * @param messages an iterable collection of message definitions
      */
     public MessageManager(@NotNull T plugin, @NotNull ConfigurationOptions<E> options, @NotNull Iterable<? extends Message> messages) {
+        Preconditions.checkNotNull(plugin, "Plugin cannot be null");
+        Preconditions.checkNotNull(options, "Configuration options cannot be null");
+        Preconditions.checkNotNull(messages, "Messages iterable cannot be null");
         this.plugin = plugin;
         this.options = options;
         this.messages = () -> messages;
@@ -71,8 +75,13 @@ public class MessageManager<T extends Plugin, E> implements IMessageManager<T, E
      * @param plugin           the plugin instance
      * @param options          the configuration options for this manager
      * @param messageEnumClass the enum class containing message definitions (must implement {@link Message})
+     * @param <En>             the enum type representing messages
+     * @throws IllegalArgumentException if the provided class is not a valid enum or does not implement Message
      */
-    public <En extends Enum<En> & Message> MessageManager(@NotNull T plugin, @NotNull ConfigurationOptions<E> options, @NotNull Class<En> messageEnumClass) {
+    public <En extends Enum<En> & Message> MessageManager(@NotNull T plugin, @NotNull ConfigurationOptions<E> options, @NotNull Class<En> messageEnumClass) throws IllegalArgumentException {
+        Preconditions.checkNotNull(plugin, "Plugin cannot be null");
+        Preconditions.checkNotNull(options, "Configuration options cannot be null");
+        Preconditions.checkNotNull(messageEnumClass, "Message enum class cannot be null");
         this.plugin = plugin;
         this.options = options;
         this.messages = () -> iterableEnum(messageEnumClass);
@@ -120,6 +129,7 @@ public class MessageManager<T extends Plugin, E> implements IMessageManager<T, E
 
     @Override
     public void loadLanguage(@NotNull E language) {
+        Preconditions.checkNotNull(language, "language cannot be null");
         String lang = this.languageConfiguration.getNormalizedLanguage(language);
         String rel = this.languageConfiguration.getRelativePath(language);
         if (rel == null) {
@@ -149,7 +159,7 @@ public class MessageManager<T extends Plugin, E> implements IMessageManager<T, E
 
     @Override
     public @NotNull List<MessageTypeAdapter> resolve(@NotNull Message message) {
-        Objects.requireNonNull(message, "message");
+        Preconditions.checkNotNull(message, "message cannot be null");
         List<? extends MessageTypeAdapter> loaded = message.loaded();
         if (loaded.isEmpty()) {
             return message.defaults().stream().map(m -> (MessageTypeAdapter) m).toList();

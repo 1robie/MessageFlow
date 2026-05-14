@@ -1,5 +1,6 @@
 package fr.robie.messageflow.model;
 
+import com.google.common.base.Preconditions;
 import fr.robie.messageflow.api.MessageTypeAdapter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -17,6 +18,13 @@ import java.util.Map;
  */
 public record SimpleMessage(@NotNull MessageType messageType,
                             @NotNull List<String> messages) implements MessageTypeAdapter {
+
+    public SimpleMessage(@NotNull MessageType messageType, @NotNull List<String> messages) {
+        Preconditions.checkNotNull(messageType, "Message type cannot be null");
+        Preconditions.checkNotNull(messages, "Messages list cannot be null");
+        this.messageType = messageType;
+        this.messages = messages;
+    }
 
     /**
      * Serializes this message to a map for YAML storage.

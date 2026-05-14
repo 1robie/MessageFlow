@@ -1,5 +1,6 @@
 package fr.robie.messageflow.model;
 
+import com.google.common.base.Preconditions;
 import fr.robie.messageflow.api.MessageTypeAdapter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -19,6 +20,15 @@ import java.util.Map;
  */
 public record TitleMessage(@NotNull String title, @Nullable String subtitle, int fadeIn, int stay,
                            int fadeOut) implements MessageTypeAdapter {
+
+    public TitleMessage(@NotNull String title, @Nullable String subtitle, int fadeIn, int stay, int fadeOut) {
+        Preconditions.checkNotNull(title, "Title cannot be null");
+        this.title = title;
+        this.subtitle = subtitle;
+        this.fadeIn = fadeIn;
+        this.stay = stay;
+        this.fadeOut = fadeOut;
+    }
 
     @Override
     public @NotNull MessageType messageType() {

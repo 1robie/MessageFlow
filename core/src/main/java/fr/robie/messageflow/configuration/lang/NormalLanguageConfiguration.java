@@ -1,5 +1,6 @@
 package fr.robie.messageflow.configuration.lang;
 
+import com.google.common.base.Preconditions;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -38,6 +39,8 @@ public class NormalLanguageConfiguration implements LanguageConfiguration<String
      * @param relativePath the relative path to the language file
      */
     public void addLanguage(@NotNull String languageCode, @NotNull String relativePath) {
+        Preconditions.checkNotNull(languageCode, "Language code cannot be null");
+        Preconditions.checkNotNull(relativePath, "Relative path cannot be null");
         String normalizedLanguage = this.getNormalizedLanguage(languageCode);
         this.languagesEntries.put(normalizedLanguage, new LanguageEntry(normalizedLanguage, relativePath));
     }
@@ -59,6 +62,7 @@ public class NormalLanguageConfiguration implements LanguageConfiguration<String
 
     @Override
     public String getNormalizedLanguage(@NotNull String languageCode) {
+        Preconditions.checkNotNull(languageCode, "Language code cannot be null");
         if (languageCode.isEmpty()) {
             return "default";
         }
@@ -69,6 +73,7 @@ public class NormalLanguageConfiguration implements LanguageConfiguration<String
     @Override
     @Nullable
     public String getRelativePath(@NotNull String language) {
+        Preconditions.checkNotNull(language, "Language cannot be null");
         LanguageEntry languageEntry = this.languagesEntries.get(language);
         if (languageEntry == null) {
             return null;
@@ -78,6 +83,7 @@ public class NormalLanguageConfiguration implements LanguageConfiguration<String
 
     @Override
     public void setActiveLanguage(@NotNull String language) {
+        Preconditions.checkNotNull(language, "Language cannot be null");
         this.activeLanguage = language;
     }
 }

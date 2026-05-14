@@ -1,5 +1,6 @@
 package fr.robie.messageflow.model;
 
+import com.google.common.base.Preconditions;
 import fr.robie.messageflow.api.MessageTypeAdapter;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarFlag;
@@ -8,6 +9,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -27,6 +29,19 @@ public record LegacyBossBarMessage(
         @NotNull String title, @NotNull BarColor color, @NotNull BarStyle style,
         @Nullable BarFlag[] flags, long duration, float progress
         ) implements MessageTypeAdapter {
+
+    public LegacyBossBarMessage(@NotNull String title, @NotNull BarColor color, @NotNull BarStyle style, @Nullable BarFlag[] flags, long duration, float progress) {
+        Preconditions.checkNotNull(title, "Title cannot be null");
+        Preconditions.checkNotNull(color, "Color cannot be null");
+        Preconditions.checkNotNull(style, "Style cannot be null");
+        this.title = title;
+        this.color = color;
+        this.style = style;
+        this.flags = flags;
+        this.duration = duration;
+        this.progress = progress;
+    }
+
     @Override
     public @NotNull MessageType messageType() {
         return MessageType.BOSS_BAR;
@@ -43,7 +58,7 @@ public record LegacyBossBarMessage(
                 "title", this.title,
                 "color", this.color.name(),
                 "style", this.style.name(),
-                "flags", this.flags.length > 0 ? Set.of(this.flags).stream().map(BarFlag::name).toList() : null,
+                "flags", (this.flags != null && this.flags.length > 0) ? Set.of(this.flags).stream().map(BarFlag::name).toList() : List.of(),
                 "duration", this.duration,
                 "progress", this.progress
         );

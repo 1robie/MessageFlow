@@ -1,5 +1,6 @@
 package fr.robie.messageflow.formatter;
 
+import com.google.common.base.Preconditions;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -49,7 +50,8 @@ public abstract class MessageFormatter<T extends Plugin, V> implements TextForma
      * @param options the configuration options for the message cache
      */
     public MessageFormatter(@NotNull T plugin, @NotNull ConfigurationOptions<?> options) {
-        assert plugin != null : "Plugin cannot be null";
+        Preconditions.checkNotNull(plugin, "Plugin cannot be null");
+        Preconditions.checkNotNull(options, "Configuration options cannot be null");
         this.plugin = plugin;
         CacheBuilder<Object, Object> builder = CacheBuilder.newBuilder()
                 .maximumSize(options.cacheMaximumSize());
@@ -113,7 +115,7 @@ public abstract class MessageFormatter<T extends Plugin, V> implements TextForma
      * @param prefix the new prefix string
      */
     public void setPrefix(@NotNull String prefix) {
-        assert prefix != null : "Prefix cannot be null";
+        Preconditions.checkNotNull(prefix, "Prefix cannot be null");
         this.prefix = prefix;
     }
 
@@ -263,6 +265,7 @@ public abstract class MessageFormatter<T extends Plugin, V> implements TextForma
      * @param placeholders key-value pairs for placeholder replacement
      */
     public void sendMessage(@NotNull Collection<? extends CommandSender> senders, @Nullable String message, @NotNull Object... placeholders) {
+        Preconditions.checkNotNull(senders, "Senders collection cannot be null");
         this.sendMessage(senders, message, true, placeholders);
     }
 
@@ -314,6 +317,8 @@ public abstract class MessageFormatter<T extends Plugin, V> implements TextForma
      * @param placeholders key-value pairs for placeholder replacement
      */
     public void sendMessage(@NotNull Message message, @NotNull CommandSender sender, @NotNull Object... placeholders) {
+        Preconditions.checkNotNull(message, "Message cannot be null");
+        Preconditions.checkNotNull(sender, "Sender cannot be null");
         this.sendMessage(message, sender, true, placeholders);
     }
 
@@ -325,6 +330,8 @@ public abstract class MessageFormatter<T extends Plugin, V> implements TextForma
      * @param placeholders key-value pairs for placeholder replacement
      */
     public void sendMessage(@NotNull Message message, @NotNull Collection<? extends CommandSender> senders, @NotNull Object... placeholders) {
+        Preconditions.checkNotNull(message, "Message cannot be null");
+        Preconditions.checkNotNull(senders, "Senders collection cannot be null");
         this.sendMessage(message, senders, true, placeholders);
     }
 
@@ -337,6 +344,8 @@ public abstract class MessageFormatter<T extends Plugin, V> implements TextForma
      * @param placeholders key-value pairs for placeholder replacement
      */
     public void sendMessage(@NotNull Message message, @NotNull CommandSender sender, boolean prefix, @NotNull Object... placeholders) {
+        Preconditions.checkNotNull(message, "Message cannot be null");
+        Preconditions.checkNotNull(sender, "Sender cannot be null");
         this.sendMessage(message, Collections.singleton(sender), prefix, placeholders);
     }
 
@@ -350,4 +359,3 @@ public abstract class MessageFormatter<T extends Plugin, V> implements TextForma
      */
     public abstract void sendMessage(@NotNull Message message, @NotNull Collection<? extends CommandSender> senders, boolean prefix, @NotNull Object... placeholders);
 }
-

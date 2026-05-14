@@ -1,10 +1,9 @@
 package fr.robie.messageflow.configuration;
 
+import com.google.common.base.Preconditions;
 import fr.robie.messageflow.configuration.lang.LanguageConfiguration;
 import fr.robie.messageflow.configuration.lang.NormalLanguageConfiguration;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.Objects;
 
 /**
  * Represents the configuration options for the MessageFlow library.
@@ -39,11 +38,13 @@ public class ConfigurationOptions<E> {
      * @param languageConfiguration the language configuration to use
      */
     public ConfigurationOptions(@NotNull LanguageConfiguration<E> languageConfiguration) {
-        this.languageConfiguration = Objects.requireNonNull(languageConfiguration, "languageConfiguration");
+        Preconditions.checkNotNull(languageConfiguration, "languageConfiguration cannot be null");
+        this.languageConfiguration = languageConfiguration;
     }
 
     public @NotNull ConfigurationOptions<E> backupDateFormat(@NotNull String format) {
-        this.backupDateFormat = Objects.requireNonNull(format, "backupDateFormat");
+        Preconditions.checkNotNull(format, "backupDateFormat cannot be null");
+        this.backupDateFormat = format;
         return this;
     }
 
@@ -98,7 +99,8 @@ public class ConfigurationOptions<E> {
      * @return this instance for fluent chaining
      */
     public @NotNull ConfigurationOptions<E> backupFolder(@NotNull String relativeFolder) {
-        this.backupFolder = Objects.requireNonNull(relativeFolder, "relativeFolder");
+        Preconditions.checkNotNull(relativeFolder, "relativeFolder cannot be null");
+        this.backupFolder = relativeFolder;
         return this;
     }
 
