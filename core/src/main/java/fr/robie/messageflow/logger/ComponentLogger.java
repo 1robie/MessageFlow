@@ -40,7 +40,7 @@ public final class ComponentLogger extends Logger {
     @NotNull
     protected String prefixe(@NotNull LogType type) {
         String colorForLogType = this.getColorForLogType(type);
-        return colorForLogType + "[" + type.name() + "] <reset>" + this.prefix + " " + (this.colorWholeMessage ? colorForLogType : "");
+        return colorForLogType + "[" + type.name() + "] <reset>" + this.prefix + " " + (this.colorWholeMessage || type.isColorWholeMessage() ? colorForLogType : "");
     }
 
     @Override

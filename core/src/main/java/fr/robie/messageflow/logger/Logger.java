@@ -12,6 +12,7 @@ import org.jetbrains.annotations.NotNull;
  * Provides both static access for global logging and instance-based logging.
  * Implementation classes handle the actual message formatting and delivery.
  */
+@SuppressWarnings("unused")
 public abstract class Logger implements TextFormatter {
     /**
      * The global logger instance.
@@ -70,6 +71,12 @@ public abstract class Logger implements TextFormatter {
         }
     }
 
+    /**
+     * Logs an info message using the global logger.
+     *
+     * @param message the Message object to log
+     * @param args    formatting arguments
+     */
     public static void info(@NotNull Message message, @NotNull Object... args) {
         if (logger != null) {
             logger.log(LogType.INFO, message, args);
@@ -88,6 +95,12 @@ public abstract class Logger implements TextFormatter {
         }
     }
 
+    /**
+     * Logs a warning message using the global logger.
+     *
+     * @param message the Message object to log
+     * @param args    formatting arguments
+     */
     public static void warn(@NotNull Message message, @NotNull Object... args) {
         if (logger != null) {
             logger.log(LogType.WARNING, message, args);
@@ -106,6 +119,12 @@ public abstract class Logger implements TextFormatter {
         }
     }
 
+    /**
+     * Logs an error message using the global logger.
+     *
+     * @param message the Message object to log
+     * @param args    formatting arguments
+     */
     public static void error(@NotNull Message message, @NotNull Object... args) {
         if (logger != null) {
             logger.log(LogType.ERROR, message, args);
@@ -124,6 +143,12 @@ public abstract class Logger implements TextFormatter {
         }
     }
 
+    /**
+     * Logs a debug message using the global logger if debug mode is enabled.
+     *
+     * @param message the Message object to log
+     * @param args    formatting arguments
+     */
     public static void debug(@NotNull Message message, @NotNull Object... args) {
         if (logger != null && logger.debugEnabled) {
             logger.log(LogType.DEBUG, message, args);
@@ -159,6 +184,12 @@ public abstract class Logger implements TextFormatter {
         return logger != null && logger.isDebugEnabled();
     }
 
+    /**
+     * Gets the prefix for a specific log type from the global logger.
+     *
+     * @param type the log type
+     * @return the formatted prefix
+     */
     @NotNull
     public static String getPrefix(@NotNull LogType type) {
         if (logger != null) {
@@ -177,6 +208,12 @@ public abstract class Logger implements TextFormatter {
         this.log(LogType.INFO, message, args);
     }
 
+    /**
+     * Logs an info message using this logger instance.
+     *
+     * @param message the Message object to log
+     * @param args    formatting arguments
+     */
     public void logInfo(@NotNull Message message, @NotNull Object... args) {
         this.log(LogType.INFO, message, args);
     }
@@ -191,6 +228,12 @@ public abstract class Logger implements TextFormatter {
         this.log(LogType.WARNING, message, args);
     }
 
+    /**
+     * Logs a warning message using this logger instance.
+     *
+     * @param message the Message object to log
+     * @param args    formatting arguments
+     */
     public void logWarn(@NotNull Message message, @NotNull Object... args) {
         this.log(LogType.WARNING, message, args);
     }
@@ -205,6 +248,12 @@ public abstract class Logger implements TextFormatter {
         this.log(LogType.ERROR, message, args);
     }
 
+    /**
+     * Logs an error message using this logger instance.
+     *
+     * @param message the Message object to log
+     * @param args    formatting arguments
+     */
     public void logError(@NotNull Message message, @NotNull Object... args) {
         this.log(LogType.ERROR, message, args);
     }
@@ -221,6 +270,12 @@ public abstract class Logger implements TextFormatter {
         }
     }
 
+    /**
+     * Logs a debug message using this logger instance if debug mode is enabled.
+     *
+     * @param message the Message object to log
+     * @param args    formatting arguments
+     */
     public void logDebug(@NotNull Message message, @NotNull Object... args) {
         if (this.debugEnabled) {
             this.log(LogType.DEBUG, message, args);
@@ -236,11 +291,30 @@ public abstract class Logger implements TextFormatter {
      */
     protected abstract void log(@NotNull LogType type, @NotNull String message, @NotNull Object... args);
 
+    /**
+     * Implementation-specific logging logic for Message objects.
+     *
+     * @param type    the type of log
+     * @param message the Message object to log
+     * @param args    formatting arguments
+     */
     protected abstract void log(@NotNull LogType type, @NotNull Message message, @NotNull Object... args);
 
+    /**
+     * Gets the formatted prefix for a log type.
+     *
+     * @param type the log type
+     * @return the prefix string
+     */
     @NotNull
     protected abstract String prefixe(@NotNull LogType type);
 
+    /**
+     * Gets the color code associated with a log type.
+     *
+     * @param type the log type
+     * @return the color string
+     */
     @NotNull
     protected abstract String getColorForLogType(@NotNull LogType type);
 
@@ -328,6 +402,40 @@ public abstract class Logger implements TextFormatter {
         /**
          * Debugging messages.
          */
-        DEBUG
+        DEBUG;
+
+        private boolean colorWholeMessage = false;
+
+        /**
+         * Checks if the entire log message should be colored for this log type.
+         *
+         * @return true if the whole message should be colored
+         */
+        public boolean isColorWholeMessage() {
+            return this.colorWholeMessage;
+        }
+
+        /**
+         * Sets whether the entire log message should be colored for this log type.
+         *
+         * @param colorWholeMessage true to color the whole message
+         */
+        public void setColorWholeMessage(boolean colorWholeMessage) {
+            this.colorWholeMessage = colorWholeMessage;
+        }
+
+        /**
+         * Toggles the colored whole message state for this log type.
+         */
+        public void toggleColorWholeMessage() {
+            this.colorWholeMessage = !this.colorWholeMessage;
+        }
+
+        /**
+         * Resets the colored whole message state to false for this log type.
+         */
+        public void resetColorWholeMessage() {
+            this.colorWholeMessage = false;
+        }
     }
 }

@@ -90,7 +90,7 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
         String loggerPrefix = options.loggerPrefix();
         if (loggerPrefix == null) {
             try {
-                loggerPrefix = "<gray>[</gray>" + this.plugin.getPluginMeta().getName() + " " + this.plugin.getPluginMeta().getVersion() + "<gray>]</gray>";
+                loggerPrefix = "<dark_gray>[</dark_gray>" + this.plugin.getPluginMeta().getName() + " " + this.plugin.getPluginMeta().getVersion() + "<dark_gray>]</dark_gray>";
             } catch (Throwable ignored) {
                 loggerPrefix = "§8[" + this.plugin.getDescription().getFullName() + "§8]";
             }
