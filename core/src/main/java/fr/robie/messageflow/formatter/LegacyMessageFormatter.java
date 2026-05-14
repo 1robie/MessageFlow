@@ -2,10 +2,8 @@ package fr.robie.messageflow.formatter;
 
 import fr.robie.messageflow.api.MessageTypeAdapter;
 import fr.robie.messageflow.configuration.ConfigurationOptions;
-import fr.robie.messageflow.model.LegacyBossBarMessage;
-import fr.robie.messageflow.model.Message;
-import fr.robie.messageflow.model.SimpleMessage;
-import fr.robie.messageflow.model.TitleMessage;
+import fr.robie.messageflow.logger.Logger;
+import fr.robie.messageflow.model.*;
 import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Bukkit;
 import org.bukkit.boss.BarColor;
@@ -13,6 +11,7 @@ import org.bukkit.boss.BarFlag;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
@@ -71,13 +70,18 @@ public class LegacyMessageFormatter<T extends Plugin> extends MessageFormatter<T
         return this.colorize(this.parseText(message, placeholders));
     }
 
-    private List<String> getLines(@NotNull SimpleMessage message, boolean prefix, @NotNull Object[] placeholders) {
+    private List<String> getLines(
+            @NotNull SimpleMessage message,
+            boolean enablePrefix,
+            @Nullable String prefix,
+            @NotNull Object[] placeholders
+    ) {
         List<String> messages = message.messages();
         if (messages.isEmpty() || messages.stream().allMatch(s -> s == null || s.isBlank())) {
             return Collections.emptyList();
         }
 
-        String prefixText = prefix ? this.prefix : "";
+        String prefixText = enablePrefix && prefix != null ? prefix : "";
 
         return messages.stream()
                 .map(s -> s == null ? "" : this.colorizeWithPlaceholders(prefixText + s, placeholders))
@@ -91,10 +95,11 @@ public class LegacyMessageFormatter<T extends Plugin> extends MessageFormatter<T
     private void sendComponents(
             @NotNull Collection<? extends CommandSender> senders,
             @NotNull SimpleMessage message,
-            boolean prefix,
+            boolean enablePrefix,
+            @Nullable String prefix,
             @NotNull Object[] placeholders
     ) {
-        List<String> lines = this.getLines(message, prefix, placeholders);
+        List<String> lines = this.getLines(message, enablePrefix, prefix, placeholders);
         if (!lines.isEmpty()) {
             this.sendLines(senders, lines);
         }
@@ -174,12 +179,12 @@ public class LegacyMessageFormatter<T extends Plugin> extends MessageFormatter<T
                 }
                 case TCHAT -> {
                     if (messageAdapter instanceof SimpleMessage simpleMessage) {
-                        this.sendComponents(senders, simpleMessage, prefix, placeholders);
+                        this.sendComponents(senders, simpleMessage, prefix, this.prefix, placeholders);
                     }
                 }
                 case ACTION_BAR -> {
                     if (messageAdapter instanceof SimpleMessage simpleMessage) {
-                        List<String> lines = this.getLines(simpleMessage, prefix, placeholders);
+                        List<String> lines = this.getLines(simpleMessage, prefix, this.prefix, placeholders);
                         if (!lines.isEmpty()) {
                             String line = lines.getFirst();
                             senders.forEach(sender -> {
@@ -225,7 +230,7 @@ public class LegacyMessageFormatter<T extends Plugin> extends MessageFormatter<T
                 }
                 case WITHOUT_PREFIX -> {
                     if (messageAdapter instanceof SimpleMessage simpleMessage) {
-                        this.sendComponents(senders, simpleMessage, false, placeholders);
+                        this.sendComponents(senders, simpleMessage, false, null, placeholders);
                     }
                 }
                 case BROADCAST -> {
@@ -233,9 +238,19 @@ public class LegacyMessageFormatter<T extends Plugin> extends MessageFormatter<T
                         Collection<CommandSender> online = Collections.unmodifiableCollection(
                                 Bukkit.getOnlinePlayers()
                         );
-                        this.sendComponents(online, simpleMessage, prefix, placeholders);
+                        this.sendComponents(online, simpleMessage, prefix, this.prefix, placeholders);
                     }
                 }
+            }
+        }
+    }
+
+    @Override
+    public void sendMessage(@NotNull Message message, @NotNull Logger.LogType logType, @NotNull ConsoleCommandSender sender, @NotNull Object... placeholders) {
+        String prefix = Logger.getPrefix(logType);
+        for (MessageTypeAdapter messageAdapter : message.loaded()) {
+            if (messageAdapter.messageType() == MessageType.TCHAT && messageAdapter instanceof SimpleMessage simpleMessage) {
+                this.sendComponents(Collections.singleton(sender), simpleMessage, true, prefix, placeholders);
             }
         }
     }

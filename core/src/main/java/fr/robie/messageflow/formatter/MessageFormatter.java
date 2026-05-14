@@ -5,9 +5,11 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import fr.robie.messageflow.configuration.ConfigurationOptions;
+import fr.robie.messageflow.logger.Logger;
 import fr.robie.messageflow.model.Message;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
@@ -38,7 +40,7 @@ public abstract class MessageFormatter<T extends Plugin, V> implements TextForma
     protected final LoadingCache<String, V> cache;
 
     /**
-     * The prefix prepended to messages when enabled.
+     * The getPrefix prepended to messages when enabled.
      */
     @NotNull
     protected String prefix = "";
@@ -101,18 +103,18 @@ public abstract class MessageFormatter<T extends Plugin, V> implements TextForma
     }
 
     /**
-     * Gets the prefix prepended to messages when enabled.
+     * Gets the getPrefix prepended to messages when enabled.
      *
-     * @return the prefix string
+     * @return the getPrefix string
      */
     public @NotNull String getPrefix() {
         return this.prefix;
     }
 
     /**
-     * Sets the prefix to prepend to messages when enabled.
+     * Sets the getPrefix to prepend to messages when enabled.
      *
-     * @param prefix the new prefix string
+     * @param prefix the new getPrefix string
      */
     public void setPrefix(@NotNull String prefix) {
         Preconditions.checkNotNull(prefix, "Prefix cannot be null");
@@ -151,7 +153,7 @@ public abstract class MessageFormatter<T extends Plugin, V> implements TextForma
     public abstract void sendTitle(@NotNull Collection<? extends @NotNull Player> players, @Nullable String title, @Nullable String subtitle, int fadeIn, int stay, int fadeOut, @NotNull Object... placeholders);
 
     /**
-     * Sends an action bar message to a single player without prefix.
+     * Sends an action bar message to a single player without getPrefix.
      *
      * @param player       the player to send the action bar to
      * @param message      the action bar text
@@ -165,7 +167,7 @@ public abstract class MessageFormatter<T extends Plugin, V> implements TextForma
     }
 
     /**
-     * Sends an action bar message to multiple players without prefix.
+     * Sends an action bar message to multiple players without getPrefix.
      *
      * @param players      the players to send the action bar to
      * @param message      the action bar text
@@ -174,11 +176,11 @@ public abstract class MessageFormatter<T extends Plugin, V> implements TextForma
     public abstract void sendActionBar(@NotNull Collection<? extends @NotNull Player> players, @Nullable String message, @NotNull Object... placeholders);
 
     /**
-     * Sends an action bar message to a single player with optional prefix.
+     * Sends an action bar message to a single player with optional getPrefix.
      *
      * @param player       the player to send the action bar to
      * @param message      the action bar text
-     * @param prefix       whether to prepend the configured prefix
+     * @param prefix       whether to prepend the configured getPrefix
      * @param placeholders key-value pairs for placeholder replacement
      */
     public void sendActionBar(@Nullable Player player, @Nullable String message, boolean prefix, @NotNull Object... placeholders) {
@@ -189,17 +191,17 @@ public abstract class MessageFormatter<T extends Plugin, V> implements TextForma
     }
 
     /**
-     * Sends an action bar message to multiple players with optional prefix.
+     * Sends an action bar message to multiple players with optional getPrefix.
      *
      * @param players      the players to send the action bar to
      * @param message      the action bar text
-     * @param prefix       whether to prepend the configured prefix
+     * @param prefix       whether to prepend the configured getPrefix
      * @param placeholders key-value pairs for placeholder replacement
      */
     public abstract void sendActionBar(@NotNull Collection<? extends @NotNull Player> players, @Nullable String message, boolean prefix, @NotNull Object... placeholders);
 
     /**
-     * Broadcasts an action bar message to all online players with prefix enabled.
+     * Broadcasts an action bar message to all online players with getPrefix enabled.
      *
      * @param message      the action bar text
      * @param placeholders key-value pairs for placeholder replacement
@@ -209,10 +211,10 @@ public abstract class MessageFormatter<T extends Plugin, V> implements TextForma
     }
 
     /**
-     * Broadcasts an action bar message to all online players with optional prefix.
+     * Broadcasts an action bar message to all online players with optional getPrefix.
      *
      * @param message      the action bar text
-     * @param prefix       whether to prepend the configured prefix
+     * @param prefix       whether to prepend the configured getPrefix
      * @param placeholders key-value pairs for placeholder replacement
      */
     public abstract void broadcastActionBar(@Nullable String message, boolean prefix, @NotNull Object... placeholders);
@@ -232,7 +234,7 @@ public abstract class MessageFormatter<T extends Plugin, V> implements TextForma
     }
 
     /**
-     * Sends a chat message to a single command sender with prefix enabled.
+     * Sends a chat message to a single command sender with getPrefix enabled.
      *
      * @param sender       the command sender to send the message to
      * @param message      the chat message text
@@ -243,11 +245,11 @@ public abstract class MessageFormatter<T extends Plugin, V> implements TextForma
     }
 
     /**
-     * Sends a chat message to a single command sender with optional prefix.
+     * Sends a chat message to a single command sender with optional getPrefix.
      *
      * @param sender       the command sender to send the message to
      * @param message      the chat message text
-     * @param prefix       whether to prepend the configured prefix
+     * @param prefix       whether to prepend the configured getPrefix
      * @param placeholders key-value pairs for placeholder replacement
      */
     public void sendMessage(@Nullable CommandSender sender, @Nullable String message, boolean prefix, @NotNull Object... placeholders) {
@@ -258,7 +260,7 @@ public abstract class MessageFormatter<T extends Plugin, V> implements TextForma
     }
 
     /**
-     * Sends a chat message to multiple command senders with prefix enabled.
+     * Sends a chat message to multiple command senders with getPrefix enabled.
      *
      * @param senders      the command senders to send the message to
      * @param message      the chat message text
@@ -270,17 +272,17 @@ public abstract class MessageFormatter<T extends Plugin, V> implements TextForma
     }
 
     /**
-     * Sends a chat message to multiple command senders with optional prefix.
+     * Sends a chat message to multiple command senders with optional getPrefix.
      *
      * @param senders      the command senders to send the message to
      * @param message      the chat message text
-     * @param prefix       whether to prepend the configured prefix
+     * @param prefix       whether to prepend the configured getPrefix
      * @param placeholders key-value pairs for placeholder replacement
      */
     public abstract void sendMessage(@NotNull Collection<? extends CommandSender> senders, @Nullable String message, boolean prefix, @NotNull Object... placeholders);
 
     /**
-     * Broadcasts a chat message to all online players with prefix enabled.
+     * Broadcasts a chat message to all online players with getPrefix enabled.
      *
      * @param message      the chat message text
      * @param placeholders key-value pairs for placeholder replacement
@@ -290,16 +292,16 @@ public abstract class MessageFormatter<T extends Plugin, V> implements TextForma
     }
 
     /**
-     * Broadcasts a chat message to all online players with optional prefix.
+     * Broadcasts a chat message to all online players with optional getPrefix.
      *
      * @param message      the chat message text
-     * @param prefix       whether to prepend the configured prefix
+     * @param prefix       whether to prepend the configured getPrefix
      * @param placeholders key-value pairs for placeholder replacement
      */
     public abstract void broadcast(@Nullable String message, boolean prefix, @NotNull Object... placeholders);
 
     /**
-     * Sends a chat message to a single command sender without prefix.
+     * Sends a chat message to a single command sender without getPrefix.
      *
      * @param sender       the command sender to send the message to
      * @param message      the chat message text
@@ -310,7 +312,7 @@ public abstract class MessageFormatter<T extends Plugin, V> implements TextForma
     }
 
     /**
-     * Sends a resolved message to a single command sender with prefix enabled.
+     * Sends a resolved message to a single command sender with getPrefix enabled.
      *
      * @param message      the message definition to resolve and send
      * @param sender       the command sender to send the message to
@@ -323,7 +325,7 @@ public abstract class MessageFormatter<T extends Plugin, V> implements TextForma
     }
 
     /**
-     * Sends a resolved message to multiple command senders with prefix enabled.
+     * Sends a resolved message to multiple command senders with getPrefix enabled.
      *
      * @param message      the message definition to resolve and send
      * @param senders      the command senders to send the message to
@@ -336,11 +338,11 @@ public abstract class MessageFormatter<T extends Plugin, V> implements TextForma
     }
 
     /**
-     * Sends a resolved message to a single command sender with optional prefix.
+     * Sends a resolved message to a single command sender with optional getPrefix.
      *
      * @param message      the message definition to resolve and send
      * @param sender       the command sender to send the message to
-     * @param prefix       whether to prepend the configured prefix
+     * @param prefix       whether to prepend the configured getPrefix
      * @param placeholders key-value pairs for placeholder replacement
      */
     public void sendMessage(@NotNull Message message, @NotNull CommandSender sender, boolean prefix, @NotNull Object... placeholders) {
@@ -350,12 +352,21 @@ public abstract class MessageFormatter<T extends Plugin, V> implements TextForma
     }
 
     /**
-     * Sends a resolved message to multiple command senders with optional prefix.
+     * Sends a resolved message to multiple command senders with optional getPrefix.
      *
      * @param message      the message definition to resolve and send
      * @param senders      the command senders to send the message to
-     * @param prefix       whether to prepend the configured prefix
+     * @param prefix       whether to prepend the configured getPrefix
      * @param placeholders key-value pairs for placeholder replacement
      */
     public abstract void sendMessage(@NotNull Message message, @NotNull Collection<? extends CommandSender> senders, boolean prefix, @NotNull Object... placeholders);
+
+    /**
+     * Sends a resolved message to the console with a getPrefix.
+     *
+     * @param message      the message definition to resolve and send
+     * @param sender       the console sender to send the message to
+     * @param placeholders key-value pairs for placeholder replacement
+     */
+    public abstract void sendMessage(@NotNull Message message, @NotNull Logger.LogType logType, @NotNull ConsoleCommandSender sender, @NotNull Object... placeholders);
 }

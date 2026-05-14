@@ -153,18 +153,18 @@ public class ConfigurationOptions<E> {
     }
 
     /**
-     * Gets the logger prefix to use for log messages. If null, the library will use the plugin name + version as the prefix.
+     * Gets the logger getPrefix to use for log messages. If null, the library will use the plugin name + version as the getPrefix.
      *
-     * @return the logger prefix, or null to use the default plugin name + version prefix
+     * @return the logger getPrefix, or null to use the default plugin name + version getPrefix
      */
     public @Nullable String loggerPrefix() {
         return this.loggerPrefix;
     }
 
     /**
-     * Sets the logger prefix to use for log messages. If set to null, the library will use the plugin name + version as the prefix.
+     * Sets the logger getPrefix to use for log messages. If set to null, the library will use the plugin name + version as the getPrefix.
      *
-     * @param prefix the logger prefix to use, or null to use the default plugin name + version prefix
+     * @param prefix the logger getPrefix to use, or null to use the default plugin name + version getPrefix
      * @return this instance for fluent chaining
      */
     public @NotNull ConfigurationOptions<E> loggerPrefix(@Nullable String prefix) {

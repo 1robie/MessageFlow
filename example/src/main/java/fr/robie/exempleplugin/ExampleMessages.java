@@ -9,7 +9,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 
 public enum ExampleMessages implements Message {
-    PREFIX("prefix", List.of(new SimpleMessage(MessageType.WITHOUT_PREFIX, List.of("&7[&bExample&7]&r ")))),
+    PREFIX("getPrefix", List.of(new SimpleMessage(MessageType.WITHOUT_PREFIX, List.of("&7[&bExample&7]&r ")))),
     HELLO("hello", List.of(Message.chat("&aHello from MessageFlow!"))),
     ONLY_FRENCH("only-french", List.of(Message.chat("&c(You are reading the default value)")));
 

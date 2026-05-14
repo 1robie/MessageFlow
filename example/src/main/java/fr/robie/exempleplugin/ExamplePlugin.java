@@ -31,7 +31,7 @@ public class ExamplePlugin extends JavaPlugin {
 
         // --- Logging Examples ---
 
-        // 1) Standard logging (prefix only colored)
+        // 1) Standard logging (getPrefix only colored)
         Logger.info("Standard Info message");
         Logger.warn("Standard Warning message");
         Logger.error("Standard Error message");
@@ -53,10 +53,12 @@ public class ExamplePlugin extends JavaPlugin {
         Logger.debug("Debug message (hidden again)");
         Logger.setColorWhole(false);
         Logger.info("Back to standard coloring");
+
+        Logger.info(ExampleMessages.HELLO);
     }
 
     @Override
     public void onDisable() {
-        this.getLogger().info("ExamplePlugin disabled!");
+        Logger.info("ExamplePlugin disabled!");
     }
 }

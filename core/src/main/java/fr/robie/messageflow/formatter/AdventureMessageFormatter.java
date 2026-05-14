@@ -2,10 +2,8 @@ package fr.robie.messageflow.formatter;
 
 import fr.robie.messageflow.api.MessageTypeAdapter;
 import fr.robie.messageflow.configuration.ConfigurationOptions;
-import fr.robie.messageflow.model.AdventureBossBarMessage;
-import fr.robie.messageflow.model.Message;
-import fr.robie.messageflow.model.SimpleMessage;
-import fr.robie.messageflow.model.TitleMessage;
+import fr.robie.messageflow.logger.Logger;
+import fr.robie.messageflow.model.*;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.audience.ForwardingAudience;
 import net.kyori.adventure.bossbar.BossBar;
@@ -16,6 +14,7 @@ import net.kyori.adventure.text.minimessage.tag.standard.StandardTags;
 import net.kyori.adventure.title.Title;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
@@ -144,23 +143,28 @@ public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatte
     private void sendComponents(
             @NotNull Collection<? extends Audience> audiences,
             @NotNull SimpleMessage message,
-            boolean prefix,
+            boolean enablePrefix,
+            @Nullable String prefix,
             @NotNull Object[] placeholders,
             @NotNull BiConsumer<Audience, Component> sender
     ) {
-        List<Component> components = this.getComponents(message, prefix, placeholders);
+        List<Component> components = this.getComponents(message, enablePrefix, prefix, placeholders);
         if (!components.isEmpty()) {
             this.sendToAudiences(audiences, components, sender);
         }
     }
 
-    private List<Component> getComponents(@NotNull SimpleMessage message, boolean prefix, @NotNull Object[] placeholders) {
+    private List<Component> getComponents(
+            @NotNull SimpleMessage message,
+            boolean enablePrefix,
+            @Nullable String prefix,
+            @NotNull Object[] placeholders) {
         List<String> messages = message.messages();
         if (messages.isEmpty() || messages.stream().allMatch(s -> s == null || s.isBlank())) {
             return Collections.emptyList();
         }
 
-        String prefixText = prefix ? this.prefix : "";
+        String prefixText = enablePrefix && prefix != null ? prefix : "";
 
         return messages.stream()
                 .map(s -> s == null ? Component.empty() : this.getComponentWithPlaceholders(prefixText + s, placeholders))
@@ -262,12 +266,12 @@ public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatte
                 }
                 case TCHAT -> {
                     if (messageAdapter instanceof SimpleMessage simpleMessage) {
-                        this.sendComponents(audiences, simpleMessage, prefix, placeholders, Audience::sendMessage);
+                        this.sendComponents(audiences, simpleMessage, prefix, this.prefix, placeholders, Audience::sendMessage);
                     }
                 }
                 case ACTION_BAR -> {
                     if (messageAdapter instanceof SimpleMessage simpleMessage) {
-                        this.sendComponents(audiences, simpleMessage, prefix, placeholders, Audience::sendActionBar);
+                        this.sendComponents(audiences, simpleMessage, prefix, this.prefix, placeholders, Audience::sendActionBar);
                     }
                 }
                 case BOSS_BAR -> {
@@ -291,15 +295,25 @@ public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatte
                 }
                 case WITHOUT_PREFIX -> {
                     if (messageAdapter instanceof SimpleMessage simpleMessage) {
-                        this.sendComponents(audiences, simpleMessage, false, placeholders, Audience::sendMessage);
+                        this.sendComponents(audiences, simpleMessage, false, null, placeholders, Audience::sendMessage);
                     }
                 }
                 case BROADCAST -> {
                     if (messageAdapter instanceof SimpleMessage simpleMessage) {
                         ForwardingAudience broadcast = Audience.audience(Bukkit.getOnlinePlayers());
-                        this.sendComponents(Collections.singleton(broadcast), simpleMessage, prefix, placeholders, Audience::sendMessage);
+                        this.sendComponents(Collections.singleton(broadcast), simpleMessage, prefix, this.prefix, placeholders, Audience::sendMessage);
                     }
                 }
+            }
+        }
+    }
+
+    @Override
+    public void sendMessage(@NotNull Message message, @NotNull Logger.LogType logType, @NotNull ConsoleCommandSender sender, @NotNull Object... placeholders) {
+        String prefix = Logger.getPrefix(logType);
+        for (MessageTypeAdapter messageAdapter : message.loaded()) {
+            if (messageAdapter.messageType() == MessageType.TCHAT && messageAdapter instanceof SimpleMessage simpleMessage) {
+                this.sendComponents(Collections.singleton(sender), simpleMessage, true, prefix, placeholders, Audience::sendMessage);
             }
         }
     }

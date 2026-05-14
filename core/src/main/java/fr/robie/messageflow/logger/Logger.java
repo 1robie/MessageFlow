@@ -3,6 +3,7 @@ package fr.robie.messageflow.logger;
 import com.google.common.base.Preconditions;
 import fr.robie.messageflow.formatter.MessageFormatter;
 import fr.robie.messageflow.formatter.TextFormatter;
+import fr.robie.messageflow.model.Message;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -18,7 +19,7 @@ public abstract class Logger implements TextFormatter {
     private static Logger logger;
 
     /**
-     * The prefix used in log messages.
+     * The getPrefix used in log messages.
      */
     protected final @NotNull String prefix;
 
@@ -33,14 +34,14 @@ public abstract class Logger implements TextFormatter {
     protected boolean debugEnabled = false;
 
     /**
-     * Whether to apply color formatting to the entire log message or just the log level prefix.
+     * Whether to apply color formatting to the entire log message or just the log level getPrefix.
      */
     protected boolean colorWholeMessage = false;
 
     /**
      * Constructs a new Logger.
      *
-     * @param prefix           the log prefix
+     * @param prefix           the log getPrefix
      * @param messageFormatter the formatter to use
      * @throws IllegalStateException if a logger instance already exists (to prevent conflicts when not relocated)
      */
@@ -69,6 +70,12 @@ public abstract class Logger implements TextFormatter {
         }
     }
 
+    public static void info(@NotNull Message message, @NotNull Object... args) {
+        if (logger != null) {
+            logger.log(LogType.INFO, message, args);
+        }
+    }
+
     /**
      * Logs a warning message using the global logger.
      *
@@ -76,6 +83,12 @@ public abstract class Logger implements TextFormatter {
      * @param args    formatting arguments
      */
     public static void warn(@NotNull String message, @NotNull Object... args) {
+        if (logger != null) {
+            logger.log(LogType.WARNING, message, args);
+        }
+    }
+
+    public static void warn(@NotNull Message message, @NotNull Object... args) {
         if (logger != null) {
             logger.log(LogType.WARNING, message, args);
         }
@@ -93,6 +106,12 @@ public abstract class Logger implements TextFormatter {
         }
     }
 
+    public static void error(@NotNull Message message, @NotNull Object... args) {
+        if (logger != null) {
+            logger.log(LogType.ERROR, message, args);
+        }
+    }
+
     /**
      * Logs a debug message using the global logger if debug mode is enabled.
      *
@@ -100,6 +119,12 @@ public abstract class Logger implements TextFormatter {
      * @param args    formatting arguments
      */
     public static void debug(@NotNull String message, @NotNull Object... args) {
+        if (logger != null && logger.debugEnabled) {
+            logger.log(LogType.DEBUG, message, args);
+        }
+    }
+
+    public static void debug(@NotNull Message message, @NotNull Object... args) {
         if (logger != null && logger.debugEnabled) {
             logger.log(LogType.DEBUG, message, args);
         }
@@ -134,6 +159,14 @@ public abstract class Logger implements TextFormatter {
         return logger != null && logger.isDebugEnabled();
     }
 
+    @NotNull
+    public static String getPrefix(@NotNull LogType type) {
+        if (logger != null) {
+            return logger.prefixe(type);
+        }
+        return "[" + type.name() + "] ";
+    }
+
     /**
      * Logs an info message using this logger instance.
      *
@@ -141,6 +174,10 @@ public abstract class Logger implements TextFormatter {
      * @param args    formatting arguments
      */
     public void logInfo(@NotNull String message, @NotNull Object... args) {
+        this.log(LogType.INFO, message, args);
+    }
+
+    public void logInfo(@NotNull Message message, @NotNull Object... args) {
         this.log(LogType.INFO, message, args);
     }
 
@@ -154,6 +191,10 @@ public abstract class Logger implements TextFormatter {
         this.log(LogType.WARNING, message, args);
     }
 
+    public void logWarn(@NotNull Message message, @NotNull Object... args) {
+        this.log(LogType.WARNING, message, args);
+    }
+
     /**
      * Logs an error message using this logger instance.
      *
@@ -161,6 +202,10 @@ public abstract class Logger implements TextFormatter {
      * @param args    formatting arguments
      */
     public void logError(@NotNull String message, @NotNull Object... args) {
+        this.log(LogType.ERROR, message, args);
+    }
+
+    public void logError(@NotNull Message message, @NotNull Object... args) {
         this.log(LogType.ERROR, message, args);
     }
 
@@ -176,6 +221,12 @@ public abstract class Logger implements TextFormatter {
         }
     }
 
+    public void logDebug(@NotNull Message message, @NotNull Object... args) {
+        if (this.debugEnabled) {
+            this.log(LogType.DEBUG, message, args);
+        }
+    }
+
     /**
      * Implementation-specific logging logic.
      *
@@ -184,6 +235,11 @@ public abstract class Logger implements TextFormatter {
      * @param args    formatting arguments
      */
     protected abstract void log(@NotNull LogType type, @NotNull String message, @NotNull Object... args);
+
+    protected abstract void log(@NotNull LogType type, @NotNull Message message, @NotNull Object... args);
+
+    @NotNull
+    protected abstract String prefixe(@NotNull LogType type);
 
     @NotNull
     protected abstract String getColorForLogType(@NotNull LogType type);
