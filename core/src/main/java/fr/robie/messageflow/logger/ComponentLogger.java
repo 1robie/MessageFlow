@@ -1,5 +1,6 @@
 package fr.robie.messageflow.logger;
 
+import com.google.common.base.Throwables;
 import fr.robie.messageflow.formatter.AdventureMessageFormatter;
 import fr.robie.messageflow.model.Message;
 import org.bukkit.Bukkit;
@@ -37,9 +38,17 @@ public final class ComponentLogger extends Logger {
     }
 
     @Override
+    protected void log(@NotNull LogType type, @NotNull Throwable throwable, @NotNull String message, @NotNull Object... args) {
+        String fullMessage = this.prefixe(type) + message + "\n<red>" + Throwables.getStackTraceAsString(throwable);
+        this.messageFormatter.sendMessage(Bukkit.getConsoleSender(), fullMessage, false, args);
+    }
+
+
+    @Override
     @NotNull
     protected String prefixe(@NotNull LogType type) {
         String colorForLogType = type.getAdventureColorCode();
-        return colorForLogType + "[" + type.name() + "] <reset>" + this.prefix + " " + (this.colorWholeMessage || type.isColorWholeMessage() ? colorForLogType : "");
+        String typeName = (this.showTypeNames && type.isShowTypeName()) ? colorForLogType + "[" + type.name() + "] " : "";
+        return typeName + "<reset>" + this.prefix + " " + (this.colorWholeMessage || type.isColorWholeMessage() ? colorForLogType : "");
     }
 }

@@ -1,5 +1,6 @@
 package fr.robie.messageflow.logger;
 
+import com.google.common.base.Throwables;
 import fr.robie.messageflow.formatter.LegacyMessageFormatter;
 import fr.robie.messageflow.model.Message;
 import org.bukkit.Bukkit;
@@ -37,9 +38,16 @@ public final class LegacyLogger extends Logger {
     }
 
     @Override
+    protected void log(@NotNull LogType type, @NotNull Throwable throwable, @NotNull String message, @NotNull Object... args) {
+        String fullMessage = this.prefixe(type) + message + "\n&c" + Throwables.getStackTraceAsString(throwable);
+        this.messageFormatter.sendMessage(Bukkit.getConsoleSender(), fullMessage, false, args);
+    }
+
+    @Override
     @NotNull
     protected String prefixe(@NotNull LogType type) {
         String colorForLogType = type.getLegacyColorCode();
-        return colorForLogType + "[" + type.name() + "] &r" + this.prefix + " " + (this.colorWholeMessage || type.isColorWholeMessage() ? colorForLogType : "");
+        String typeName = (this.showTypeNames && type.isShowTypeName()) ? colorForLogType + "[" + type.name() + "] " : "";
+        return typeName + "&r" + this.prefix + " " + (this.colorWholeMessage || type.isColorWholeMessage() ? colorForLogType : "");
     }
 }

@@ -40,6 +40,11 @@ public abstract class Logger implements TextFormatter {
     protected boolean colorWholeMessage = false;
 
     /**
+     * Whether to show the log type name (e.g., [INFO]) in the prefix.
+     */
+    protected boolean showTypeNames = true;
+
+    /**
      * Constructs a new Logger.
      *
      * @param prefix           the log getPrefix
@@ -152,6 +157,45 @@ public abstract class Logger implements TextFormatter {
     public static void debug(@NotNull Message message, @NotNull Object... args) {
         if (logger != null && logger.debugEnabled) {
             logger.log(LogType.DEBUG, message, args);
+        }
+    }
+
+    /**
+     * Logs a debug message with a stacktrace using the global logger if debug mode is enabled.
+     *
+     * @param message   the message to log
+     * @param throwable the exception to log
+     * @param args      formatting arguments
+     */
+    public static void debug(@NotNull String message, @NotNull Throwable throwable, @NotNull Object... args) {
+        if (logger != null && logger.debugEnabled) {
+            logger.log(LogType.DEBUG, throwable, message, args);
+        }
+    }
+
+    /**
+     * Logs a warning message with a stacktrace using the global logger.
+     *
+     * @param message   the message to log
+     * @param throwable the exception to log
+     * @param args      formatting arguments
+     */
+    public static void warn(@NotNull String message, @NotNull Throwable throwable, @NotNull Object... args) {
+        if (logger != null) {
+            logger.log(LogType.WARNING, throwable, message, args);
+        }
+    }
+
+    /**
+     * Logs an error message with a stacktrace using the global logger.
+     *
+     * @param message   the message to log
+     * @param throwable the exception to log
+     * @param args      formatting arguments
+     */
+    public static void error(@NotNull String message, @NotNull Throwable throwable, @NotNull Object... args) {
+        if (logger != null) {
+            logger.log(LogType.ERROR, throwable, message, args);
         }
     }
 
@@ -283,6 +327,41 @@ public abstract class Logger implements TextFormatter {
     }
 
     /**
+     * Logs a debug message with a stacktrace using this logger instance if debug mode is enabled.
+     *
+     * @param message   the message to log
+     * @param throwable the exception to log
+     * @param args      formatting arguments
+     */
+    public void logDebug(@NotNull String message, @NotNull Throwable throwable, @NotNull Object... args) {
+        if (this.debugEnabled) {
+            this.log(LogType.DEBUG, throwable, message, args);
+        }
+    }
+
+    /**
+     * Logs a warning message with a stacktrace using this logger instance.
+     *
+     * @param message   the message to log
+     * @param throwable the exception to log
+     * @param args      formatting arguments
+     */
+    public void logWarn(@NotNull String message, @NotNull Throwable throwable, @NotNull Object... args) {
+        this.log(LogType.WARNING, throwable, message, args);
+    }
+
+    /**
+     * Logs an error message with a stacktrace using this logger instance.
+     *
+     * @param message   the message to log
+     * @param throwable the exception to log
+     * @param args      formatting arguments
+     */
+    public void logError(@NotNull String message, @NotNull Throwable throwable, @NotNull Object... args) {
+        this.log(LogType.ERROR, throwable, message, args);
+    }
+
+    /**
      * Implementation-specific logging logic.
      *
      * @param type    the type of log
@@ -290,6 +369,16 @@ public abstract class Logger implements TextFormatter {
      * @param args    formatting arguments
      */
     protected abstract void log(@NotNull LogType type, @NotNull String message, @NotNull Object... args);
+
+    /**
+     * Implementation-specific logging logic with a stacktrace.
+     *
+     * @param type      the type of log
+     * @param throwable the exception to log
+     * @param message   the message to log
+     * @param args      formatting arguments
+     */
+    protected abstract void log(@NotNull LogType type, @NotNull Throwable throwable, @NotNull String message, @NotNull Object... args);
 
     /**
      * Implementation-specific logging logic for Message objects.
@@ -346,6 +435,24 @@ public abstract class Logger implements TextFormatter {
     }
 
     /**
+     * Checks if log type names (e.g., [INFO]) should be shown.
+     *
+     * @return true if type names should be shown
+     */
+    public boolean isShowTypeNames() {
+        return this.showTypeNames;
+    }
+
+    /**
+     * Sets whether log type names (e.g., [INFO]) should be shown.
+     *
+     * @param showTypeNames true to show type names
+     */
+    public void setShowTypeNames(boolean showTypeNames) {
+        this.showTypeNames = showTypeNames;
+    }
+
+    /**
      * Sets whether the entire log message should be colored for the global logger.
      *
      * @param enabled true to color the whole message
@@ -366,6 +473,26 @@ public abstract class Logger implements TextFormatter {
     }
 
     /**
+     * Sets whether log type names (e.g., [INFO]) should be shown for the global logger.
+     *
+     * @param enabled true to show type names
+     */
+    public static void setShowTypeNamesGlobal(boolean enabled) {
+        if (logger != null) {
+            logger.setShowTypeNames(enabled);
+        }
+    }
+
+    /**
+     * Checks if log type names are shown for the global logger.
+     *
+     * @return true if type names are shown
+     */
+    public static boolean isShowTypeNamesGlobal() {
+        return logger != null && logger.isShowTypeNames();
+    }
+
+    /**
      * Gets the global logger instance.
      *
      * @return the logger instance, or null if not initialized
@@ -381,27 +508,33 @@ public abstract class Logger implements TextFormatter {
         /**
          * Informational messages.
          */
-        INFO("<blue>", "&9"),
+        INFO("<blue>", "&9", false),
         /**
          * Warning messages.
          */
-        WARNING("<gold>", "&6"),
+        WARNING("<gold>", "&6", false),
         /**
          * Error messages.
          */
-        ERROR("<red>", "&c"),
+        ERROR("<red>", "&c", true),
         /**
          * Debugging messages.
          */
-        DEBUG("<light_purple>", "&d");
+        DEBUG("<light_purple>", "&d", false);
         private String adventureColorCode;
         private String legacyColorCode;
 
-        private boolean colorWholeMessage = false;
+        private final boolean defaultColorWholeMessage;
 
-        LogType(@NotNull String adventureColorCode, @NotNull String legacyColorCode) {
+        private boolean colorWholeMessage;
+
+        private boolean showTypeName = true;
+
+        LogType(@NotNull String adventureColorCode, @NotNull String legacyColorCode, boolean defaultColorWholeMessage) {
             this.adventureColorCode = adventureColorCode;
             this.legacyColorCode = legacyColorCode;
+            this.defaultColorWholeMessage = defaultColorWholeMessage;
+            this.colorWholeMessage = defaultColorWholeMessage;
         }
 
         /**
@@ -430,10 +563,35 @@ public abstract class Logger implements TextFormatter {
         }
 
         /**
-         * Resets the colored whole message state to false for this log type.
+         * Resets the colored whole message state to its default value for this log type.
          */
         public void resetColorWholeMessage() {
-            this.colorWholeMessage = false;
+            this.colorWholeMessage = this.defaultColorWholeMessage;
+        }
+
+        /**
+         * Checks if the type name (e.g., [INFO]) should be shown for this log type.
+         *
+         * @return true if the type name should be shown
+         */
+        public boolean isShowTypeName() {
+            return this.showTypeName;
+        }
+
+        /**
+         * Sets whether the type name should be shown for this log type.
+         *
+         * @param showTypeName true to show the type name
+         */
+        public void setShowTypeName(boolean showTypeName) {
+            this.showTypeName = showTypeName;
+        }
+
+        /**
+         * Toggles the visibility of the type name for this log type.
+         */
+        public void toggleShowTypeName() {
+            this.showTypeName = !this.showTypeName;
         }
 
         @NotNull
