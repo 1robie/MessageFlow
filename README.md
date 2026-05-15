@@ -49,10 +49,10 @@ MessageFlow is available via JitPack.
 </repositories>
 
 <dependency>
-  <groupId>com.github.1robie</groupId>
-  <artifactId>message-flow</artifactId>
-  <version>VERSION_TAG</version>
-  <scope>compile</scope>
+    <groupId>com.github.1robie</groupId>
+    <artifactId>message-flow</artifactId>
+    <version>VERSION_TAG</version>
+    <scope>compile</scope>
 </dependency>
 ```
 
