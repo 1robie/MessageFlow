@@ -38,6 +38,13 @@ public final class LegacyLogger extends Logger {
     }
 
     @Override
+    protected void log(@NotNull LogType type, @NotNull Throwable throwable, @NotNull Message message, @NotNull Object... args) {
+        this.log(type, message, args);
+        String stackTrace = "\n&c" + Throwables.getStackTraceAsString(throwable);
+        this.messageFormatter.sendMessageWithoutPrefix(Bukkit.getConsoleSender(), stackTrace);
+    }
+
+    @Override
     protected void log(@NotNull LogType type, @NotNull Throwable throwable, @NotNull String message, @NotNull Object... args) {
         String fullMessage = this.prefixe(type) + message + "\n&c" + Throwables.getStackTraceAsString(throwable);
         this.messageFormatter.sendMessage(Bukkit.getConsoleSender(), fullMessage, false, args);

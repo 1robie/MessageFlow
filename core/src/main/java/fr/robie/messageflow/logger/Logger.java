@@ -174,6 +174,19 @@ public abstract class Logger implements TextFormatter {
     }
 
     /**
+     * Logs a debug message with a stacktrace using the global logger if debug mode is enabled.
+     *
+     * @param message   the Message object to log
+     * @param throwable the exception to log
+     * @param args      formatting arguments
+     */
+    public static void debug(@NotNull Message message, @NotNull Throwable throwable, @NotNull Object... args) {
+        if (logger != null && logger.debugEnabled) {
+            logger.log(LogType.DEBUG, throwable, message, args);
+        }
+    }
+
+    /**
      * Logs a warning message with a stacktrace using the global logger.
      *
      * @param message   the message to log
@@ -187,6 +200,19 @@ public abstract class Logger implements TextFormatter {
     }
 
     /**
+     * Logs a warning message with a stacktrace using the global logger.
+     *
+     * @param message   the Message object to log
+     * @param throwable the exception to log
+     * @param args      formatting arguments
+     */
+    public static void warn(@NotNull Message message, @NotNull Throwable throwable, @NotNull Object... args) {
+        if (logger != null) {
+            logger.log(LogType.WARNING, throwable, message, args);
+        }
+    }
+
+    /**
      * Logs an error message with a stacktrace using the global logger.
      *
      * @param message   the message to log
@@ -194,6 +220,19 @@ public abstract class Logger implements TextFormatter {
      * @param args      formatting arguments
      */
     public static void error(@NotNull String message, @NotNull Throwable throwable, @NotNull Object... args) {
+        if (logger != null) {
+            logger.log(LogType.ERROR, throwable, message, args);
+        }
+    }
+
+    /**
+     * Logs an error message with a stacktrace using the global logger.
+     *
+     * @param message   the Message object to log
+     * @param throwable the exception to log
+     * @param args      formatting arguments
+     */
+    public static void error(@NotNull Message message, @NotNull Throwable throwable, @NotNull Object... args) {
         if (logger != null) {
             logger.log(LogType.ERROR, throwable, message, args);
         }
@@ -340,6 +379,19 @@ public abstract class Logger implements TextFormatter {
     }
 
     /**
+     * Logs a debug message with a stacktrace using this logger instance if debug mode is enabled.
+     *
+     * @param message   the Message object to log
+     * @param throwable the exception to log
+     * @param args      formatting arguments
+     */
+    public void logDebug(@NotNull Message message, @NotNull Throwable throwable, @NotNull Object... args) {
+        if (this.debugEnabled) {
+            this.log(LogType.DEBUG, throwable, message, args);
+        }
+    }
+
+    /**
      * Logs a warning message with a stacktrace using this logger instance.
      *
      * @param message   the message to log
@@ -351,6 +403,17 @@ public abstract class Logger implements TextFormatter {
     }
 
     /**
+     * Logs a warning message with a stacktrace using this logger instance.
+     *
+     * @param message   the Message object to log
+     * @param throwable the exception to log
+     * @param args      formatting arguments
+     */
+    public void logWarn(@NotNull Message message, @NotNull Throwable throwable, @NotNull Object... args) {
+        this.log(LogType.WARNING, throwable, message, args);
+    }
+
+    /**
      * Logs an error message with a stacktrace using this logger instance.
      *
      * @param message   the message to log
@@ -358,6 +421,17 @@ public abstract class Logger implements TextFormatter {
      * @param args      formatting arguments
      */
     public void logError(@NotNull String message, @NotNull Throwable throwable, @NotNull Object... args) {
+        this.log(LogType.ERROR, throwable, message, args);
+    }
+
+    /**
+     * Logs an error message with a stacktrace using this logger instance.
+     *
+     * @param message   the Message object to log
+     * @param throwable the exception to log
+     * @param args      formatting arguments
+     */
+    public void logError(@NotNull Message message, @NotNull Throwable throwable, @NotNull Object... args) {
         this.log(LogType.ERROR, throwable, message, args);
     }
 
@@ -388,6 +462,16 @@ public abstract class Logger implements TextFormatter {
      * @param args    formatting arguments
      */
     protected abstract void log(@NotNull LogType type, @NotNull Message message, @NotNull Object... args);
+
+    /**
+     * Implementation-specific logging logic for Message objects with a stacktrace.
+     *
+     * @param type      the type of log
+     * @param throwable the exception to log
+     * @param message   the Message object to log
+     * @param args      formatting arguments
+     */
+    protected abstract void log(@NotNull LogType type, @NotNull Throwable throwable, @NotNull Message message, @NotNull Object... args);
 
     /**
      * Gets the formatted prefix for a log type.

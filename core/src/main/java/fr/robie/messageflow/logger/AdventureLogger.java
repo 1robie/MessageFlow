@@ -38,6 +38,13 @@ public final class AdventureLogger extends Logger {
     }
 
     @Override
+    protected void log(@NotNull LogType type, @NotNull Throwable throwable, @NotNull Message message, @NotNull Object... args) {
+        this.log(type, message, args);
+        String stackTrace = "\n<red>" + Throwables.getStackTraceAsString(throwable);
+        this.messageFormatter.sendMessageWithoutPrefix(Bukkit.getConsoleSender(), stackTrace);
+    }
+
+    @Override
     protected void log(@NotNull LogType type, @NotNull Throwable throwable, @NotNull String message, @NotNull Object... args) {
         String fullMessage = this.prefixe(type) + message + "\n<red>" + Throwables.getStackTraceAsString(throwable);
         this.messageFormatter.sendMessage(Bukkit.getConsoleSender(), fullMessage, false, args);
