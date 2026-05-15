@@ -2,11 +2,8 @@ package fr.robie.messageflow.api;
 
 import fr.robie.messageflow.configuration.lang.LanguageConfiguration;
 import fr.robie.messageflow.formatter.MessageFormatter;
-import fr.robie.messageflow.model.Message;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.List;
 
 /**
  * Interface for managing messages, translations, and their lifecycle.
@@ -34,9 +31,9 @@ public interface IMessageManager<T extends Plugin, E> {
     /**
      * Alias for {@link #loadLanguage(E)}, provided for convenience.
      *
-     * @param language
+     * @param language the language code to set as active (e.g., "en_us")
      */
-    default void setActiveLanguage(E language) {
+    default void setActiveLanguage(@NotNull E language) {
         this.loadLanguage(language);
     }
 
@@ -50,13 +47,5 @@ public interface IMessageManager<T extends Plugin, E> {
      *
      * @param language the language code to load (e.g., "en_us")
      */
-    void loadLanguage(E language);
-
-    /**
-     * Returns the parsed message entries for the given key.
-     *
-     * @param message the message key to resolve
-     * @return the list of message adapters for the given message
-     */
-    @NotNull List<MessageTypeAdapter> resolve(@NotNull Message message);
+    void loadLanguage(@NotNull E language);
 }

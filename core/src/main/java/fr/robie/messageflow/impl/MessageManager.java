@@ -173,16 +173,6 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
         this.languageConfiguration.setActiveLanguage(language);
     }
 
-    @Override
-    public @NotNull List<MessageTypeAdapter> resolve(@NotNull Message message) {
-        Preconditions.checkNotNull(message, "message cannot be null");
-        List<? extends MessageTypeAdapter> loaded = message.loaded();
-        if (loaded.isEmpty()) {
-            return message.defaults().stream().map(m -> (MessageTypeAdapter) m).toList();
-        }
-        return loaded.stream().map(m -> (MessageTypeAdapter) m).toList();
-    }
-
     /**
      * Updates the keys in a language file by adding missing keys and/or removing obsolete keys
      * based on the current configuration options. Creates a backup before removing obsolete keys
