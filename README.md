@@ -16,10 +16,10 @@ message formatting using both modern **Adventure** (MiniMessage) and **Legacy** 
 - **Dynamic Configuration**: Automatically manages YAML language files—adding missing keys, removing obsolete ones, and
   creating backups.
 - **Advanced Logging**: A flexible logging system with:
-    - Global and instance-based access.
-    - Integrated support for Adventure/Legacy formatting.
-    - Customizable visibility for log type tags (e.g., `[INFO]`).
-    - Exception logging with red-colored stacktraces for maximum visibility.
+  - Global and instance-based access.
+  - Integrated support for Adventure/Legacy formatting.
+  - Customizable visibility for log type tags (e.g., `[INFO]`).
+  - Exception logging with red-colored stacktraces for maximum visibility.
 - **Clean Architecture**: Highly modular structure separating API, implementation, and models.
 
 ---
@@ -49,10 +49,10 @@ MessageFlow is available via JitPack.
 </repositories>
 
 <dependency>
-<groupId>com.github.1robie</groupId>
-<artifactId>message-flow</artifactId>
-<version>VERSION_TAG</version>
-<scope>compile</scope>
+  <groupId>com.github.1robie</groupId>
+  <artifactId>message-flow</artifactId>
+  <version>VERSION_TAG</version>
+  <scope>compile</scope>
 </dependency>
 ```
 
@@ -176,9 +176,7 @@ ConfigurationOptions<String> options = ConfigurationOptions.singleFile("messages
 
 // Initialize Manager
 MessageManager<MyPlugin, String> messageManager = new MessageManager<>(this, this.options, MyMessages.class);
-messageManager.
-
-reload(); // Creates file and fills missing keys
+messageManager.reload(); // Creates file and fills missing keys
 
 ```
 
@@ -193,9 +191,7 @@ ConfigurationOptions<Langs> options = new ConfigurationOptions<>(this.langConfig
 
 // Initialize Manager
 MessageManager<MyPlugin, Langs> messageManager = new MessageManager<>(this, this.options, MyMessages.class);
-messageManager.
-
-reload(); // Creates files and fills missing keys
+messageManager.reload(); // Creates files and fills missing keys
 ```
 
 With string-based language keys:
@@ -203,17 +199,11 @@ With string-based language keys:
 ```java
 // Define languages
 NormalLanguageConfiguration langConfig = new NormalLanguageConfiguration("en_us"); // -> Default language key
-langConfig.
-
-addLanguage("en_us","messages_en.yml");
-langConfig.
-
-addLanguage("fr_fr","messages_fr.yml");
+langConfig.addLanguage("en_us","messages_en.yml");
+langConfig.addLanguage("fr_fr","messages_fr.yml");
 
 MessageManager<MyPlugin, String> messageManager = new MessageManager<>(this, this.langConfig, MyMessages.class);
-messageManager.
-
-reload(); // Creates files and fills missing keys
+messageManager.reload(); // Creates files and fills missing keys
 
 ```
 
@@ -222,31 +212,19 @@ reload(); // Creates files and fills missing keys
 ```java
 // 1. Basic logging (INFO, WARN, ERROR, DEBUG)
 Logger.info("Server started!");
-Logger.
-
-error("A critical error occurred",someThrowable); // Stacktrace is red!
+Logger.error("A critical error occurred",someThrowable); // Stacktrace is red!
 
 // 2. Formatting control
-Logger.
-
-setColorWhole(true); // Entire line becomes colored
-Logger.LogType.ERROR.
-
-setColorWholeMessage(true); // Default: true for Errors
+Logger.setColorWhole(true); // Entire line becomes colored
+Logger.LogType.ERROR.setColorWholeMessage(true); // Default: true for Errors
 
 // 3. Prefix customization
-Logger.
-
-setShowTypeNamesGlobal(false); // Hides [INFO], [WARN], etc.
-Logger.LogType.DEBUG.
-
-setShowTypeName(true); // Show only for debug
+Logger.setShowTypeNamesGlobal(false); // Hides [INFO], [WARN], etc.
+Logger.LogType.DEBUG.setShowTypeName(true); // Show only for debug
 
 // 4. Instance-based logging
 Logger myLogger = Logger.getLogger();
-myLogger.
-
-logInfo("Local log message");
+myLogger.logInfo("Local log message");
 ```
 
 ### 3. Sending Messages
@@ -257,9 +235,7 @@ MessageManager<MyPlugin, String> messageManager = ...; // Initialized as shown a
 @SuppressWarnings("DataFlowIssue")
 MessageFormatter<MyPlugin, ?> formatter = this.messageManager.formatter();
 
-formatter.
-
-sendMessage(player, MyMessages.WELCOME, "player",player.getName()); // Sends "Welcome to the server, PlayerName!" to the player
+formatter.sendMessage(player, MyMessages.WELCOME, "player",player.getName()); // Sends "Welcome to the server, PlayerName!" to the player
 
 ```
 
