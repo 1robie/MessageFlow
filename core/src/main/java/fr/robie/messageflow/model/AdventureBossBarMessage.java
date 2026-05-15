@@ -2,6 +2,7 @@ package fr.robie.messageflow.model;
 
 import com.google.common.base.Preconditions;
 import fr.robie.messageflow.api.MessageTypeAdapter;
+import fr.robie.messageflow.logger.Logger;
 import net.kyori.adventure.bossbar.BossBar;
 import org.jetbrains.annotations.NotNull;
 import org.jspecify.annotations.NonNull;
@@ -10,6 +11,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 
 /**
  * A message adapter for boss bar messages using the Adventure API.
@@ -22,9 +24,10 @@ import java.util.Set;
  * @param duration the display duration in milliseconds
  * @param progress the progress value (0.0 to 1.0)
  */
-public record AdventureBossBarMessage(@NotNull String title, @NotNull BossBar.Color color, @NotNull BossBar.Overlay overlay,
-                                  @NotNull Set<BossBar.Flag> flags, long duration,
-                                  float progress) implements MessageTypeAdapter {
+public record AdventureBossBarMessage(@NotNull String title, @NotNull BossBar.Color color,
+                                      @NotNull BossBar.Overlay overlay,
+                                      @NotNull Set<BossBar.Flag> flags, long duration,
+                                      float progress) implements MessageTypeAdapter {
 
     public AdventureBossBarMessage {
         Preconditions.checkNotNull(title, "Title cannot be null");
@@ -68,6 +71,7 @@ public record AdventureBossBarMessage(@NotNull String title, @NotNull BossBar.Co
         try {
             color = BossBar.Color.valueOf(((String) map.getOrDefault("color", "PINK")).toUpperCase());
         } catch (IllegalArgumentException e) {
+            Logger.warn("Invalid boss bar color value: %value%. Valid values are %valid_values%. Defaulting to PINK.", "value", map.get("color"), "valid_values", Stream.of(BossBar.Color.values()).map(BossBar.Color::name).toList());
             color = BossBar.Color.PINK;
         }
 
@@ -75,6 +79,7 @@ public record AdventureBossBarMessage(@NotNull String title, @NotNull BossBar.Co
         try {
             overlay = BossBar.Overlay.valueOf(((String) map.getOrDefault("overlay", "PROGRESS")).toUpperCase());
         } catch (IllegalArgumentException e) {
+            Logger.warn("Invalid boss bar overlay value: %value%. Valid values are %valid_values%. Defaulting to PROGRESS.", "value", map.get("overlay"), "valid_values", Stream.of(BossBar.Overlay.values()).map(BossBar.Overlay::name).toList());
             overlay = BossBar.Overlay.PROGRESS;
         }
 

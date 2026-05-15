@@ -11,6 +11,7 @@ import fr.robie.messageflow.formatter.LegacyMessageFormatter;
 import fr.robie.messageflow.formatter.MessageFormatter;
 import fr.robie.messageflow.logger.AdventureLogger;
 import fr.robie.messageflow.logger.LegacyLogger;
+import fr.robie.messageflow.logger.Logger;
 import fr.robie.messageflow.model.*;
 import fr.robie.messageflow.util.PlatformType;
 import org.bukkit.configuration.ConfigurationSection;
@@ -327,7 +328,8 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
             }
             this.plugin.saveResource(relativePath, false);
             return true;
-        } catch (IllegalArgumentException ignored) {
+        } catch (IllegalArgumentException exception) {
+            Logger.warn("Failed to copy bundled resource: %path%. Resource not found in JAR.", exception, "path", relativePath);
             return false;
         }
     }
@@ -346,7 +348,8 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
                 return YamlConfiguration.loadConfiguration(reader);
             }
-        } catch (IOException ignored) {
+        } catch (IOException exception) {
+            Logger.warn("Failed to load bundled resource: %path%", exception, "path", relativePath);
             return null;
         }
     }
@@ -360,6 +363,7 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
     private void backupFile(@NotNull File file, @NotNull String lang) {
         File backupDir = new File(this.plugin.getDataFolder(), this.options.backupFolder());
         if (!backupDir.exists() && !backupDir.mkdirs()) {
+            Logger.warn("Failed to create backup directory: %dir%. Skipping backup.", "dir", backupDir.getAbsolutePath());
             return;
         }
 
@@ -369,7 +373,8 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
 
         try {
             Files.copy(file.toPath(), dest.toPath(), StandardCopyOption.REPLACE_EXISTING);
-        } catch (IOException ignored) {
+        } catch (IOException exception) {
+            Logger.warn("Failed to backup file %file% to %dest%", exception, "file", file.getAbsolutePath(), "dest", dest.getAbsolutePath());
         }
     }
 
@@ -446,20 +451,17 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
                     return result;
                 }
             }
+            case ConfigurationSection section -> {
+                MessageTypeAdapter parsed = this.parseAdapterFromMap(section.getValues(true));
+                return parsed != null ? List.of(parsed) : List.of();
+            }
+            case Map<?, ?> map -> {
+                MessageTypeAdapter parsed = this.parseAdapterFromMap(map);
+                return parsed != null ? List.of(parsed) : List.of();
+            }
             default -> {
             }
         }
-
-        if (raw instanceof ConfigurationSection section) {
-            MessageTypeAdapter parsed = this.parseAdapterFromMap(section.getValues(true));
-            return parsed != null ? List.of(parsed) : List.of();
-        }
-
-        if (raw instanceof Map<?, ?> map) {
-            MessageTypeAdapter parsed = this.parseAdapterFromMap(map);
-            return parsed != null ? List.of(parsed) : List.of();
-        }
-
         return List.of();
     }
 
@@ -489,12 +491,17 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
             values.put(k, e.getValue());
         }
 
-        return switch (type) {
-            case TITLE -> TitleMessage.deserialize(values);
-            case BOSS_BAR ->
-                    PlatformType.hasComponent() ? AdventureBossBarMessage.deserialize(values) : LegacyBossBarMessage.deserialize(values);
-            case ACTION_BAR, TCHAT, NONE, WITHOUT_PREFIX, BROADCAST -> SimpleMessage.deserialize(type, values);
-        };
+        try {
+            return switch (type) {
+                case TITLE -> TitleMessage.deserialize(values);
+                case BOSS_BAR ->
+                        PlatformType.hasComponent() ? AdventureBossBarMessage.deserialize(values) : LegacyBossBarMessage.deserialize(values);
+                case ACTION_BAR, TCHAT, NONE, WITHOUT_PREFIX, BROADCAST -> SimpleMessage.deserialize(type, values);
+            };
+        } catch (Exception e) {
+            Logger.warn("Failed to parse message of type %type%: %error%", "type", type.name(), "error", e.getMessage());
+            return null;
+        }
     }
 
     /**

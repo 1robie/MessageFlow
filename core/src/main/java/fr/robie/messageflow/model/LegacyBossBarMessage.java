@@ -2,17 +2,15 @@ package fr.robie.messageflow.model;
 
 import com.google.common.base.Preconditions;
 import fr.robie.messageflow.api.MessageTypeAdapter;
+import fr.robie.messageflow.logger.Logger;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarFlag;
 import org.bukkit.boss.BarStyle;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Stream;
 
 /**
  * A message adapter for boss bar messages using the legacy Bukkit API.
@@ -28,7 +26,7 @@ import java.util.Set;
 public record LegacyBossBarMessage(
         @NotNull String title, @NotNull BarColor color, @NotNull BarStyle style,
         @Nullable BarFlag[] flags, long duration, float progress
-        ) implements MessageTypeAdapter {
+) implements MessageTypeAdapter {
 
     public LegacyBossBarMessage {
         Preconditions.checkNotNull(title, "Title cannot be null");
@@ -71,6 +69,7 @@ public record LegacyBossBarMessage(
         try {
             color = BarColor.valueOf(((String) map.getOrDefault("color", "PINK")).toUpperCase());
         } catch (IllegalArgumentException e) {
+            Logger.warn("Invalid boss bar color value: %value%. Valid values are %valid_values%. Defaulting to PINK.", "value", map.get("color"), "valid_values", Stream.of(BarColor.values()).map(BarColor::name).toList());
             color = BarColor.PINK;
         }
 
@@ -78,6 +77,7 @@ public record LegacyBossBarMessage(
         try {
             style = BarStyle.valueOf(((String) map.getOrDefault("style", "SOLID")).toUpperCase());
         } catch (IllegalArgumentException e) {
+            Logger.warn("Invalid boss bar style value: %value%. Valid values are %valid_values%. Defaulting to SOLID.", "value", map.get("style"), "valid_values", Stream.of(BarStyle.values()).map(BarStyle::name).toList());
             style = BarStyle.SOLID;
         }
 
