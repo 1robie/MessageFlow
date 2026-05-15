@@ -9,7 +9,7 @@ import fr.robie.messageflow.configuration.lang.LanguageEntry;
 import fr.robie.messageflow.formatter.AdventureMessageFormatter;
 import fr.robie.messageflow.formatter.LegacyMessageFormatter;
 import fr.robie.messageflow.formatter.MessageFormatter;
-import fr.robie.messageflow.logger.ComponentLogger;
+import fr.robie.messageflow.logger.AdventureLogger;
 import fr.robie.messageflow.logger.LegacyLogger;
 import fr.robie.messageflow.model.*;
 import fr.robie.messageflow.util.PlatformType;
@@ -97,7 +97,7 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
         }
 
         if (this.messageFormatter instanceof AdventureMessageFormatter<?> adventureFormatter) {
-            new ComponentLogger(loggerPrefix, adventureFormatter);
+            new AdventureLogger(loggerPrefix, adventureFormatter);
         } else {
             LegacyMessageFormatter<?> legacyFormatter = (LegacyMessageFormatter<?>) this.messageFormatter;
             new LegacyLogger(loggerPrefix, legacyFormatter);

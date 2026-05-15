@@ -14,15 +14,15 @@ import org.jspecify.annotations.NonNull;
  * This logger is suitable for modern Minecraft versions (1.16+) that support
  * rich text components and MiniMessage formatting.
  */
-public final class ComponentLogger extends Logger {
+public final class AdventureLogger extends Logger {
 
     /**
-     * Constructs a new ComponentLogger.
+     * Constructs a new AdventureLogger.
      *
      * @param prefix           the log getPrefix
      * @param messageFormatter the Adventure message formatter to use
      */
-    public ComponentLogger(@NotNull String prefix, @NotNull AdventureMessageFormatter<? extends Plugin> messageFormatter) {
+    public AdventureLogger(@NotNull String prefix, @NotNull AdventureMessageFormatter<? extends Plugin> messageFormatter) {
         super(prefix, messageFormatter);
     }
 
