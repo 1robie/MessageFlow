@@ -13,6 +13,7 @@
     <modules>
         <module>example</module>
         <module>core</module>
+        <module>Hooks</module>
     </modules>
 
     <profiles>
@@ -48,6 +49,26 @@
                 <version>${project.version}</version>
                 <scope>provided</scope>
             </dependency>
+
+            <!-- Hooks dependencies -->
+
+            <!-- PlaceholderAPI -->
+            <dependency>
+                <groupId>me.clip</groupId>
+                <artifactId>placeholderapi</artifactId>
+                <version>2.12.2</version>
+                <scope>provided</scope>
+            </dependency>
+
+            <!-- Internal Modules -->
+
+            <dependency>
+                <groupId>fr.robie.messageflow</groupId>
+                <artifactId>BOM</artifactId>
+                <version>${project.version}</version>
+                <scope>compile</scope>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
 
