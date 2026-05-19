@@ -14,6 +14,7 @@
         <module>example</module>
         <module>core</module>
         <module>Hooks</module>
+        <module>common</module>
     </modules>
 
     <profiles>
@@ -67,6 +68,13 @@
                 <artifactId>BOM</artifactId>
                 <version>${project.version}</version>
                 <scope>compile</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>fr.robie.messageflow</groupId>
+                <artifactId>common</artifactId>
+                <version>${project.version}</version>
+                <scope>provided</scope>
             </dependency>
 
         </dependencies>
@@ -141,6 +149,11 @@
         <repository>
             <id>jitpack.io</id>
             <url>https://jitpack.io</url>
+        </repository>
+
+        <repository>
+            <id>placeholderapi</id>
+            <url>https://repo.extendedclip.com/content/repositories/placeholderapi/</url>
         </repository>
     </repositories>
 </project>

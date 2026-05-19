@@ -13,10 +13,14 @@
     <artifactId>PlaceholderAPI</artifactId>
 
     <dependencies>
-        <!--        <dependency>-->
-        <!--            <groupId>me.clip</groupId>-->
-        <!--            <artifactId>placeholderapi</artifactId>-->
-        <!--        </dependency>-->
+        <dependency>
+            <groupId>me.clip</groupId>
+            <artifactId>placeholderapi</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>fr.robie.messageflow</groupId>
+            <artifactId>common</artifactId>
+        </dependency>
     </dependencies>
 
 </project>
