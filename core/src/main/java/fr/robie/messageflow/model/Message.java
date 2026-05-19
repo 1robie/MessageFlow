@@ -21,6 +21,13 @@ public interface Message {
     void setLoaded(@NotNull List<? extends MessageTypeAdapter> loaded);
 
     /**
+     * @return The message settings for this message.
+     */
+    default @NotNull MessageSettings settings() {
+        return MessageSettings.DEFAULT;
+    }
+
+    /**
      * Convenience: returns the first text line found in the loaded messages.
      * This mirrors the common "classic message first line" usage.
      */

@@ -243,7 +243,17 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
                 m.setLoaded(m.defaults());
                 continue;
             }
-            m.setLoaded(this.parseMessageList(config, m.key()));
+            List<MessageTypeAdapter> parsed = this.parseMessageList(config, m.key());
+            List<MessageTypeAdapter> filtered = parsed.stream()
+                    .filter(adapter -> m.settings().isTypeAllowed(adapter.messageType()))
+                    .toList();
+
+            if (filtered.isEmpty() && !parsed.isEmpty()) {
+                Logger.warn("All parsed message types for key '%key%' are blocked by its settings. Falling back to defaults.", "key", m.key());
+                m.setLoaded(m.defaults());
+            } else {
+                m.setLoaded(filtered);
+            }
         }
     }
 

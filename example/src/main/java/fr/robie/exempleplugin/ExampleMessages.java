@@ -2,24 +2,34 @@ package fr.robie.exempleplugin;
 
 import fr.robie.messageflow.api.MessageTypeAdapter;
 import fr.robie.messageflow.model.Message;
+import fr.robie.messageflow.model.MessageSettings;
 import fr.robie.messageflow.model.MessageType;
 import fr.robie.messageflow.model.SimpleMessage;
+import fr.robie.messageflow.model.TitleMessage;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
+import java.util.Set;
 
 public enum ExampleMessages implements Message {
     PREFIX("getPrefix", List.of(new SimpleMessage(MessageType.WITHOUT_PREFIX, List.of("&7[&bExample&7]&r ")))),
     HELLO("hello", List.of(Message.chat("&aHello from MessageFlow!"))),
-    ONLY_FRENCH("only-french", List.of(Message.chat("&c(You are reading the default value)")));
+    ONLY_FRENCH("only-french", List.of(Message.chat("&c(You are reading the default value)"))),
+    IMPORTANT_NOTICE("important-notice", List.of(new TitleMessage("&eImportant!", "&fPlease read this notice.", 10, 70, 20)), MessageSettings.whitelist(MessageType.TITLE, MessageType.ACTION_BAR));
 
     private final String key;
     private final List<? extends MessageTypeAdapter> defaults;
+    private final MessageSettings settings;
     private List<? extends MessageTypeAdapter> loaded;
 
     ExampleMessages(String key, List<? extends MessageTypeAdapter> defaults) {
+        this(key, defaults, MessageSettings.DEFAULT);
+    }
+
+    ExampleMessages(String key, List<? extends MessageTypeAdapter> defaults, MessageSettings settings) {
         this.key = key;
         this.defaults = defaults;
+        this.settings = settings;
     }
 
     @Override
@@ -40,6 +50,11 @@ public enum ExampleMessages implements Message {
     @Override
     public void setLoaded(@NotNull List<? extends MessageTypeAdapter> loaded) {
         this.loaded = loaded;
+    }
+
+    @Override
+    public @NotNull MessageSettings settings() {
+        return this.settings;
     }
 }
 
