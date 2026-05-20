@@ -205,11 +205,13 @@ public class LegacyMessageFormatter<T extends Plugin> extends MessageFormatter<T
                             String title, BarColor color, BarStyle style,
                             BarFlag[] flags, long duration, float progress
                     )) {
+                        List<Player> players = senders.stream()
+                                .filter(s -> s instanceof Player)
+                                .map(s -> (Player) s)
+                                .toList();
+
                         if (this.textResolverRegistry.hasResolvers()) {
-                            senders.forEach(sender -> {
-                                if (!(sender instanceof Player p)) {
-                                    return;
-                                }
+                            players.forEach(p -> {
                                 BossBar bar = this.createBossBar(
                                         this.format(title, p, placeholders),
                                         color, style, flags, progress);
@@ -218,12 +220,9 @@ public class LegacyMessageFormatter<T extends Plugin> extends MessageFormatter<T
                         } else {
                             String sharedTitle = this.format(title, null, placeholders);
                             BossBar bar = this.createBossBar(sharedTitle, color, style, flags, progress);
-                            senders.forEach(sender -> {
-                                if (!(sender instanceof Player p)) {
-                                    return;
-                                }
-                                this.showBossBar(bar, p, duration);
-                            });
+
+
+                            players.forEach(p -> this.showBossBar(bar, p, duration));
                         }
                     }
                 }

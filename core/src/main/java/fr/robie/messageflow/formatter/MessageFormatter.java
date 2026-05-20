@@ -222,6 +222,29 @@ public abstract class MessageFormatter<T extends Plugin, V> implements TextForma
     @NotNull
     protected abstract V empty();
 
+    protected <A, B> void scheduleHideBossBar(
+            long durationTicks,
+            Collection<? extends A> players,
+            BiConsumer<A, B> hideAction,
+            B bossbar
+    ) {
+        this.plugin.getServer().getAsyncScheduler().runDelayed(this.plugin,
+                w -> players.forEach(player -> hideAction.accept(player, bossbar)),
+                durationTicks * 50L,
+                TimeUnit.MILLISECONDS
+        );
+    }
+
+
+    protected <A, B> void scheduleHideBossBar(
+            long durationTicks,
+            A player,
+            BiConsumer<A, B> hideAction,
+            B bossbar
+    ) {
+        this.scheduleHideBossBar(durationTicks, Collections.singleton(player), hideAction, bossbar);
+    }
+
     /**
      * Sends a title to a single player.
      *
