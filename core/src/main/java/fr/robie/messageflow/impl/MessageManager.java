@@ -1,6 +1,7 @@
 package fr.robie.messageflow.impl;
 
 import com.google.common.base.Preconditions;
+import fr.robie.messageflow.TextResolverRegistry;
 import fr.robie.messageflow.api.IMessageManager;
 import fr.robie.messageflow.api.MessageTypeAdapter;
 import fr.robie.messageflow.configuration.ConfigurationOptions;
@@ -84,9 +85,15 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
         this.plugin = plugin;
         this.options = options;
         this.messages = messages;
+
+        TextResolverRegistry registry = new TextResolverRegistry();
+        registry.initialize();
+
         this.messageFormatter = PlatformType.hasComponent()
                 ? new AdventureMessageFormatter<>(plugin, options)
                 : new LegacyMessageFormatter<>(plugin, options);
+
+        this.messageFormatter.setTextResolverRegistry(registry);
 
         String loggerPrefix = options.loggerPrefix();
         if (loggerPrefix == null) {

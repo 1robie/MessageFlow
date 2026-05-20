@@ -21,6 +21,8 @@ import org.jspecify.annotations.NonNull;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
+import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -60,36 +62,13 @@ public class LegacyMessageFormatter<T extends Plugin> extends MessageFormatter<T
         return this.cache.getUnchecked(message);
     }
 
-    private @NotNull String colorizeWithPlaceholders(@Nullable String message, @NotNull Object... placeholders) {
+    private @NotNull String colorizeWithPlaceholders(@Nullable String message, @Nullable Player player, @NotNull Object... placeholders) {
         if (message == null) {
             return "";
         }
-        if (placeholders.length == 0) {
-            return this.colorize(message);
-        }
-        return this.colorize(this.parseText(message, placeholders));
-    }
-
-    private List<String> getLines(
-            @NotNull SimpleMessage message,
-            boolean enablePrefix,
-            @Nullable String prefix,
-            @NotNull Object[] placeholders
-    ) {
-        List<String> messages = message.messages();
-        if (messages.isEmpty() || messages.stream().allMatch(s -> s == null || s.isBlank())) {
-            return Collections.emptyList();
-        }
-
-        String prefixText = enablePrefix && prefix != null ? prefix : "";
-
-        return messages.stream()
-                .map(s -> s == null ? "" : this.colorizeWithPlaceholders(prefixText + s, placeholders))
-                .toList();
-    }
-
-    private void sendLines(@NotNull Collection<? extends CommandSender> senders, @NotNull List<String> lines) {
-        senders.forEach(sender -> lines.forEach(sender::sendMessage));
+        String text = this.parseText(message, placeholders);
+        text = this.applyResolvers(text, player, placeholders);
+        return this.colorize(text);
     }
 
     private void sendComponents(
@@ -99,17 +78,49 @@ public class LegacyMessageFormatter<T extends Plugin> extends MessageFormatter<T
             @Nullable String prefix,
             @NotNull Object[] placeholders
     ) {
-        List<String> lines = this.getLines(message, enablePrefix, prefix, placeholders);
-        if (!lines.isEmpty()) {
-            this.sendLines(senders, lines);
+        List<String> messages = message.messages();
+        if (messages.isEmpty() || messages.stream().allMatch(s -> s == null || s.isBlank())) {
+            return;
+        }
+
+        String prefixText = enablePrefix && prefix != null ? prefix : "";
+
+        if (this.textResolverRegistry.hasResolvers()) {
+            senders.forEach(sender -> {
+                Player player = sender instanceof Player p ? p : null;
+                for (String s : messages) {
+                    if (s != null) {
+                        sender.sendMessage(this.colorizeWithPlaceholders(prefixText + s, player, placeholders));
+                    }
+                }
+            });
+        } else {
+            List<String> colorized = messages.stream()
+                    .filter(Objects::nonNull)
+                    .map(s -> this.colorizeWithPlaceholders(prefixText + s, null, placeholders))
+                    .toList();
+            senders.forEach(sender -> colorized.forEach(sender::sendMessage));
         }
     }
 
     @Override
-    public void sendTitle(@NotNull Collection<? extends @NotNull Player> players, @Nullable String title, @Nullable String subtitle, int fadeIn, int stay, int fadeOut, @NonNull @NotNull Object... placeholders) {
-        String parsedTitle = this.colorizeWithPlaceholders(title, placeholders);
-        String parsedSubtitle = this.colorizeWithPlaceholders(subtitle, placeholders);
-        players.forEach(player -> player.sendTitle(parsedTitle, parsedSubtitle, fadeIn, stay, fadeOut));
+    public void sendTitle(
+            @NotNull Collection<? extends @NotNull Player> players,
+            @Nullable String title, @Nullable String subtitle,
+            int fadeIn, int stay, int fadeOut,
+            @NonNull @NotNull Object... placeholders
+    ) {
+        if (this.textResolverRegistry.hasResolvers()) {
+            players.forEach(player -> player.sendTitle(
+                    this.colorizeWithPlaceholders(title, player, placeholders),
+                    this.colorizeWithPlaceholders(subtitle, player, placeholders),
+                    fadeIn, stay, fadeOut
+            ));
+        } else {
+            String sharedTitle = this.colorizeWithPlaceholders(title, null, placeholders);
+            String sharedSubtitle = this.colorizeWithPlaceholders(subtitle, null, placeholders);
+            players.forEach(player -> player.sendTitle(sharedTitle, sharedSubtitle, fadeIn, stay, fadeOut));
+        }
     }
 
     @Override
@@ -118,14 +129,17 @@ public class LegacyMessageFormatter<T extends Plugin> extends MessageFormatter<T
     }
 
     @Override
-    public void sendActionBar(@NotNull Collection<? extends @NotNull Player> players, @Nullable String message, boolean prefix, @NotNull Object... placeholders) {
+    public void sendActionBar(
+            @NotNull Collection<? extends @NotNull Player> players,
+            @Nullable String message,
+            boolean prefix,
+            @NotNull Object... placeholders
+    ) {
         if (message == null || players.isEmpty()) {
             return;
         }
-
-        String prefixText = prefix ? this.prefix : "";
-        String colorized = this.colorizeWithPlaceholders(prefixText + message, placeholders);
-        players.forEach(player -> player.sendActionBar(colorized));
+        String text = (prefix ? this.prefix : "") + message;
+        this.perSenderOrShared(players, text, placeholders, Player::sendActionBar);
     }
 
     @Override
@@ -134,15 +148,17 @@ public class LegacyMessageFormatter<T extends Plugin> extends MessageFormatter<T
     }
 
     @Override
-    public void sendMessage(@NotNull Collection<? extends CommandSender> senders, @Nullable String message, boolean prefix, @NotNull Object... placeholders) {
+    public void sendMessage(
+            @NotNull Collection<? extends CommandSender> senders,
+            @Nullable String message,
+            boolean prefix,
+            @NotNull Object... placeholders
+    ) {
         if (message == null || senders.isEmpty()) {
             return;
         }
-
-        String prefixText = prefix ? this.prefix : "";
-        String colorized = this.colorizeWithPlaceholders(prefixText + message, placeholders);
-
-        senders.forEach(sender -> sender.sendMessage(colorized));
+        String text = (prefix ? this.prefix : "") + message;
+        this.perSenderOrShared(senders, text, placeholders, CommandSender::sendMessage);
     }
 
     @Override
@@ -162,88 +178,98 @@ public class LegacyMessageFormatter<T extends Plugin> extends MessageFormatter<T
 
         for (MessageTypeAdapter messageAdapter : message.loaded()) {
             switch (messageAdapter.messageType()) {
+
                 case TITLE -> {
                     if (messageAdapter instanceof TitleMessage(
-                            String title1, String subtitle, int fadeIn, int stay, int fadeOut
+                            String title, String subtitle, int fadeIn, int stay, int fadeOut
                     )) {
-                        senders.forEach(sender -> {
-                            if (sender instanceof Player player) {
-                                player.sendTitle(
-                                        this.colorizeWithPlaceholders(title1, placeholders),
-                                        this.colorizeWithPlaceholders(subtitle, placeholders),
-                                        fadeIn, stay, fadeOut
-                                );
-                            }
-                        });
-                    }
-                }
-                case TCHAT -> {
-                    if (messageAdapter instanceof SimpleMessage simpleMessage) {
-                        this.sendComponents(senders, simpleMessage, prefix, this.prefix, placeholders);
-                    }
-                }
-                case ACTION_BAR -> {
-                    if (messageAdapter instanceof SimpleMessage simpleMessage) {
-                        List<String> lines = this.getLines(simpleMessage, prefix, this.prefix, placeholders);
-                        if (!lines.isEmpty()) {
-                            String line = lines.getFirst();
+                        if (this.textResolverRegistry.hasResolvers()) {
                             senders.forEach(sender -> {
-                                if (sender instanceof Player player) {
-                                    player.sendActionBar(line);
+                                Player player = sender instanceof Player p ? p : null;
+                                String coloredTitle = this.colorizeWithPlaceholders(title, player, placeholders);
+                                String coloredSubtitle = this.colorizeWithPlaceholders(subtitle, player, placeholders);
+                                if (sender instanceof Player p) {
+                                    p.sendTitle(coloredTitle, coloredSubtitle, fadeIn, stay, fadeOut);
+                                } else {
+                                    sender.sendMessage(coloredTitle);
+                                    sender.sendMessage(coloredSubtitle);
+                                }
+                            });
+                        } else {
+                            String sharedTitle = this.colorizeWithPlaceholders(title, null, placeholders);
+                            String sharedSubtitle = this.colorizeWithPlaceholders(subtitle, null, placeholders);
+                            senders.forEach(sender -> {
+                                if (sender instanceof Player p) {
+                                    p.sendTitle(sharedTitle, sharedSubtitle, fadeIn, stay, fadeOut);
+                                } else {
+                                    sender.sendMessage(sharedTitle);
+                                    sender.sendMessage(sharedSubtitle);
                                 }
                             });
                         }
                     }
                 }
+
+                case TCHAT -> {
+                    if (messageAdapter instanceof SimpleMessage sm) {
+                        this.sendComponents(senders, sm, prefix, this.prefix, placeholders);
+                    }
+                }
+
+                case ACTION_BAR -> {
+                    if (messageAdapter instanceof SimpleMessage sm) {
+                        String line = sm.messages().isEmpty() ? null : sm.messages().getFirst();
+                        List<? extends Player> players = senders.stream()
+                                .filter(s -> s instanceof Player)
+                                .map(s -> (Player) s)
+                                .toList();
+                        this.sendActionBar(players, line, prefix, placeholders);
+                    }
+                }
+
                 case BOSS_BAR -> {
                     if (messageAdapter instanceof LegacyBossBarMessage(
                             String title, BarColor color, BarStyle style,
                             BarFlag[] flags, long duration, float progress
                     )) {
-                        BossBar bossBar = flags != null
-                                ? Bukkit.createBossBar(
-                                this.colorizeWithPlaceholders(title, placeholders),
-                                color,
-                                style,
-                                flags
-                        )
-                                : Bukkit.createBossBar(
-                                this.colorizeWithPlaceholders(title, placeholders),
-                                color,
-                                style
-                        );
-                        bossBar.setProgress(Math.clamp(progress, 0f, 1f));
-                        List<Player> snapshot = senders.stream()
-                                .filter(s -> s instanceof Player)
-                                .map(s -> (Player) s)
-                                .toList();
-
-                        snapshot.forEach(bossBar::addPlayer);
-
-                        this.plugin.getServer().getScheduler().runTaskLater(this.plugin,
-                                () -> {
-                                    snapshot.forEach(bossBar::removePlayer);
-                                    bossBar.setVisible(false);
-                                },
-                                duration / 50L);
+                        if (this.textResolverRegistry.hasResolvers()) {
+                            senders.forEach(sender -> {
+                                if (!(sender instanceof Player p)) {
+                                    return;
+                                }
+                                BossBar bar = this.createBossBar(
+                                        this.colorizeWithPlaceholders(title, p, placeholders),
+                                        color, style, flags, progress);
+                                this.showBossBar(bar, p, duration);
+                            });
+                        } else {
+                            String sharedTitle = this.colorizeWithPlaceholders(title, null, placeholders);
+                            BossBar bar = this.createBossBar(sharedTitle, color, style, flags, progress);
+                            senders.forEach(sender -> {
+                                if (!(sender instanceof Player p)) {
+                                    return;
+                                }
+                                this.showBossBar(bar, p, duration);
+                            });
+                        }
                     }
                 }
+
                 case WITHOUT_PREFIX -> {
-                    if (messageAdapter instanceof SimpleMessage simpleMessage) {
-                        this.sendComponents(senders, simpleMessage, false, null, placeholders);
+                    if (messageAdapter instanceof SimpleMessage sm) {
+                        this.sendComponents(senders, sm, false, null, placeholders);
                     }
                 }
+
                 case BROADCAST -> {
-                    if (messageAdapter instanceof SimpleMessage simpleMessage) {
-                        Collection<CommandSender> online = Collections.unmodifiableCollection(
-                                Bukkit.getOnlinePlayers()
-                        );
-                        this.sendComponents(online, simpleMessage, prefix, this.prefix, placeholders);
+                    if (messageAdapter instanceof SimpleMessage sm) {
+                        this.sendComponents(Bukkit.getOnlinePlayers(), sm, prefix, this.prefix, placeholders);
                     }
                 }
             }
         }
     }
+
 
     @Override
     public void sendMessage(@NotNull Message message, @NotNull Logger.LogType logType, @NotNull ConsoleCommandSender sender, @NotNull Object... placeholders) {
@@ -254,4 +280,54 @@ public class LegacyMessageFormatter<T extends Plugin> extends MessageFormatter<T
             }
         }
     }
+
+    // ---
+    // Utility methods
+    // ---
+
+    /**
+     * If resolvers are active, each sender may produce a different string (e.g. PAPI per-player),
+     * so we colorize individually. Otherwise we colorize once and reuse for all senders.
+     */
+    private <S extends CommandSender> void perSenderOrShared(
+            @NotNull Collection<? extends S> senders,
+            @NotNull String text,
+            @NotNull Object[] placeholders,
+            @NotNull BiConsumer<S, String> action
+    ) {
+        if (this.textResolverRegistry.hasResolvers()) {
+            senders.forEach(sender -> {
+                Player player = sender instanceof Player p ? p : null;
+                action.accept(sender, this.colorizeWithPlaceholders(text, player, placeholders));
+            });
+        } else {
+            String shared = this.colorizeWithPlaceholders(text, null, placeholders);
+            senders.forEach(sender -> action.accept(sender, shared));
+        }
+    }
+
+    private void showBossBar(@NotNull BossBar bar, @NotNull Player player, long duration) {
+        bar.addPlayer(player);
+        this.plugin.getServer().getScheduler().runTaskLater(this.plugin,
+                () -> {
+                    bar.removePlayer(player);
+                    bar.setVisible(false);
+                },
+                duration / 50L);
+    }
+
+    private @NotNull BossBar createBossBar(
+            @NotNull String title,
+            @NotNull BarColor color,
+            @NotNull BarStyle style,
+            @Nullable BarFlag[] flags,
+            float progress
+    ) {
+        BossBar bar = (flags != null && flags.length > 0)
+                ? Bukkit.createBossBar(title, color, style, flags)
+                : Bukkit.createBossBar(title, color, style);
+        bar.setProgress(Math.clamp(progress, 0f, 1f));
+        return bar;
+    }
+
 }

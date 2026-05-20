@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import fr.robie.messageflow.api.ITextResolverRegistry;
 import fr.robie.messageflow.configuration.ConfigurationOptions;
 import fr.robie.messageflow.logger.Logger;
 import fr.robie.messageflow.model.Message;
@@ -38,6 +39,11 @@ public abstract class MessageFormatter<T extends Plugin, V> implements TextForma
      * Cache for storing formatted messages to avoid repeated parsing.
      */
     protected final LoadingCache<String, V> cache;
+
+    /**
+     * The text resolver registry used to resolve placeholders and hooks.
+     */
+    protected ITextResolverRegistry textResolverRegistry;
 
     /**
      * The getPrefix prepended to messages when enabled.
@@ -119,6 +125,40 @@ public abstract class MessageFormatter<T extends Plugin, V> implements TextForma
     public void setPrefix(@NotNull String prefix) {
         Preconditions.checkNotNull(prefix, "Prefix cannot be null");
         this.prefix = prefix;
+    }
+
+    /**
+     * Gets the text resolver registry used by this formatter.
+     *
+     * @return the text resolver registry
+     */
+    public ITextResolverRegistry getTextResolverRegistry() {
+        return this.textResolverRegistry;
+    }
+
+    /**
+     * Sets the text resolver registry to be used by this formatter.
+     *
+     * @param textResolverRegistry the new text resolver registry
+     */
+    public void setTextResolverRegistry(@NotNull ITextResolverRegistry textResolverRegistry) {
+        Preconditions.checkNotNull(textResolverRegistry, "TextResolverRegistry cannot be null");
+        this.textResolverRegistry = textResolverRegistry;
+    }
+
+    /**
+     * Applies all registered text resolvers to the given text.
+     *
+     * @param text   the text to resolve
+     * @param player the player context, or null
+     * @param args   optional arguments for the resolvers
+     * @return the resolved text
+     */
+    protected @NotNull String applyResolvers(@NotNull String text, @Nullable Player player, Object... args) {
+        if (this.textResolverRegistry == null) {
+            return text;
+        }
+        return this.textResolverRegistry.resolve(text, player, args);
     }
 
     /**

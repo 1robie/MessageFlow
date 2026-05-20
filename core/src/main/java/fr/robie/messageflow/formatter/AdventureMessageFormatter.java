@@ -5,7 +5,6 @@ import fr.robie.messageflow.configuration.ConfigurationOptions;
 import fr.robie.messageflow.logger.Logger;
 import fr.robie.messageflow.model.*;
 import net.kyori.adventure.audience.Audience;
-import net.kyori.adventure.audience.ForwardingAudience;
 import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
@@ -129,14 +128,13 @@ public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatte
         return this.cache.getUnchecked(message);
     }
 
-    private Component getComponentWithPlaceholders(@Nullable String message, @NotNull Object... placeholders) {
+    private Component getComponentWithPlaceholders(@Nullable String message, @Nullable Player player, @NotNull Object... placeholders) {
         if (message == null) {
             return Component.empty();
         }
-        if (placeholders.length == 0) {
-            return this.getComponent(message);
-        }
-        return MINI_MESSAGE.deserialize(colorMiniMessage(this.parseText(message, placeholders)));
+        String text = this.parseText(message, placeholders);
+        text = this.applyResolvers(text, player, placeholders);
+        return this.load(text);
     }
 
 
@@ -146,67 +144,80 @@ public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatte
             boolean enablePrefix,
             @Nullable String prefix,
             @NotNull Object[] placeholders,
-            @NotNull BiConsumer<Audience, Component> sender
+            @NotNull BiConsumer<Audience, Component> sendAction
     ) {
-        List<Component> components = this.getComponents(message, enablePrefix, prefix, placeholders);
-        if (!components.isEmpty()) {
-            this.sendToAudiences(audiences, components, sender);
-        }
-    }
-
-    private List<Component> getComponents(
-            @NotNull SimpleMessage message,
-            boolean enablePrefix,
-            @Nullable String prefix,
-            @NotNull Object[] placeholders) {
         List<String> messages = message.messages();
         if (messages.isEmpty() || messages.stream().allMatch(s -> s == null || s.isBlank())) {
-            return Collections.emptyList();
+            return;
         }
 
         String prefixText = enablePrefix && prefix != null ? prefix : "";
 
-        return messages.stream()
-                .map(s -> s == null ? Component.empty() : this.getComponentWithPlaceholders(prefixText + s, placeholders))
-                .toList();
+        if (this.textResolverRegistry.hasResolvers()) {
+            audiences.forEach(audience -> {
+                Player player = audience instanceof Player p ? p : null;
+                for (String s : messages) {
+                    if (s != null) {
+                        sendAction.accept(audience, this.getComponentWithPlaceholders(prefixText + s, player, placeholders));
+                    }
+                }
+            });
+        } else {
+            List<Component> components = new ArrayList<>();
+            for (String s : messages) {
+                if (s != null) {
+                    components.add(this.getComponentWithPlaceholders(prefixText + s, null, placeholders));
+                }
+            }
+            audiences.forEach(audience -> {
+                for (Component component : components) {
+                    sendAction.accept(audience, component);
+                }
+            });
+        }
     }
 
-    private void sendToAudiences(
-            @NotNull Collection<? extends Audience> audiences,
-            @NotNull List<Component> components,
-            @NotNull BiConsumer<Audience, Component> sender
+    @Override
+    public void sendTitle(
+            @NotNull Collection<? extends @NotNull Player> players,
+            @Nullable String title, @Nullable String subtitle,
+            int fadeIn, int stay, int fadeOut,
+            @NonNull @NotNull Object... placeholders
     ) {
-        audiences.forEach(audience -> components.forEach(component -> sender.accept(audience, component)));
+        if (players.isEmpty()) {
+            return;
+        }
+
+        if (this.textResolverRegistry.hasResolvers()) {
+            players.forEach(player ->
+                    player.showTitle(this.buildTitle(title, subtitle, fadeIn, stay, fadeOut, player, placeholders)));
+        } else {
+            Title shared = this.buildTitle(title, subtitle, fadeIn, stay, fadeOut, null, placeholders);
+            players.forEach(player -> player.showTitle(shared));
+        }
     }
 
     @Override
-    public void sendTitle(@NotNull Collection<? extends @NotNull Player> players, @Nullable String title, @Nullable String subtitle, int fadeIn, int stay, int fadeOut, @NonNull @NotNull Object... placeholders) {
-        Title titleObj = Title.title(
-                this.getComponentWithPlaceholders(title, placeholders),
-                this.getComponentWithPlaceholders(subtitle, placeholders),
-                Title.Times.times(
-                        Duration.ofMillis(fadeIn * 50L),
-                        Duration.ofMillis(stay * 50L),
-                        Duration.ofMillis(fadeOut * 50L)
-                )
-        );
-        players.forEach(player -> player.showTitle(titleObj));
-    }
-
-    @Override
-    public void sendActionBar(@NotNull Collection<? extends @NotNull Player> players, @Nullable String message, @NonNull @NotNull Object... placeholders) {
+    public void sendActionBar(
+            @NotNull Collection<? extends @NotNull Player> players,
+            @Nullable String message,
+            @NonNull @NotNull Object... placeholders
+    ) {
         this.sendActionBar(players, message, false, placeholders);
     }
 
     @Override
-    public void sendActionBar(@NotNull Collection<? extends @NotNull Player> players, @Nullable String message, boolean prefix, @NotNull Object... placeholders) {
+    public void sendActionBar(
+            @NotNull Collection<? extends @NotNull Player> players,
+            @Nullable String message,
+            boolean prefix,
+            @NotNull Object... placeholders
+    ) {
         if (message == null || players.isEmpty()) {
             return;
         }
-
-        String prefixText = prefix ? this.prefix : "";
-        Component component = this.getComponentWithPlaceholders(prefixText + message, placeholders);
-        players.forEach(player -> player.sendActionBar(component));
+        String text = (prefix ? this.prefix : "") + message;
+        this.perAudienceOrShared(players, text, placeholders, Player::sendActionBar);
     }
 
     @Override
@@ -215,93 +226,98 @@ public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatte
     }
 
     @Override
-    public void sendMessage(@NotNull Collection<? extends CommandSender> senders, @Nullable String message, boolean prefix, @NotNull Object... placeholders) {
+    public void sendMessage(
+            @NotNull Collection<? extends CommandSender> senders,
+            @Nullable String message,
+            boolean prefix,
+            @NotNull Object... placeholders
+    ) {
         if (message == null || senders.isEmpty()) {
             return;
         }
-
-        String prefixText = prefix ? this.prefix : "";
-        Component component = this.getComponentWithPlaceholders(prefixText + message, placeholders);
-
-        senders.forEach(sender -> {
-            if (sender instanceof Audience audience) {
-                audience.sendMessage(component);
-            }
-        });
+        String text = (prefix ? this.prefix : "") + message;
+        this.perAudienceOrShared(senders, text, placeholders, CommandSender::sendMessage);
     }
 
     @Override
     public void broadcast(@Nullable String message, boolean prefix, @NotNull Object... placeholders) {
-        if (message == null) {
-            return;
-        }
-
-        String prefixText = prefix ? this.prefix : "";
-        Component component = this.getComponentWithPlaceholders(prefixText + message, placeholders);
-        Audience.audience(Bukkit.getOnlinePlayers()).sendMessage(component);
+        this.sendMessage(Bukkit.getOnlinePlayers(), message, prefix, placeholders);
     }
 
-    public void sendMessage(@NotNull Message message, @NotNull Collection<? extends CommandSender> audiences, boolean prefix, @NotNull Object... placeholders) {
+    public void sendMessage(
+            @NotNull Message message,
+            @NotNull Collection<? extends CommandSender> audiences,
+            boolean prefix,
+            @NotNull Object... placeholders
+    ) {
         if (audiences.isEmpty()) {
             return;
         }
 
         for (MessageTypeAdapter messageAdapter : message.loaded()) {
             switch (messageAdapter.messageType()) {
+
                 case TITLE -> {
                     if (messageAdapter instanceof TitleMessage(
-                            String title1, String subtitle, int fadeIn, int stay, int fadeOut
+                            String title, String subtitle, int fadeIn, int stay, int fadeOut
                     )) {
-                        Title title = Title.title(
-                                this.getComponentWithPlaceholders(title1, placeholders),
-                                this.getComponentWithPlaceholders(subtitle, placeholders),
-                                Title.Times.times(
-                                        Duration.ofMillis(fadeIn * 50L),
-                                        Duration.ofMillis(stay * 50L),
-                                        Duration.ofMillis(fadeOut * 50L)
-                                )
-                        );
-                        audiences.forEach(a -> a.showTitle(title));
+                        if (this.textResolverRegistry.hasResolvers()) {
+                            audiences.forEach(a -> {
+                                Player player = a instanceof Player p ? p : null;
+                                a.showTitle(this.buildTitle(title, subtitle, fadeIn, stay, fadeOut, player, placeholders));
+                            });
+                        } else {
+                            Title shared = this.buildTitle(title, subtitle, fadeIn, stay, fadeOut, null, placeholders);
+                            audiences.forEach(a -> a.showTitle(shared));
+                        }
                     }
                 }
+
                 case TCHAT -> {
-                    if (messageAdapter instanceof SimpleMessage simpleMessage) {
-                        this.sendComponents(audiences, simpleMessage, prefix, this.prefix, placeholders, Audience::sendMessage);
+                    if (messageAdapter instanceof SimpleMessage sm) {
+                        this.sendComponents(audiences, sm, prefix, this.prefix, placeholders, Audience::sendMessage);
                     }
                 }
+
                 case ACTION_BAR -> {
-                    if (messageAdapter instanceof SimpleMessage simpleMessage) {
-                        this.sendComponents(audiences, simpleMessage, prefix, this.prefix, placeholders, Audience::sendActionBar);
+                    if (messageAdapter instanceof SimpleMessage sm) {
+                        this.sendComponents(audiences, sm, prefix, this.prefix, placeholders, Audience::sendActionBar);
                     }
                 }
+
                 case BOSS_BAR -> {
                     if (messageAdapter instanceof AdventureBossBarMessage(
                             String title, BossBar.Color color, BossBar.Overlay overlay,
                             Set<BossBar.Flag> flags, long duration, float progress
                     )) {
-                        BossBar bossBar = BossBar.bossBar(
-                                this.getComponentWithPlaceholders(title, placeholders),
-                                progress, color, overlay, flags
-                        );
-                        List<Audience> snapshot = List.copyOf(audiences);
-                        snapshot.forEach(a -> a.showBossBar(bossBar));
-                        this.plugin.getServer().getAsyncScheduler().runDelayed(
-                                this.plugin,
-                                w -> snapshot.forEach(a -> a.hideBossBar(bossBar)),
-                                duration * 50L,
-                                TimeUnit.MILLISECONDS
-                        );
+                        if (this.textResolverRegistry.hasResolvers()) {
+                            audiences.forEach(a -> {
+                                Player player = a instanceof Player p ? p : null;
+                                BossBar bar = BossBar.bossBar(
+                                        this.getComponentWithPlaceholders(title, player, placeholders),
+                                        progress, color, overlay, flags);
+                                a.showBossBar(bar);
+                                this.scheduleHideBossBar(bar, duration, Collections.singleton(a));
+                            });
+                        } else {
+                            BossBar bar = BossBar.bossBar(
+                                    this.getComponentWithPlaceholders(title, null, placeholders),
+                                    progress, color, overlay, flags);
+                            audiences.forEach(a -> a.showBossBar(bar));
+                            this.scheduleHideBossBar(bar, duration, audiences);
+                        }
                     }
                 }
+
                 case WITHOUT_PREFIX -> {
-                    if (messageAdapter instanceof SimpleMessage simpleMessage) {
-                        this.sendComponents(audiences, simpleMessage, false, null, placeholders, Audience::sendMessage);
+                    if (messageAdapter instanceof SimpleMessage sm) {
+                        this.sendComponents(audiences, sm, false, null, placeholders, Audience::sendMessage);
                     }
                 }
+
                 case BROADCAST -> {
-                    if (messageAdapter instanceof SimpleMessage simpleMessage) {
-                        ForwardingAudience broadcast = Audience.audience(Bukkit.getOnlinePlayers());
-                        this.sendComponents(Collections.singleton(broadcast), simpleMessage, prefix, this.prefix, placeholders, Audience::sendMessage);
+                    if (messageAdapter instanceof SimpleMessage sm) {
+                        this.sendComponents(Bukkit.getOnlinePlayers(), sm, prefix, this.prefix, placeholders, Audience::sendMessage);
                     }
                 }
             }
@@ -309,12 +325,70 @@ public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatte
     }
 
     @Override
-    public void sendMessage(@NotNull Message message, @NotNull Logger.LogType logType, @NotNull ConsoleCommandSender sender, @NotNull Object... placeholders) {
-        String prefix = Logger.getPrefix(logType);
-        for (MessageTypeAdapter messageAdapter : message.loaded()) {
-            if (messageAdapter.messageType() == MessageType.TCHAT && messageAdapter instanceof SimpleMessage simpleMessage) {
-                this.sendComponents(Collections.singleton(sender), simpleMessage, true, prefix, placeholders, Audience::sendMessage);
+    public void sendMessage(
+            @NotNull Message message,
+            @NotNull Logger.LogType logType,
+            @NotNull ConsoleCommandSender sender,
+            @NotNull Object... placeholders
+    ) {
+        String logPrefix = Logger.getPrefix(logType);
+        for (MessageTypeAdapter adapter : message.loaded()) {
+            if (adapter.messageType() == MessageType.TCHAT && adapter instanceof SimpleMessage sm) {
+                this.sendComponents(Collections.singleton(sender), sm, true, logPrefix, placeholders, Audience::sendMessage);
             }
         }
+    }
+
+
+    // -----
+    // Utility methods
+    // -----
+
+    private <A extends Audience> void perAudienceOrShared(
+            @NotNull Collection<A> audiences,
+            @NotNull String text,
+            @NotNull Object[] placeholders,
+            @NotNull BiConsumer<A, Component> action
+    ) {
+        if (this.textResolverRegistry.hasResolvers()) {
+            audiences.forEach(a -> {
+                Player player = a instanceof Player p ? p : null;
+                action.accept(a, this.getComponentWithPlaceholders(text, player, placeholders));
+            });
+        } else {
+            Component shared = this.getComponentWithPlaceholders(text, null, placeholders);
+            audiences.forEach(a -> action.accept(a, shared));
+        }
+    }
+
+    private Title buildTitle(
+            @Nullable String titleText,
+            @Nullable String subtitleText,
+            int fadeIn, int stay, int fadeOut,
+            @Nullable Player player,
+            @NotNull Object[] placeholders
+    ) {
+        return Title.title(
+                this.getComponentWithPlaceholders(titleText, player, placeholders),
+                this.getComponentWithPlaceholders(subtitleText, player, placeholders),
+                Title.Times.times(
+                        Duration.ofMillis(fadeIn * 50L),
+                        Duration.ofMillis(stay * 50L),
+                        Duration.ofMillis(fadeOut * 50L)
+                )
+        );
+    }
+
+    private void scheduleHideBossBar(
+            @NotNull BossBar bar,
+            long durationTicks,
+            @NotNull Collection<? extends Audience> audiences
+    ) {
+        this.plugin.getServer().getAsyncScheduler().runDelayed(
+                this.plugin,
+                w -> audiences.forEach(a -> a.hideBossBar(bar)),
+                durationTicks * 50L,
+                TimeUnit.MILLISECONDS
+        );
     }
 }
