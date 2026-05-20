@@ -80,6 +80,11 @@ public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatte
         return MINI_MESSAGE.deserialize(colorMiniMessage(message));
     }
 
+    @Override
+    protected @NonNull Component empty() {
+        return Component.empty();
+    }
+
     private static String colorMiniMessage(@NotNull String message) {
         String result = convertLegacyHex(message);
         result = convertShortLegacyHex(result);
@@ -150,31 +155,7 @@ public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatte
         if (messages.isEmpty() || messages.stream().allMatch(s -> s == null || s.isBlank())) {
             return;
         }
-
-        String prefixText = enablePrefix && prefix != null ? prefix : "";
-
-        if (this.textResolverRegistry.hasResolvers()) {
-            audiences.forEach(audience -> {
-                Player player = audience instanceof Player p ? p : null;
-                for (String s : messages) {
-                    if (s != null) {
-                        sendAction.accept(audience, this.getComponentWithPlaceholders(prefixText + s, player, placeholders));
-                    }
-                }
-            });
-        } else {
-            List<Component> components = new ArrayList<>();
-            for (String s : messages) {
-                if (s != null) {
-                    components.add(this.getComponentWithPlaceholders(prefixText + s, null, placeholders));
-                }
-            }
-            audiences.forEach(audience -> {
-                for (Component component : components) {
-                    sendAction.accept(audience, component);
-                }
-            });
-        }
+        this.perAudienceOrShared(audiences, messages, placeholders, enablePrefix && prefix != null ? prefix : null, sendAction);
     }
 
     @Override
@@ -343,23 +324,6 @@ public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatte
     // -----
     // Utility methods
     // -----
-
-    private <A extends Audience> void perAudienceOrShared(
-            @NotNull Collection<A> audiences,
-            @NotNull String text,
-            @NotNull Object[] placeholders,
-            @NotNull BiConsumer<A, Component> action
-    ) {
-        if (this.textResolverRegistry.hasResolvers()) {
-            audiences.forEach(a -> {
-                Player player = a instanceof Player p ? p : null;
-                action.accept(a, this.getComponentWithPlaceholders(text, player, placeholders));
-            });
-        } else {
-            Component shared = this.getComponentWithPlaceholders(text, null, placeholders);
-            audiences.forEach(a -> action.accept(a, shared));
-        }
-    }
 
     private Title buildTitle(
             @Nullable String titleText,

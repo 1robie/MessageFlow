@@ -21,8 +21,6 @@ import org.jspecify.annotations.NonNull;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
-import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -58,6 +56,11 @@ public class LegacyMessageFormatter<T extends Plugin> extends MessageFormatter<T
         return ChatColor.translateAlternateColorCodes('&', sb.toString());
     }
 
+    @Override
+    protected @NonNull String empty() {
+        return "";
+    }
+
     public @NotNull String colorize(@NotNull String message) {
         return this.cache.getUnchecked(message);
     }
@@ -83,24 +86,7 @@ public class LegacyMessageFormatter<T extends Plugin> extends MessageFormatter<T
             return;
         }
 
-        String prefixText = enablePrefix && prefix != null ? prefix : "";
-
-        if (this.textResolverRegistry.hasResolvers()) {
-            senders.forEach(sender -> {
-                Player player = sender instanceof Player p ? p : null;
-                for (String s : messages) {
-                    if (s != null) {
-                        sender.sendMessage(this.colorizeWithPlaceholders(prefixText + s, player, placeholders));
-                    }
-                }
-            });
-        } else {
-            List<String> colorized = messages.stream()
-                    .filter(Objects::nonNull)
-                    .map(s -> this.colorizeWithPlaceholders(prefixText + s, null, placeholders))
-                    .toList();
-            senders.forEach(sender -> colorized.forEach(sender::sendMessage));
-        }
+        this.perAudienceOrShared(senders, messages, placeholders, enablePrefix && prefix != null ? prefix : null, CommandSender::sendMessage);
     }
 
     @Override
@@ -139,7 +125,7 @@ public class LegacyMessageFormatter<T extends Plugin> extends MessageFormatter<T
             return;
         }
         String text = (prefix ? this.prefix : "") + message;
-        this.perSenderOrShared(players, text, placeholders, Player::sendActionBar);
+        this.perAudienceOrShared(players, text, placeholders, Player::sendActionBar);
     }
 
     @Override
@@ -158,7 +144,7 @@ public class LegacyMessageFormatter<T extends Plugin> extends MessageFormatter<T
             return;
         }
         String text = (prefix ? this.prefix : "") + message;
-        this.perSenderOrShared(senders, text, placeholders, CommandSender::sendMessage);
+        this.perAudienceOrShared(senders, text, placeholders, CommandSender::sendMessage);
     }
 
     @Override
@@ -284,27 +270,6 @@ public class LegacyMessageFormatter<T extends Plugin> extends MessageFormatter<T
     // ---
     // Utility methods
     // ---
-
-    /**
-     * If resolvers are active, each sender may produce a different string (e.g. PAPI per-player),
-     * so we colorize individually. Otherwise we colorize once and reuse for all senders.
-     */
-    private <S extends CommandSender> void perSenderOrShared(
-            @NotNull Collection<? extends S> senders,
-            @NotNull String text,
-            @NotNull Object[] placeholders,
-            @NotNull BiConsumer<S, String> action
-    ) {
-        if (this.textResolverRegistry.hasResolvers()) {
-            senders.forEach(sender -> {
-                Player player = sender instanceof Player p ? p : null;
-                action.accept(sender, this.colorizeWithPlaceholders(text, player, placeholders));
-            });
-        } else {
-            String shared = this.colorizeWithPlaceholders(text, null, placeholders);
-            senders.forEach(sender -> action.accept(sender, shared));
-        }
-    }
 
     private void showBossBar(@NotNull BossBar bar, @NotNull Player player, long duration) {
         bar.addPlayer(player);

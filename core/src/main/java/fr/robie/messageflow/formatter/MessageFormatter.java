@@ -18,7 +18,9 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
 
 /**
  * Abstract base class for message formatters that handle text formatting and message delivery.
@@ -160,6 +162,62 @@ public abstract class MessageFormatter<T extends Plugin, V> implements TextForma
         }
         return this.textResolverRegistry.resolve(text, player, args);
     }
+
+    protected <A> void perAudienceOrShared(
+            @NotNull Collection<? extends A> audiences,
+            @NotNull String text,
+            @NotNull Object[] placeholders,
+            @NotNull BiConsumer<A, V> action
+    ) {
+        if (this.textResolverRegistry.hasResolvers()) {
+            audiences.forEach(audience -> {
+                V formatted = this.format(text, audience instanceof Player p ? p : null, placeholders);
+                action.accept(audience, formatted);
+            });
+        } else {
+            V formatted = this.format(text, null, placeholders);
+            audiences.forEach(audience -> action.accept(audience, formatted));
+        }
+    }
+
+    protected <A> void perAudienceOrShared(
+            @NotNull Collection<? extends A> audiences,
+            @NotNull Collection<String> texts,
+            @NotNull Object[] placeholders,
+            @Nullable String prefix,
+            @NotNull BiConsumer<A, V> action
+    ) {
+        if (this.textResolverRegistry.hasResolvers()) {
+            audiences.forEach(audience -> {
+                for (String text : texts) {
+                    String withPrefix = prefix != null ? prefix + text : text;
+                    V formatted = this.format(withPrefix, audience instanceof Player p ? p : null, placeholders);
+                    action.accept(audience, formatted);
+                }
+            });
+        } else {
+            List<V> formattedList = texts.stream()
+                    .map(text -> {
+                        String withPrefix = prefix != null ? prefix + text : text;
+                        return this.format(withPrefix, null, placeholders);
+                    })
+                    .toList();
+            audiences.forEach(audience -> formattedList.forEach(formatted -> action.accept(audience, formatted)));
+        }
+    }
+
+    @NotNull
+    protected V format(@Nullable String message, @Nullable Player player, @NotNull Object... placeholders) {
+        if (message == null) {
+            return this.empty();
+        }
+        String parsedText = this.parseText(message, placeholders);
+        parsedText = this.applyResolvers(parsedText, player, placeholders);
+        return this.load(parsedText);
+    }
+
+    @NotNull
+    protected abstract V empty();
 
     /**
      * Sends a title to a single player.
