@@ -1,5 +1,7 @@
 package fr.robie.messageflow.formatter;
 
+import fr.robie.messageflow.api.PlaceholderValue;
+import org.bukkit.entity.Player;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -7,6 +9,8 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -14,36 +18,49 @@ import java.util.regex.Pattern;
  * Represents a collection of named placeholders for message formatting.
  * Immutable placeholder map that can be used to replace tokens in messages.
  *
- * <p>Placeholders are stored as key-value pairs where both keys and values are strings.
- * Null values are converted to empty strings for consistency.
+ * <p>Placeholders can be:
+ * <ul>
+ *   <li><strong>Static:</strong> Fixed string values (e.g., "John")</li>
+ *   <li><strong>Dynamic:</strong> Supplier-based values evaluated at resolution time (e.g., {@code () -> "value"})</li>
+ *   <li><strong>Player-specific:</strong> Function-based values evaluated per player (e.g., {@code player -> String.valueOf(player.getHealth())})</li>
+ * </ul>
+ *
+ * <p>Null values are converted to empty strings for consistency.
  *
  * <p>Usage examples:
  * <pre>
- * // Single placeholder
+ * // Static placeholder
  * Placeholder p1 = Placeholder.of("name", "John");
  *
+ * // Dynamic placeholder with supplier
+ * Placeholder p2 = Placeholder.of("time", () -> System.currentTimeMillis());
+ *
+ * // Player-specific placeholder with function
+ * Placeholder p3 = Placeholder.of("health", player -> String.valueOf(player.getHealth()));
+ *
  * // Multiple placeholders using builder
- * Placeholder p2 = Placeholder.builder()
+ * Placeholder p4 = Placeholder.builder()
  *     .put("name", "John")
  *     .put("level", "10")
+ *     .put("ping", player -> String.valueOf(player.getPing()))
  *     .build();
  *
  * // Empty placeholders (no replacements)
- * Placeholder p3 = Placeholder.empty();
+ * Placeholder p5 = Placeholder.empty();
  * </pre>
  */
 public final class Placeholder {
     private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("%[^%]+%");
     private static final Placeholder EMPTY = new Placeholder(Collections.emptyMap());
 
-    private final Map<String, String> placeholders;
+    private final Map<String, PlaceholderValue> placeholders;
 
     /**
      * Creates a new Placeholder with the given key-value pairs.
      *
      * @param placeholders an immutable map of placeholders
      */
-    private Placeholder(@NotNull Map<String, String> placeholders) {
+    private Placeholder(@NotNull Map<String, PlaceholderValue> placeholders) {
         this.placeholders = placeholders;
     }
 
@@ -52,7 +69,7 @@ public final class Placeholder {
      *
      * @return an immutable map of placeholder key-value pairs
      */
-    public @NotNull Map<String, String> getMap() {
+    public @NotNull Map<String, PlaceholderValue> getMap() {
         return this.placeholders;
     }
 
@@ -68,6 +85,18 @@ public final class Placeholder {
 
     @Contract("null -> null; !null -> _")
     public String parse(@Nullable String message) {
+        return this.parse(message, null);
+    }
+
+    /**
+     * Parses the message by replacing placeholders with their evaluated values.
+     *
+     * @param message the message to parse (may be null)
+     * @param player  the player context for player-specific placeholders (may be null)
+     * @return the parsed message with replacements, or null if input is null
+     */
+    @Contract("null, _ -> null; !null, _ -> _")
+    public String parse(@Nullable String message, @Nullable Player player) {
         if (message == null) {
             return null;
         }
@@ -77,7 +106,15 @@ public final class Placeholder {
 
         Map<String, String> replacements = new HashMap<>();
         for (var entry : this.placeholders.entrySet()) {
-            replacements.put("%" + entry.getKey() + "%", entry.getValue());
+            String key = entry.getKey();
+            PlaceholderValue value = entry.getValue();
+            try {
+                String evaluated = value.evaluate(player);
+                replacements.put("%" + key + "%", evaluated);
+            } catch (Exception e) {
+                // Leave placeholder as-is on error, will be handled by resolver
+                replacements.put("%" + key + "%", "%" + key + "%");
+            }
         }
 
         Matcher matcher = PLACEHOLDER_PATTERN.matcher(message);
@@ -102,20 +139,46 @@ public final class Placeholder {
     }
 
     /**
-     * Creates a Placeholder with a single key-value pair.
+     * Creates a Placeholder with a single static key-value pair.
      *
      * @param key   the placeholder key (must not be null)
      * @param value the placeholder value (null values become empty strings)
      * @return a Placeholder containing the single key-value pair
      */
     public static @NotNull Placeholder of(@NotNull String key, String value) {
-        Map<String, String> map = new HashMap<>();
-        map.put(key, value == null ? "" : value);
+        Map<String, PlaceholderValue> map = new HashMap<>();
+        map.put(key, PlaceholderValue.ofStatic(value == null ? "" : value));
         return new Placeholder(Collections.unmodifiableMap(map));
     }
 
     /**
-     * Creates a Placeholder with multiple key-value pairs.
+     * Creates a Placeholder with a single dynamic key-value pair using a supplier.
+     *
+     * @param key      the placeholder key (must not be null)
+     * @param supplier the supplier that provides the placeholder value
+     * @return a Placeholder containing the single key-value pair
+     */
+    public static @NotNull Placeholder of(@NotNull String key, @NotNull Supplier<String> supplier) {
+        Map<String, PlaceholderValue> map = new HashMap<>();
+        map.put(key, PlaceholderValue.ofDynamic(supplier));
+        return new Placeholder(Collections.unmodifiableMap(map));
+    }
+
+    /**
+     * Creates a Placeholder with a single player-specific key-value pair using a function.
+     *
+     * @param key      the placeholder key (must not be null)
+     * @param function the function that provides the placeholder value based on a player
+     * @return a Placeholder containing the single key-value pair
+     */
+    public static @NotNull Placeholder of(@NotNull String key, @NotNull Function<Player, String> function) {
+        Map<String, PlaceholderValue> map = new HashMap<>();
+        map.put(key, PlaceholderValue.ofPlayer(function));
+        return new Placeholder(Collections.unmodifiableMap(map));
+    }
+
+    /**
+     * Creates a Placeholder with multiple static key-value pairs.
      * Arguments must be provided in key-value order.
      *
      * @param key1   the first placeholder key (must not be null)
@@ -126,7 +189,10 @@ public final class Placeholder {
      */
     public static @NotNull Placeholder of(@NotNull String key1, String value1,
                                           @NotNull String key2, String value2) {
-        return new Placeholder(Map.of(key1, value1 == null ? "" : value1, key2, value2 == null ? "" : value2));
+        Map<String, PlaceholderValue> map = new HashMap<>();
+        map.put(key1, PlaceholderValue.ofStatic(value1 == null ? "" : value1));
+        map.put(key2, PlaceholderValue.ofStatic(value2 == null ? "" : value2));
+        return new Placeholder(Map.copyOf(map));
     }
 
     /**
@@ -140,20 +206,45 @@ public final class Placeholder {
 
     /**
      * Builder for creating Placeholder instances with multiple key-value pairs.
+     * Supports static, dynamic, and player-specific values.
      * Useful for complex cases with many placeholders.
      */
     public static final class Builder {
-        private final Map<String, String> map = new HashMap<>();
+        private final Map<String, PlaceholderValue> map = new HashMap<>();
 
         /**
-         * Adds a key-value pair to the builder.
+         * Adds a static key-value pair to the builder.
          *
          * @param key   the placeholder key (must not be null)
          * @param value the placeholder value (null values become empty strings)
          * @return this Builder instance for method chaining
          */
         public @NotNull Builder put(@NotNull String key, String value) {
-            this.map.put(key, value == null ? "" : value);
+            this.map.put(key, PlaceholderValue.ofStatic(value == null ? "" : value));
+            return this;
+        }
+
+        /**
+         * Adds a dynamic key-value pair to the builder using a supplier.
+         *
+         * @param key      the placeholder key (must not be null)
+         * @param supplier the supplier that provides the placeholder value
+         * @return this Builder instance for method chaining
+         */
+        public @NotNull Builder put(@NotNull String key, @NotNull Supplier<String> supplier) {
+            this.map.put(key, PlaceholderValue.ofDynamic(supplier));
+            return this;
+        }
+
+        /**
+         * Adds a player-specific key-value pair to the builder using a function.
+         *
+         * @param key      the placeholder key (must not be null)
+         * @param function the function that provides the placeholder value based on a player
+         * @return this Builder instance for method chaining
+         */
+        public @NotNull Builder put(@NotNull String key, @NotNull Function<Player, String> function) {
+            this.map.put(key, PlaceholderValue.ofPlayer(function));
             return this;
         }
 

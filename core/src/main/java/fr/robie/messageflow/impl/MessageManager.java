@@ -7,10 +7,7 @@ import fr.robie.messageflow.api.MessageTypeAdapter;
 import fr.robie.messageflow.configuration.ConfigurationOptions;
 import fr.robie.messageflow.configuration.lang.LanguageConfiguration;
 import fr.robie.messageflow.configuration.lang.LanguageEntry;
-import fr.robie.messageflow.formatter.AdventureMessageFormatter;
-import fr.robie.messageflow.formatter.LegacyMessageFormatter;
-import fr.robie.messageflow.formatter.MessageFormatter;
-import fr.robie.messageflow.formatter.Placeholder;
+import fr.robie.messageflow.formatter.*;
 import fr.robie.messageflow.logger.AdventureLogger;
 import fr.robie.messageflow.logger.LegacyLogger;
 import fr.robie.messageflow.logger.Logger;
@@ -89,6 +86,8 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
 
         TextResolverRegistry registry = new TextResolverRegistry();
         registry.initialize();
+
+        registry.register(new FunctionalPlaceholderResolver());
 
         this.messageFormatter = PlatformType.hasComponent()
                 ? new AdventureMessageFormatter<>(plugin, options)
