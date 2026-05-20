@@ -32,5 +32,9 @@ public enum MessageType {
     /**
      * A message broadcast to all online players.
      */
-    BROADCAST
+    BROADCAST,
+    /**
+     * A sound effect played to the player.
+     */
+    SOUND
 }

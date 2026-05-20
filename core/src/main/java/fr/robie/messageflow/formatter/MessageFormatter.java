@@ -8,6 +8,7 @@ import fr.robie.messageflow.api.ITextResolverRegistry;
 import fr.robie.messageflow.configuration.ConfigurationOptions;
 import fr.robie.messageflow.logger.Logger;
 import fr.robie.messageflow.model.Message;
+import fr.robie.messageflow.model.SoundMessage;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
@@ -219,6 +220,11 @@ public abstract class MessageFormatter<T extends Plugin, V> {
         return this.load(parsedText);
     }
 
+    /**
+     * Provides an empty value of the formatted message type, used when the input message is null.
+     *
+     * @return an empty formatted message object
+     */
     @NotNull
     protected abstract V empty();
 
@@ -234,7 +240,6 @@ public abstract class MessageFormatter<T extends Plugin, V> {
                 TimeUnit.MILLISECONDS
         );
     }
-
 
     protected <A, B> void scheduleHideBossBar(
             long durationTicks,
@@ -520,6 +525,40 @@ public abstract class MessageFormatter<T extends Plugin, V> {
      * @param placeholders placeholders for text replacement
      */
     public abstract void broadcast(@Nullable String message, boolean prefix, @NotNull Placeholder placeholders);
+
+    /**
+     * Plays a sound for a single player.
+     *
+     * @param player       the player to play the sound for
+     * @param soundMessage the sound message to play
+     */
+    public void playSound(@NotNull Player player, @NotNull SoundMessage soundMessage) {
+        this.playSound(Collections.singleton(player), soundMessage);
+    }
+
+    /**
+     * Plays a sound for multiple players.
+     *
+     * @param players      the players to play the sound for
+     * @param soundMessage the sound message to play
+     */
+    public void playSound(@NotNull Collection<? extends Player> players, @NotNull SoundMessage soundMessage) {
+        if (players.isEmpty()) {
+            return;
+        }
+        for (Player player : players) {
+            player.playSound(player, soundMessage.sound(), soundMessage.category(), soundMessage.volume(), soundMessage.pitch());
+        }
+    }
+
+    /**
+     * Broadcasts a sound to all online players.
+     *
+     * @param soundMessage the sound message to play
+     */
+    public void broadcastSound(@NotNull SoundMessage soundMessage) {
+        this.playSound(Bukkit.getOnlinePlayers(), soundMessage);
+    }
 
     /**
      * Sends a chat message to a single command sender without getPrefix.

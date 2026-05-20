@@ -238,8 +238,22 @@ public class LegacyMessageFormatter<T extends Plugin> extends MessageFormatter<T
                         this.sendComponents(Bukkit.getOnlinePlayers(), sm, prefix, this.prefix, placeholders);
                     }
                 }
+
+                case SOUND -> {
+                    if (messageAdapter instanceof SoundMessage soundMessage) {
+                        this.playSound(senders.stream()
+                                .filter(s -> s instanceof Player)
+                                .map(s -> (Player) s)
+                                .toList(), soundMessage);
+                    }
+                }
             }
         }
+    }
+
+    @Override
+    public void playSound(@NotNull Collection<? extends Player> players, @NotNull SoundMessage soundMessage) {
+
     }
 
 

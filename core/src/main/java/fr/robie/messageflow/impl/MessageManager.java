@@ -505,6 +505,7 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
                 case BOSS_BAR ->
                         PlatformType.hasComponent() ? AdventureBossBarMessage.deserialize(values) : LegacyBossBarMessage.deserialize(values);
                 case ACTION_BAR, TCHAT, NONE, WITHOUT_PREFIX, BROADCAST -> SimpleMessage.deserialize(type, values);
+                case SOUND -> SoundMessage.deserialize(values);
             };
         } catch (Exception e) {
             Logger.warn("Failed to parse message of type %type%: %error%", Placeholder.of("type", type.name(), "error", e.getMessage()));

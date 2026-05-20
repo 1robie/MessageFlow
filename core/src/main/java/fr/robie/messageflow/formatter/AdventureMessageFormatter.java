@@ -286,6 +286,12 @@ public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatte
                         this.sendComponents(Bukkit.getOnlinePlayers(), sm, prefix, this.prefix, placeholders, Audience::sendMessage);
                     }
                 }
+
+                case SOUND -> {
+                    if (messageAdapter instanceof SoundMessage soundMessage) {
+                        this.playSound(audiences.stream().filter(a -> a instanceof Player).map(a -> (Player) a).toList(), soundMessage);
+                    }
+                }
             }
         }
     }
