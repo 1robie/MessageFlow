@@ -8,6 +8,7 @@ import fr.robie.messageflow.logger.Logger;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.NonNull;
 
 import java.util.Collections;
 import java.util.Map;
@@ -75,11 +76,12 @@ public final class GlobalPlaceholderRegistry {
      * @param config the cache configuration
      * @return configured LoadingCache instance
      */
+    @SuppressWarnings("unchecked")
     private LoadingCache<String, CacheEntry> createGlobalCache(@NotNull PlaceholderCacheConfig config) {
         return config.createGlobalCacheBuilder()
                 .build(new CacheLoader<String, CacheEntry>() {
                     @Override
-                    public CacheEntry load(@NotNull String key) {
+                    public @NonNull CacheEntry load(@NotNull String key) {
                         throw new UnsupportedOperationException("Use registry methods instead");
                     }
                 });
@@ -91,11 +93,12 @@ public final class GlobalPlaceholderRegistry {
      * @param config the cache configuration
      * @return configured LoadingCache instance
      */
+    @SuppressWarnings("unchecked")
     private @NotNull LoadingCache<String, CacheEntry> createPlayerCache(@NotNull PlaceholderCacheConfig config) {
         return config.createPlayerCacheBuilder()
                 .build(new CacheLoader<String, CacheEntry>() {
                     @Override
-                    public CacheEntry load(@NotNull String cacheKey) {
+                    public @NonNull CacheEntry load(@NotNull String cacheKey) {
                         throw new UnsupportedOperationException("Use registry methods instead");
                     }
                 });
