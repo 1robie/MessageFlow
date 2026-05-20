@@ -211,6 +211,9 @@ public abstract class MessageFormatter<T extends Plugin, V> implements TextForma
         if (message == null) {
             return this.empty();
         }
+        if (placeholders.length == 0 && !this.textResolverRegistry.hasResolvers()) {
+            return this.cache.getUnchecked(message);
+        }
         String parsedText = this.parseText(message, placeholders);
         parsedText = this.applyResolvers(parsedText, player, placeholders);
         return this.load(parsedText);

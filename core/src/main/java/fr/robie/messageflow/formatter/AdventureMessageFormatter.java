@@ -128,21 +128,6 @@ public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatte
     }
 
 
-    @NotNull
-    public Component getComponent(@NotNull String message) {
-        return this.cache.getUnchecked(message);
-    }
-
-    private Component getComponentWithPlaceholders(@Nullable String message, @Nullable Player player, @NotNull Object... placeholders) {
-        if (message == null) {
-            return Component.empty();
-        }
-        String text = this.parseText(message, placeholders);
-        text = this.applyResolvers(text, player, placeholders);
-        return this.load(text);
-    }
-
-
     private void sendComponents(
             @NotNull Collection<? extends Audience> audiences,
             @NotNull SimpleMessage message,
@@ -275,14 +260,14 @@ public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatte
                             audiences.forEach(a -> {
                                 Player player = a instanceof Player p ? p : null;
                                 BossBar bar = BossBar.bossBar(
-                                        this.getComponentWithPlaceholders(title, player, placeholders),
+                                        this.format(title, player, placeholders),
                                         progress, color, overlay, flags);
                                 a.showBossBar(bar);
                                 this.scheduleHideBossBar(bar, duration, Collections.singleton(a));
                             });
                         } else {
                             BossBar bar = BossBar.bossBar(
-                                    this.getComponentWithPlaceholders(title, null, placeholders),
+                                    this.format(title, null, placeholders),
                                     progress, color, overlay, flags);
                             audiences.forEach(a -> a.showBossBar(bar));
                             this.scheduleHideBossBar(bar, duration, audiences);
@@ -333,8 +318,8 @@ public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatte
             @NotNull Object[] placeholders
     ) {
         return Title.title(
-                this.getComponentWithPlaceholders(titleText, player, placeholders),
-                this.getComponentWithPlaceholders(subtitleText, player, placeholders),
+                this.format(titleText, player, placeholders),
+                this.format(subtitleText, player, placeholders),
                 Title.Times.times(
                         Duration.ofMillis(fadeIn * 50L),
                         Duration.ofMillis(stay * 50L),

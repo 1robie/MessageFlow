@@ -61,19 +61,6 @@ public class LegacyMessageFormatter<T extends Plugin> extends MessageFormatter<T
         return "";
     }
 
-    public @NotNull String colorize(@NotNull String message) {
-        return this.cache.getUnchecked(message);
-    }
-
-    private @NotNull String colorizeWithPlaceholders(@Nullable String message, @Nullable Player player, @NotNull Object... placeholders) {
-        if (message == null) {
-            return "";
-        }
-        String text = this.parseText(message, placeholders);
-        text = this.applyResolvers(text, player, placeholders);
-        return this.colorize(text);
-    }
-
     private void sendComponents(
             @NotNull Collection<? extends CommandSender> senders,
             @NotNull SimpleMessage message,
@@ -98,13 +85,13 @@ public class LegacyMessageFormatter<T extends Plugin> extends MessageFormatter<T
     ) {
         if (this.textResolverRegistry.hasResolvers()) {
             players.forEach(player -> player.sendTitle(
-                    this.colorizeWithPlaceholders(title, player, placeholders),
-                    this.colorizeWithPlaceholders(subtitle, player, placeholders),
+                    this.format(title, player, placeholders),
+                    this.format(subtitle, player, placeholders),
                     fadeIn, stay, fadeOut
             ));
         } else {
-            String sharedTitle = this.colorizeWithPlaceholders(title, null, placeholders);
-            String sharedSubtitle = this.colorizeWithPlaceholders(subtitle, null, placeholders);
+            String sharedTitle = this.format(title, null, placeholders);
+            String sharedSubtitle = this.format(subtitle, null, placeholders);
             players.forEach(player -> player.sendTitle(sharedTitle, sharedSubtitle, fadeIn, stay, fadeOut));
         }
     }
@@ -172,8 +159,8 @@ public class LegacyMessageFormatter<T extends Plugin> extends MessageFormatter<T
                         if (this.textResolverRegistry.hasResolvers()) {
                             senders.forEach(sender -> {
                                 Player player = sender instanceof Player p ? p : null;
-                                String coloredTitle = this.colorizeWithPlaceholders(title, player, placeholders);
-                                String coloredSubtitle = this.colorizeWithPlaceholders(subtitle, player, placeholders);
+                                String coloredTitle = this.format(title, player, placeholders);
+                                String coloredSubtitle = this.format(subtitle, player, placeholders);
                                 if (sender instanceof Player p) {
                                     p.sendTitle(coloredTitle, coloredSubtitle, fadeIn, stay, fadeOut);
                                 } else {
@@ -182,8 +169,8 @@ public class LegacyMessageFormatter<T extends Plugin> extends MessageFormatter<T
                                 }
                             });
                         } else {
-                            String sharedTitle = this.colorizeWithPlaceholders(title, null, placeholders);
-                            String sharedSubtitle = this.colorizeWithPlaceholders(subtitle, null, placeholders);
+                            String sharedTitle = this.format(title, null, placeholders);
+                            String sharedSubtitle = this.format(subtitle, null, placeholders);
                             senders.forEach(sender -> {
                                 if (sender instanceof Player p) {
                                     p.sendTitle(sharedTitle, sharedSubtitle, fadeIn, stay, fadeOut);
@@ -224,12 +211,12 @@ public class LegacyMessageFormatter<T extends Plugin> extends MessageFormatter<T
                                     return;
                                 }
                                 BossBar bar = this.createBossBar(
-                                        this.colorizeWithPlaceholders(title, p, placeholders),
+                                        this.format(title, p, placeholders),
                                         color, style, flags, progress);
                                 this.showBossBar(bar, p, duration);
                             });
                         } else {
-                            String sharedTitle = this.colorizeWithPlaceholders(title, null, placeholders);
+                            String sharedTitle = this.format(title, null, placeholders);
                             BossBar bar = this.createBossBar(sharedTitle, color, style, flags, progress);
                             senders.forEach(sender -> {
                                 if (!(sender instanceof Player p)) {
