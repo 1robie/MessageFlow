@@ -17,7 +17,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.regex.Pattern;
 
 /**
  * Singleton registry for global placeholders with optional caching support.
@@ -41,7 +40,6 @@ import java.util.regex.Pattern;
  */
 public final class GlobalPlaceholderRegistry {
     private static final GlobalPlaceholderRegistry INSTANCE = new GlobalPlaceholderRegistry(PlaceholderCacheConfig.defaults());
-    private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("%[^%]+%");
 
     private final Map<String, PlaceholderValue> registry = new ConcurrentHashMap<>();
     private final Map<String, CacheConfig> cacheConfig = new ConcurrentHashMap<>();
@@ -260,7 +258,7 @@ public final class GlobalPlaceholderRegistry {
         if (this.registry.isEmpty()) {
             return false;
         }
-        var matcher = PLACEHOLDER_PATTERN.matcher(text);
+        var matcher = Placeholder.PLACEHOLDER_PATTERN.matcher(text);
         while (matcher.find()) {
             String placeholder = matcher.group();
             String key = placeholder.substring(1, placeholder.length() - 1);

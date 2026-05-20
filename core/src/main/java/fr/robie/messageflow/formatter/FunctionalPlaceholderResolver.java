@@ -8,7 +8,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * TextResolver implementation that resolves global placeholders with support for
@@ -31,7 +30,6 @@ import java.util.regex.Pattern;
 public final class FunctionalPlaceholderResolver implements TextResolver {
     private final GlobalPlaceholderRegistry globalPlaceholderRegistry = GlobalPlaceholderRegistry.getInstance();
 
-    private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("%[^%]+%");
     private static final String ERROR_FORMAT = "§c%s§r";
 
     @Override
@@ -45,7 +43,7 @@ public final class FunctionalPlaceholderResolver implements TextResolver {
             return text;
         }
 
-        Matcher matcher = PLACEHOLDER_PATTERN.matcher(text);
+        Matcher matcher = Placeholder.PLACEHOLDER_PATTERN.matcher(text);
         StringBuilder sb = new StringBuilder();
 
         while (matcher.find()) {

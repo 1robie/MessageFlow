@@ -50,7 +50,10 @@ import java.util.regex.Pattern;
  * </pre>
  */
 public final class Placeholder {
-    private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("%[^%]+%");
+    /**
+     * Pattern used to identify placeholders in strings (e.g., %key%).
+     */
+    public static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("%[^%]+%");
     private static final Placeholder EMPTY = new Placeholder(Collections.emptyMap());
 
     private final Map<String, PlaceholderValue> placeholders;
