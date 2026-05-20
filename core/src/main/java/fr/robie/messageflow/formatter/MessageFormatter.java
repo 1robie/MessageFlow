@@ -32,7 +32,7 @@ import java.util.function.BiConsumer;
  * @param <T> the type of the plugin using this formatter
  * @param <V> the type of the formatted message object (e.g., Component for Adventure, String for Legacy)
  */
-public abstract class MessageFormatter<T extends Plugin, V> implements TextFormatter {
+public abstract class MessageFormatter<T extends Plugin, V> {
     /**
      * The plugin instance using this formatter.
      */
@@ -151,22 +151,22 @@ public abstract class MessageFormatter<T extends Plugin, V> implements TextForma
     /**
      * Applies all registered text resolvers to the given text.
      *
-     * @param text   the text to resolve
-     * @param player the player context, or null
-     * @param args   optional arguments for the resolvers
+     * @param text         the text to resolve
+     * @param player       the player context, or null
+     * @param placeholders optional placeholders for the resolvers
      * @return the resolved text
      */
-    protected @NotNull String applyResolvers(@NotNull String text, @Nullable Player player, Object... args) {
+    protected @NotNull String applyResolvers(@NotNull String text, @Nullable Player player, @NotNull Placeholder placeholders) {
         if (this.textResolverRegistry == null) {
             return text;
         }
-        return this.textResolverRegistry.resolve(text, player, args);
+        return this.textResolverRegistry.resolve(text, player, placeholders);
     }
 
     protected <A> void perAudienceOrShared(
             @NotNull Collection<? extends A> audiences,
             @NotNull String text,
-            @NotNull Object[] placeholders,
+            @NotNull Placeholder placeholders,
             @NotNull BiConsumer<A, V> action
     ) {
         if (this.textResolverRegistry.hasResolvers()) {
@@ -183,7 +183,7 @@ public abstract class MessageFormatter<T extends Plugin, V> implements TextForma
     protected <A> void perAudienceOrShared(
             @NotNull Collection<? extends A> audiences,
             @NotNull Collection<String> texts,
-            @NotNull Object[] placeholders,
+            @NotNull Placeholder placeholders,
             @Nullable String prefix,
             @NotNull BiConsumer<A, V> action
     ) {
@@ -207,14 +207,14 @@ public abstract class MessageFormatter<T extends Plugin, V> implements TextForma
     }
 
     @NotNull
-    protected V format(@Nullable String message, @Nullable Player player, @NotNull Object... placeholders) {
+    protected V format(@Nullable String message, @Nullable Player player, @NotNull Placeholder placeholders) {
         if (message == null) {
             return this.empty();
         }
-        if (placeholders.length == 0 && !this.textResolverRegistry.hasResolvers()) {
+        if (placeholders.isEmpty() && !this.textResolverRegistry.hasResolvers()) {
             return this.cache.getUnchecked(message);
         }
-        String parsedText = this.parseText(message, placeholders);
+        String parsedText = placeholders.parse(message);
         parsedText = this.applyResolvers(parsedText, player, placeholders);
         return this.load(parsedText);
     }
@@ -254,13 +254,27 @@ public abstract class MessageFormatter<T extends Plugin, V> implements TextForma
      * @param fadeIn       fade-in time in ticks
      * @param stay         stay time in ticks
      * @param fadeOut      fade-out time in ticks
-     * @param placeholders key-value pairs for placeholder replacement
+     * @param placeholders placeholders for text replacement
      */
-    public void sendTitle(@Nullable Player player, @Nullable String title, @Nullable String subtitle, int fadeIn, int stay, int fadeOut, @NotNull Object... placeholders) {
+    public void sendTitle(@Nullable Player player, @Nullable String title, @Nullable String subtitle, int fadeIn, int stay, int fadeOut, @NotNull Placeholder placeholders) {
         if (player == null) {
             return;
         }
         this.sendTitle(Collections.singleton(player), title, subtitle, fadeIn, stay, fadeOut, placeholders);
+    }
+
+    /**
+     * Sends a title to a single player without placeholders.
+     *
+     * @param player   the player to send the title to
+     * @param title    the main title text
+     * @param subtitle the subtitle text
+     * @param fadeIn   fade-in time in ticks
+     * @param stay     stay time in ticks
+     * @param fadeOut  fade-out time in ticks
+     */
+    public void sendTitle(@Nullable Player player, @Nullable String title, @Nullable String subtitle, int fadeIn, int stay, int fadeOut) {
+        this.sendTitle(player, title, subtitle, fadeIn, stay, fadeOut, Placeholder.empty());
     }
 
     /**
@@ -272,18 +286,18 @@ public abstract class MessageFormatter<T extends Plugin, V> implements TextForma
      * @param fadeIn       fade-in time in ticks
      * @param stay         stay time in ticks
      * @param fadeOut      fade-out time in ticks
-     * @param placeholders key-value pairs for placeholder replacement
+     * @param placeholders placeholders for text replacement
      */
-    public abstract void sendTitle(@NotNull Collection<? extends @NotNull Player> players, @Nullable String title, @Nullable String subtitle, int fadeIn, int stay, int fadeOut, @NotNull Object... placeholders);
+    public abstract void sendTitle(@NotNull Collection<? extends @NotNull Player> players, @Nullable String title, @Nullable String subtitle, int fadeIn, int stay, int fadeOut, @NotNull Placeholder placeholders);
 
     /**
      * Sends an action bar message to a single player without getPrefix.
      *
      * @param player       the player to send the action bar to
      * @param message      the action bar text
-     * @param placeholders key-value pairs for placeholder replacement
+     * @param placeholders placeholders for text replacement
      */
-    public void sendActionBar(@Nullable Player player, @Nullable String message, @NotNull Object... placeholders) {
+    public void sendActionBar(@Nullable Player player, @Nullable String message, @NotNull Placeholder placeholders) {
         if (player == null) {
             return;
         }
@@ -291,13 +305,23 @@ public abstract class MessageFormatter<T extends Plugin, V> implements TextForma
     }
 
     /**
+     * Sends an action bar message to a single player without getPrefix or placeholders.
+     *
+     * @param player  the player to send the action bar to
+     * @param message the action bar text
+     */
+    public void sendActionBar(@Nullable Player player, @Nullable String message) {
+        this.sendActionBar(player, message, Placeholder.empty());
+    }
+
+    /**
      * Sends an action bar message to multiple players without getPrefix.
      *
      * @param players      the players to send the action bar to
      * @param message      the action bar text
-     * @param placeholders key-value pairs for placeholder replacement
+     * @param placeholders placeholders for text replacement
      */
-    public abstract void sendActionBar(@NotNull Collection<? extends @NotNull Player> players, @Nullable String message, @NotNull Object... placeholders);
+    public abstract void sendActionBar(@NotNull Collection<? extends @NotNull Player> players, @Nullable String message, @NotNull Placeholder placeholders);
 
     /**
      * Sends an action bar message to a single player with optional getPrefix.
@@ -305,13 +329,24 @@ public abstract class MessageFormatter<T extends Plugin, V> implements TextForma
      * @param player       the player to send the action bar to
      * @param message      the action bar text
      * @param prefix       whether to prepend the configured getPrefix
-     * @param placeholders key-value pairs for placeholder replacement
+     * @param placeholders placeholders for text replacement
      */
-    public void sendActionBar(@Nullable Player player, @Nullable String message, boolean prefix, @NotNull Object... placeholders) {
+    public void sendActionBar(@Nullable Player player, @Nullable String message, boolean prefix, @NotNull Placeholder placeholders) {
         if (player == null) {
             return;
         }
         this.sendActionBar(Collections.singleton(player), message, prefix, placeholders);
+    }
+
+    /**
+     * Sends an action bar message to a single player with optional getPrefix, no placeholders.
+     *
+     * @param player  the player to send the action bar to
+     * @param message the action bar text
+     * @param prefix  whether to prepend the configured getPrefix
+     */
+    public void sendActionBar(@Nullable Player player, @Nullable String message, boolean prefix) {
+        this.sendActionBar(player, message, prefix, Placeholder.empty());
     }
 
     /**
@@ -320,18 +355,27 @@ public abstract class MessageFormatter<T extends Plugin, V> implements TextForma
      * @param players      the players to send the action bar to
      * @param message      the action bar text
      * @param prefix       whether to prepend the configured getPrefix
-     * @param placeholders key-value pairs for placeholder replacement
+     * @param placeholders placeholders for text replacement
      */
-    public abstract void sendActionBar(@NotNull Collection<? extends @NotNull Player> players, @Nullable String message, boolean prefix, @NotNull Object... placeholders);
+    public abstract void sendActionBar(@NotNull Collection<? extends @NotNull Player> players, @Nullable String message, boolean prefix, @NotNull Placeholder placeholders);
 
     /**
      * Broadcasts an action bar message to all online players with getPrefix enabled.
      *
      * @param message      the action bar text
-     * @param placeholders key-value pairs for placeholder replacement
+     * @param placeholders placeholders for text replacement
      */
-    public void broadcastActionBar(@Nullable String message, @NotNull Object... placeholders) {
+    public void broadcastActionBar(@Nullable String message, @NotNull Placeholder placeholders) {
         this.broadcastActionBar(message, true, placeholders);
+    }
+
+    /**
+     * Broadcasts an action bar message to all online players with getPrefix enabled, no placeholders.
+     *
+     * @param message the action bar text
+     */
+    public void broadcastActionBar(@Nullable String message) {
+        this.broadcastActionBar(message, true, Placeholder.empty());
     }
 
     /**
@@ -339,9 +383,9 @@ public abstract class MessageFormatter<T extends Plugin, V> implements TextForma
      *
      * @param message      the action bar text
      * @param prefix       whether to prepend the configured getPrefix
-     * @param placeholders key-value pairs for placeholder replacement
+     * @param placeholders placeholders for text replacement
      */
-    public abstract void broadcastActionBar(@Nullable String message, boolean prefix, @NotNull Object... placeholders);
+    public abstract void broadcastActionBar(@Nullable String message, boolean prefix, @NotNull Placeholder placeholders);
 
     /**
      * Broadcasts a title to all online players.
@@ -351,10 +395,23 @@ public abstract class MessageFormatter<T extends Plugin, V> implements TextForma
      * @param fadeIn       fade-in time in ticks
      * @param stay         stay time in ticks
      * @param fadeOut      fade-out time in ticks
-     * @param placeholders key-value pairs for placeholder replacement
+     * @param placeholders placeholders for text replacement
      */
-    public void broadcastTitle(@Nullable String title, @Nullable String subtitle, int fadeIn, int stay, int fadeOut, @NotNull Object... placeholders) {
+    public void broadcastTitle(@Nullable String title, @Nullable String subtitle, int fadeIn, int stay, int fadeOut, @NotNull Placeholder placeholders) {
         this.sendTitle(Bukkit.getOnlinePlayers(), title, subtitle, fadeIn, stay, fadeOut, placeholders);
+    }
+
+    /**
+     * Broadcasts a title to all online players, no placeholders.
+     *
+     * @param title    the main title text
+     * @param subtitle the subtitle text
+     * @param fadeIn   fade-in time in ticks
+     * @param stay     stay time in ticks
+     * @param fadeOut  fade-out time in ticks
+     */
+    public void broadcastTitle(@Nullable String title, @Nullable String subtitle, int fadeIn, int stay, int fadeOut) {
+        this.broadcastTitle(title, subtitle, fadeIn, stay, fadeOut, Placeholder.empty());
     }
 
     /**
@@ -362,10 +419,20 @@ public abstract class MessageFormatter<T extends Plugin, V> implements TextForma
      *
      * @param sender       the command sender to send the message to
      * @param message      the chat message text
-     * @param placeholders key-value pairs for placeholder replacement
+     * @param placeholders placeholders for text replacement
      */
-    public void sendMessage(@Nullable CommandSender sender, @Nullable String message, @NotNull Object... placeholders) {
+    public void sendMessage(@Nullable CommandSender sender, @Nullable String message, @NotNull Placeholder placeholders) {
         this.sendMessage(sender, message, true, placeholders);
+    }
+
+    /**
+     * Sends a chat message to a single command sender with getPrefix enabled, no placeholders.
+     *
+     * @param sender  the command sender to send the message to
+     * @param message the chat message text
+     */
+    public void sendMessage(@Nullable CommandSender sender, @Nullable String message) {
+        this.sendMessage(sender, message, true, Placeholder.empty());
     }
 
     /**
@@ -374,9 +441,9 @@ public abstract class MessageFormatter<T extends Plugin, V> implements TextForma
      * @param sender       the command sender to send the message to
      * @param message      the chat message text
      * @param prefix       whether to prepend the configured getPrefix
-     * @param placeholders key-value pairs for placeholder replacement
+     * @param placeholders placeholders for text replacement
      */
-    public void sendMessage(@Nullable CommandSender sender, @Nullable String message, boolean prefix, @NotNull Object... placeholders) {
+    public void sendMessage(@Nullable CommandSender sender, @Nullable String message, boolean prefix, @NotNull Placeholder placeholders) {
         if (sender == null || message == null) {
             return;
         }
@@ -384,15 +451,36 @@ public abstract class MessageFormatter<T extends Plugin, V> implements TextForma
     }
 
     /**
+     * Sends a chat message to a single command sender with optional getPrefix, no placeholders.
+     *
+     * @param sender  the command sender to send the message to
+     * @param message the chat message text
+     * @param prefix  whether to prepend the configured getPrefix
+     */
+    public void sendMessage(@Nullable CommandSender sender, @Nullable String message, boolean prefix) {
+        this.sendMessage(sender, message, prefix, Placeholder.empty());
+    }
+
+    /**
      * Sends a chat message to multiple command senders with getPrefix enabled.
      *
      * @param senders      the command senders to send the message to
      * @param message      the chat message text
-     * @param placeholders key-value pairs for placeholder replacement
+     * @param placeholders placeholders for text replacement
      */
-    public void sendMessage(@NotNull Collection<? extends CommandSender> senders, @Nullable String message, @NotNull Object... placeholders) {
+    public void sendMessage(@NotNull Collection<? extends CommandSender> senders, @Nullable String message, @NotNull Placeholder placeholders) {
         Preconditions.checkNotNull(senders, "Senders collection cannot be null");
         this.sendMessage(senders, message, true, placeholders);
+    }
+
+    /**
+     * Sends a chat message to multiple command senders with getPrefix enabled, no placeholders.
+     *
+     * @param senders the command senders to send the message to
+     * @param message the chat message text
+     */
+    public void sendMessage(@NotNull Collection<? extends CommandSender> senders, @Nullable String message) {
+        this.sendMessage(senders, message, true, Placeholder.empty());
     }
 
     /**
@@ -401,18 +489,27 @@ public abstract class MessageFormatter<T extends Plugin, V> implements TextForma
      * @param senders      the command senders to send the message to
      * @param message      the chat message text
      * @param prefix       whether to prepend the configured getPrefix
-     * @param placeholders key-value pairs for placeholder replacement
+     * @param placeholders placeholders for text replacement
      */
-    public abstract void sendMessage(@NotNull Collection<? extends CommandSender> senders, @Nullable String message, boolean prefix, @NotNull Object... placeholders);
+    public abstract void sendMessage(@NotNull Collection<? extends CommandSender> senders, @Nullable String message, boolean prefix, @NotNull Placeholder placeholders);
 
     /**
      * Broadcasts a chat message to all online players with getPrefix enabled.
      *
      * @param message      the chat message text
-     * @param placeholders key-value pairs for placeholder replacement
+     * @param placeholders placeholders for text replacement
      */
-    public void broadcast(@Nullable String message, @NotNull Object... placeholders) {
+    public void broadcast(@Nullable String message, @NotNull Placeholder placeholders) {
         this.broadcast(message, true, placeholders);
+    }
+
+    /**
+     * Broadcasts a chat message to all online players with getPrefix enabled, no placeholders.
+     *
+     * @param message the chat message text
+     */
+    public void broadcast(@Nullable String message) {
+        this.broadcast(message, true, Placeholder.empty());
     }
 
     /**
@@ -420,19 +517,29 @@ public abstract class MessageFormatter<T extends Plugin, V> implements TextForma
      *
      * @param message      the chat message text
      * @param prefix       whether to prepend the configured getPrefix
-     * @param placeholders key-value pairs for placeholder replacement
+     * @param placeholders placeholders for text replacement
      */
-    public abstract void broadcast(@Nullable String message, boolean prefix, @NotNull Object... placeholders);
+    public abstract void broadcast(@Nullable String message, boolean prefix, @NotNull Placeholder placeholders);
 
     /**
      * Sends a chat message to a single command sender without getPrefix.
      *
      * @param sender       the command sender to send the message to
      * @param message      the chat message text
-     * @param placeholders key-value pairs for placeholder replacement
+     * @param placeholders placeholders for text replacement
      */
-    public void sendMessageWithoutPrefix(@Nullable CommandSender sender, @Nullable String message, @NotNull Object... placeholders) {
+    public void sendMessageWithoutPrefix(@Nullable CommandSender sender, @Nullable String message, @NotNull Placeholder placeholders) {
         this.sendMessage(sender, message, false, placeholders);
+    }
+
+    /**
+     * Sends a chat message to a single command sender without getPrefix or placeholders.
+     *
+     * @param sender  the command sender to send the message to
+     * @param message the chat message text
+     */
+    public void sendMessageWithoutPrefix(@Nullable CommandSender sender, @Nullable String message) {
+        this.sendMessage(sender, message, false, Placeholder.empty());
     }
 
     /**
@@ -440,12 +547,22 @@ public abstract class MessageFormatter<T extends Plugin, V> implements TextForma
      *
      * @param message      the message definition to resolve and send
      * @param sender       the command sender to send the message to
-     * @param placeholders key-value pairs for placeholder replacement
+     * @param placeholders placeholders for text replacement
      */
-    public void sendMessage(@NotNull Message message, @NotNull CommandSender sender, @NotNull Object... placeholders) {
+    public void sendMessage(@NotNull Message message, @NotNull CommandSender sender, @NotNull Placeholder placeholders) {
         Preconditions.checkNotNull(message, "Message cannot be null");
         Preconditions.checkNotNull(sender, "Sender cannot be null");
         this.sendMessage(message, sender, true, placeholders);
+    }
+
+    /**
+     * Sends a resolved message to a single command sender with getPrefix enabled, no placeholders.
+     *
+     * @param message the message definition to resolve and send
+     * @param sender  the command sender to send the message to
+     */
+    public void sendMessage(@NotNull Message message, @NotNull CommandSender sender) {
+        this.sendMessage(message, sender, true, Placeholder.empty());
     }
 
     /**
@@ -453,12 +570,22 @@ public abstract class MessageFormatter<T extends Plugin, V> implements TextForma
      *
      * @param message      the message definition to resolve and send
      * @param senders      the command senders to send the message to
-     * @param placeholders key-value pairs for placeholder replacement
+     * @param placeholders placeholders for text replacement
      */
-    public void sendMessage(@NotNull Message message, @NotNull Collection<? extends CommandSender> senders, @NotNull Object... placeholders) {
+    public void sendMessage(@NotNull Message message, @NotNull Collection<? extends CommandSender> senders, @NotNull Placeholder placeholders) {
         Preconditions.checkNotNull(message, "Message cannot be null");
         Preconditions.checkNotNull(senders, "Senders collection cannot be null");
         this.sendMessage(message, senders, true, placeholders);
+    }
+
+    /**
+     * Sends a resolved message to multiple command senders with getPrefix enabled, no placeholders.
+     *
+     * @param message the message definition to resolve and send
+     * @param senders the command senders to send the message to
+     */
+    public void sendMessage(@NotNull Message message, @NotNull Collection<? extends CommandSender> senders) {
+        this.sendMessage(message, senders, true, Placeholder.empty());
     }
 
     /**
@@ -467,12 +594,23 @@ public abstract class MessageFormatter<T extends Plugin, V> implements TextForma
      * @param message      the message definition to resolve and send
      * @param sender       the command sender to send the message to
      * @param prefix       whether to prepend the configured getPrefix
-     * @param placeholders key-value pairs for placeholder replacement
+     * @param placeholders placeholders for text replacement
      */
-    public void sendMessage(@NotNull Message message, @NotNull CommandSender sender, boolean prefix, @NotNull Object... placeholders) {
+    public void sendMessage(@NotNull Message message, @NotNull CommandSender sender, boolean prefix, @NotNull Placeholder placeholders) {
         Preconditions.checkNotNull(message, "Message cannot be null");
         Preconditions.checkNotNull(sender, "Sender cannot be null");
         this.sendMessage(message, Collections.singleton(sender), prefix, placeholders);
+    }
+
+    /**
+     * Sends a resolved message to a single command sender with optional getPrefix, no placeholders.
+     *
+     * @param message the message definition to resolve and send
+     * @param sender  the command sender to send the message to
+     * @param prefix  whether to prepend the configured getPrefix
+     */
+    public void sendMessage(@NotNull Message message, @NotNull CommandSender sender, boolean prefix) {
+        this.sendMessage(message, sender, prefix, Placeholder.empty());
     }
 
     /**
@@ -481,16 +619,28 @@ public abstract class MessageFormatter<T extends Plugin, V> implements TextForma
      * @param message      the message definition to resolve and send
      * @param senders      the command senders to send the message to
      * @param prefix       whether to prepend the configured getPrefix
-     * @param placeholders key-value pairs for placeholder replacement
+     * @param placeholders placeholders for text replacement
      */
-    public abstract void sendMessage(@NotNull Message message, @NotNull Collection<? extends CommandSender> senders, boolean prefix, @NotNull Object... placeholders);
+    public abstract void sendMessage(@NotNull Message message, @NotNull Collection<? extends CommandSender> senders, boolean prefix, @NotNull Placeholder placeholders);
 
     /**
      * Sends a resolved message to the console with a getPrefix.
      *
      * @param message      the message definition to resolve and send
+     * @param logType      the type of log message
      * @param sender       the console sender to send the message to
-     * @param placeholders key-value pairs for placeholder replacement
+     * @param placeholders placeholders for text replacement
      */
-    public abstract void sendMessage(@NotNull Message message, @NotNull Logger.LogType logType, @NotNull ConsoleCommandSender sender, @NotNull Object... placeholders);
+    public abstract void sendMessage(@NotNull Message message, @NotNull Logger.LogType logType, @NotNull ConsoleCommandSender sender, @NotNull Placeholder placeholders);
+
+    /**
+     * Sends a resolved message to the console with a getPrefix, no placeholders.
+     *
+     * @param message the message definition to resolve and send
+     * @param logType the type of log message
+     * @param sender  the console sender to send the message to
+     */
+    public void sendMessage(@NotNull Message message, @NotNull Logger.LogType logType, @NotNull ConsoleCommandSender sender) {
+        this.sendMessage(message, logType, sender, Placeholder.empty());
+    }
 }

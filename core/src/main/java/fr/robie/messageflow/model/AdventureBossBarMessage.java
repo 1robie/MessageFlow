@@ -2,6 +2,7 @@ package fr.robie.messageflow.model;
 
 import com.google.common.base.Preconditions;
 import fr.robie.messageflow.api.MessageTypeAdapter;
+import fr.robie.messageflow.formatter.Placeholder;
 import fr.robie.messageflow.logger.Logger;
 import net.kyori.adventure.bossbar.BossBar;
 import org.jetbrains.annotations.NotNull;
@@ -71,7 +72,7 @@ public record AdventureBossBarMessage(@NotNull String title, @NotNull BossBar.Co
         try {
             color = BossBar.Color.valueOf(((String) map.getOrDefault("color", "PINK")).toUpperCase());
         } catch (IllegalArgumentException e) {
-            Logger.warn("Invalid boss bar color value: %value%. Valid values are %valid_values%. Defaulting to PINK.", "value", map.get("color"), "valid_values", Stream.of(BossBar.Color.values()).map(BossBar.Color::name).toList());
+            Logger.warn("Invalid boss bar color value: %value%. Valid values are %valid_values%. Defaulting to PINK.", Placeholder.of("value", String.valueOf(map.get("color")), "valid_values", Stream.of(BossBar.Color.values()).map(BossBar.Color::name).toList().toString()));
             color = BossBar.Color.PINK;
         }
 
@@ -79,7 +80,7 @@ public record AdventureBossBarMessage(@NotNull String title, @NotNull BossBar.Co
         try {
             overlay = BossBar.Overlay.valueOf(((String) map.getOrDefault("overlay", "PROGRESS")).toUpperCase());
         } catch (IllegalArgumentException e) {
-            Logger.warn("Invalid boss bar overlay value: %value%. Valid values are %valid_values%. Defaulting to PROGRESS.", "value", map.get("overlay"), "valid_values", Stream.of(BossBar.Overlay.values()).map(BossBar.Overlay::name).toList());
+            Logger.warn("Invalid boss bar overlay value: %value%. Valid values are %valid_values%. Defaulting to PROGRESS.", Placeholder.of("value", String.valueOf(map.get("overlay")), "valid_values", Stream.of(BossBar.Overlay.values()).map(BossBar.Overlay::name).toList().toString()));
             overlay = BossBar.Overlay.PROGRESS;
         }
 

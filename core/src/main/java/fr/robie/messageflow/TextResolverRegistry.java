@@ -3,6 +3,7 @@ package fr.robie.messageflow;
 import com.google.common.base.Preconditions;
 import fr.robie.messageflow.api.ITextResolverRegistry;
 import fr.robie.messageflow.api.TextResolver;
+import fr.robie.messageflow.formatter.Placeholder;
 import fr.robie.messageflow.hooks.placeholderapi.PlaceholderAPIResolver;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -29,10 +30,10 @@ public class TextResolverRegistry implements ITextResolverRegistry {
     }
 
     @Override
-    public @NotNull String resolve(@NotNull String text, @Nullable Player player, Object... args) {
+    public @NotNull String resolve(@NotNull String text, @Nullable Player player, @NotNull Placeholder placeholders) {
         for (TextResolver resolver : this.resolvers) {
-            if (resolver.canResolve(text, player, args)) {
-                text = resolver.resolve(text, player, args);
+            if (resolver.canResolve(text, player, placeholders)) {
+                text = resolver.resolve(text, player, placeholders);
             }
         }
         return text;

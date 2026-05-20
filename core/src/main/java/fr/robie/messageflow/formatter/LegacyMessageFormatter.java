@@ -66,7 +66,7 @@ public class LegacyMessageFormatter<T extends Plugin> extends MessageFormatter<T
             @NotNull SimpleMessage message,
             boolean enablePrefix,
             @Nullable String prefix,
-            @NotNull Object[] placeholders
+            @NotNull Placeholder placeholders
     ) {
         List<String> messages = message.messages();
         if (messages.isEmpty() || messages.stream().allMatch(s -> s == null || s.isBlank())) {
@@ -81,7 +81,7 @@ public class LegacyMessageFormatter<T extends Plugin> extends MessageFormatter<T
             @NotNull Collection<? extends @NotNull Player> players,
             @Nullable String title, @Nullable String subtitle,
             int fadeIn, int stay, int fadeOut,
-            @NonNull @NotNull Object... placeholders
+            @NotNull Placeholder placeholders
     ) {
         if (this.textResolverRegistry.hasResolvers()) {
             players.forEach(player -> player.sendTitle(
@@ -97,7 +97,7 @@ public class LegacyMessageFormatter<T extends Plugin> extends MessageFormatter<T
     }
 
     @Override
-    public void sendActionBar(@NotNull Collection<? extends @NotNull Player> players, @Nullable String message, @NonNull @NotNull Object... placeholders) {
+    public void sendActionBar(@NotNull Collection<? extends @NotNull Player> players, @Nullable String message, @NotNull Placeholder placeholders) {
         this.sendActionBar(players, message, false, placeholders);
     }
 
@@ -106,7 +106,7 @@ public class LegacyMessageFormatter<T extends Plugin> extends MessageFormatter<T
             @NotNull Collection<? extends @NotNull Player> players,
             @Nullable String message,
             boolean prefix,
-            @NotNull Object... placeholders
+            @NotNull Placeholder placeholders
     ) {
         if (message == null || players.isEmpty()) {
             return;
@@ -116,7 +116,7 @@ public class LegacyMessageFormatter<T extends Plugin> extends MessageFormatter<T
     }
 
     @Override
-    public void broadcastActionBar(@Nullable String message, boolean prefix, @NotNull Object... placeholders) {
+    public void broadcastActionBar(@Nullable String message, boolean prefix, @NotNull Placeholder placeholders) {
         this.sendActionBar(Bukkit.getOnlinePlayers(), message, prefix, placeholders);
     }
 
@@ -125,7 +125,7 @@ public class LegacyMessageFormatter<T extends Plugin> extends MessageFormatter<T
             @NotNull Collection<? extends CommandSender> senders,
             @Nullable String message,
             boolean prefix,
-            @NotNull Object... placeholders
+            @NotNull Placeholder placeholders
     ) {
         if (message == null || senders.isEmpty()) {
             return;
@@ -135,7 +135,7 @@ public class LegacyMessageFormatter<T extends Plugin> extends MessageFormatter<T
     }
 
     @Override
-    public void broadcast(@Nullable String message, boolean prefix, @NotNull Object... placeholders) {
+    public void broadcast(@Nullable String message, boolean prefix, @NotNull Placeholder placeholders) {
         this.sendMessage(Bukkit.getOnlinePlayers(), message, prefix, placeholders);
     }
 
@@ -143,7 +143,7 @@ public class LegacyMessageFormatter<T extends Plugin> extends MessageFormatter<T
             @NotNull Message message,
             @NotNull Collection<? extends CommandSender> senders,
             boolean prefix,
-            @NotNull Object... placeholders
+            @NotNull Placeholder placeholders
     ) {
         if (senders.isEmpty()) {
             return;
@@ -244,7 +244,7 @@ public class LegacyMessageFormatter<T extends Plugin> extends MessageFormatter<T
 
 
     @Override
-    public void sendMessage(@NotNull Message message, @NotNull Logger.LogType logType, @NotNull ConsoleCommandSender sender, @NotNull Object... placeholders) {
+    public void sendMessage(@NotNull Message message, @NotNull Logger.LogType logType, @NotNull ConsoleCommandSender sender, @NotNull Placeholder placeholders) {
         String prefix = Logger.getPrefix(logType);
         for (MessageTypeAdapter messageAdapter : message.loaded()) {
             if (messageAdapter.messageType() == MessageType.TCHAT && messageAdapter instanceof SimpleMessage simpleMessage) {

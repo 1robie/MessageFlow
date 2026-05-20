@@ -44,6 +44,11 @@
     <dependencies>
         <dependency>
             <groupId>fr.robie.messageflow</groupId>
+            <artifactId>common</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>fr.robie.messageflow</groupId>
             <artifactId>BOM</artifactId>
         </dependency>
 

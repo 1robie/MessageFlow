@@ -10,6 +10,7 @@ import fr.robie.messageflow.configuration.lang.LanguageEntry;
 import fr.robie.messageflow.formatter.AdventureMessageFormatter;
 import fr.robie.messageflow.formatter.LegacyMessageFormatter;
 import fr.robie.messageflow.formatter.MessageFormatter;
+import fr.robie.messageflow.formatter.Placeholder;
 import fr.robie.messageflow.logger.AdventureLogger;
 import fr.robie.messageflow.logger.LegacyLogger;
 import fr.robie.messageflow.logger.Logger;
@@ -256,7 +257,7 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
                     .toList();
 
             if (filtered.isEmpty() && !parsed.isEmpty()) {
-                Logger.warn("All parsed message types for key '%key%' are blocked by its settings. Falling back to defaults.", "key", m.key());
+                Logger.warn("All parsed message types for key '%key%' are blocked by its settings. Falling back to defaults.", Placeholder.of("key", m.key()));
                 m.setLoaded(m.defaults());
             } else {
                 m.setLoaded(filtered);
@@ -336,7 +337,7 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
             this.plugin.saveResource(relativePath, false);
             return true;
         } catch (IllegalArgumentException exception) {
-            Logger.warn("Failed to copy bundled resource: %path%. Resource not found in JAR.", exception, "path", relativePath);
+            Logger.warn("Failed to copy bundled resource: %path%. Resource not found in JAR.", exception, Placeholder.of("path", relativePath));
             return false;
         }
     }
@@ -356,7 +357,7 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
                 return YamlConfiguration.loadConfiguration(reader);
             }
         } catch (IOException exception) {
-            Logger.warn("Failed to load bundled resource: %path%", exception, "path", relativePath);
+            Logger.warn("Failed to load bundled resource: %path%", exception, Placeholder.of("path", relativePath));
             return null;
         }
     }
@@ -370,7 +371,7 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
     private void backupFile(@NotNull File file, @NotNull String lang) {
         File backupDir = new File(this.plugin.getDataFolder(), this.options.backupFolder());
         if (!backupDir.exists() && !backupDir.mkdirs()) {
-            Logger.warn("Failed to create backup directory: %dir%. Skipping backup.", "dir", backupDir.getAbsolutePath());
+            Logger.warn("Failed to create backup directory: %dir%. Skipping backup.", Placeholder.of("dir", backupDir.getAbsolutePath()));
             return;
         }
 
@@ -381,7 +382,7 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
         try {
             Files.copy(file.toPath(), dest.toPath(), StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException exception) {
-            Logger.warn("Failed to backup file %file% to %dest%", exception, "file", file.getAbsolutePath(), "dest", dest.getAbsolutePath());
+            Logger.warn("Failed to backup file %file% to %dest%", exception, Placeholder.of("file", file.getAbsolutePath(), "dest", dest.getAbsolutePath()));
         }
     }
 
@@ -506,7 +507,7 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
                 case ACTION_BAR, TCHAT, NONE, WITHOUT_PREFIX, BROADCAST -> SimpleMessage.deserialize(type, values);
             };
         } catch (Exception e) {
-            Logger.warn("Failed to parse message of type %type%: %error%", "type", type.name(), "error", e.getMessage());
+            Logger.warn("Failed to parse message of type %type%: %error%", Placeholder.of("type", type.name(), "error", e.getMessage()));
             return null;
         }
     }

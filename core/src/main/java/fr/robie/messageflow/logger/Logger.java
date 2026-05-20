@@ -2,7 +2,7 @@ package fr.robie.messageflow.logger;
 
 import com.google.common.base.Preconditions;
 import fr.robie.messageflow.formatter.MessageFormatter;
-import fr.robie.messageflow.formatter.TextFormatter;
+import fr.robie.messageflow.formatter.Placeholder;
 import fr.robie.messageflow.model.Message;
 import org.jetbrains.annotations.NotNull;
 
@@ -13,7 +13,7 @@ import org.jetbrains.annotations.NotNull;
  * Implementation classes handle the actual message formatting and delivery.
  */
 @SuppressWarnings("unused")
-public abstract class Logger implements TextFormatter {
+public abstract class Logger {
     /**
      * The global logger instance.
      */
@@ -67,12 +67,33 @@ public abstract class Logger implements TextFormatter {
     /**
      * Logs an info message using the global logger.
      *
-     * @param message the message to log
-     * @param args    formatting arguments
+     * @param message      the message to log
+     * @param placeholders formatting placeholders
      */
-    public static void info(@NotNull String message, @NotNull Object... args) {
+    public static void info(@NotNull String message, @NotNull Placeholder placeholders) {
         if (logger != null) {
-            logger.log(LogType.INFO, message, args);
+            logger.log(LogType.INFO, message, placeholders);
+        }
+    }
+
+    /**
+     * Logs an info message using the global logger.
+     *
+     * @param message the message to log
+     */
+    public static void info(@NotNull String message) {
+        info(message, Placeholder.empty());
+    }
+
+    /**
+     * Logs an info message using the global logger.
+     *
+     * @param message      the Message object to log
+     * @param placeholders formatting placeholders
+     */
+    public static void info(@NotNull Message message, @NotNull Placeholder placeholders) {
+        if (logger != null) {
+            logger.log(LogType.INFO, message, placeholders);
         }
     }
 
@@ -80,11 +101,20 @@ public abstract class Logger implements TextFormatter {
      * Logs an info message using the global logger.
      *
      * @param message the Message object to log
-     * @param args    formatting arguments
      */
-    public static void info(@NotNull Message message, @NotNull Object... args) {
+    public static void info(@NotNull Message message) {
+        info(message, Placeholder.empty());
+    }
+
+    /**
+     * Logs a warning message using the global logger.
+     *
+     * @param message      the message to log
+     * @param placeholders formatting placeholders
+     */
+    public static void warn(@NotNull String message, @NotNull Placeholder placeholders) {
         if (logger != null) {
-            logger.log(LogType.INFO, message, args);
+            logger.log(LogType.WARNING, message, placeholders);
         }
     }
 
@@ -92,11 +122,20 @@ public abstract class Logger implements TextFormatter {
      * Logs a warning message using the global logger.
      *
      * @param message the message to log
-     * @param args    formatting arguments
      */
-    public static void warn(@NotNull String message, @NotNull Object... args) {
+    public static void warn(@NotNull String message) {
+        warn(message, Placeholder.empty());
+    }
+
+    /**
+     * Logs a warning message using the global logger.
+     *
+     * @param message      the Message object to log
+     * @param placeholders formatting placeholders
+     */
+    public static void warn(@NotNull Message message, @NotNull Placeholder placeholders) {
         if (logger != null) {
-            logger.log(LogType.WARNING, message, args);
+            logger.log(LogType.WARNING, message, placeholders);
         }
     }
 
@@ -104,11 +143,20 @@ public abstract class Logger implements TextFormatter {
      * Logs a warning message using the global logger.
      *
      * @param message the Message object to log
-     * @param args    formatting arguments
      */
-    public static void warn(@NotNull Message message, @NotNull Object... args) {
+    public static void warn(@NotNull Message message) {
+        warn(message, Placeholder.empty());
+    }
+
+    /**
+     * Logs an error message using the global logger.
+     *
+     * @param message      the message to log
+     * @param placeholders formatting placeholders
+     */
+    public static void error(@NotNull String message, @NotNull Placeholder placeholders) {
         if (logger != null) {
-            logger.log(LogType.WARNING, message, args);
+            logger.log(LogType.ERROR, message, placeholders);
         }
     }
 
@@ -116,11 +164,20 @@ public abstract class Logger implements TextFormatter {
      * Logs an error message using the global logger.
      *
      * @param message the message to log
-     * @param args    formatting arguments
      */
-    public static void error(@NotNull String message, @NotNull Object... args) {
+    public static void error(@NotNull String message) {
+        error(message, Placeholder.empty());
+    }
+
+    /**
+     * Logs an error message using the global logger.
+     *
+     * @param message      the Message object to log
+     * @param placeholders formatting placeholders
+     */
+    public static void error(@NotNull Message message, @NotNull Placeholder placeholders) {
         if (logger != null) {
-            logger.log(LogType.ERROR, message, args);
+            logger.log(LogType.ERROR, message, placeholders);
         }
     }
 
@@ -128,11 +185,20 @@ public abstract class Logger implements TextFormatter {
      * Logs an error message using the global logger.
      *
      * @param message the Message object to log
-     * @param args    formatting arguments
      */
-    public static void error(@NotNull Message message, @NotNull Object... args) {
-        if (logger != null) {
-            logger.log(LogType.ERROR, message, args);
+    public static void error(@NotNull Message message) {
+        error(message, Placeholder.empty());
+    }
+
+    /**
+     * Logs a debug message using the global logger if debug mode is enabled.
+     *
+     * @param message      the message to log
+     * @param placeholders formatting placeholders
+     */
+    public static void debug(@NotNull String message, @NotNull Placeholder placeholders) {
+        if (logger != null && logger.debugEnabled) {
+            logger.log(LogType.DEBUG, message, placeholders);
         }
     }
 
@@ -140,11 +206,20 @@ public abstract class Logger implements TextFormatter {
      * Logs a debug message using the global logger if debug mode is enabled.
      *
      * @param message the message to log
-     * @param args    formatting arguments
      */
-    public static void debug(@NotNull String message, @NotNull Object... args) {
+    public static void debug(@NotNull String message) {
+        debug(message, Placeholder.empty());
+    }
+
+    /**
+     * Logs a debug message using the global logger if debug mode is enabled.
+     *
+     * @param message      the Message object to log
+     * @param placeholders formatting placeholders
+     */
+    public static void debug(@NotNull Message message, @NotNull Placeholder placeholders) {
         if (logger != null && logger.debugEnabled) {
-            logger.log(LogType.DEBUG, message, args);
+            logger.log(LogType.DEBUG, message, placeholders);
         }
     }
 
@@ -152,11 +227,21 @@ public abstract class Logger implements TextFormatter {
      * Logs a debug message using the global logger if debug mode is enabled.
      *
      * @param message the Message object to log
-     * @param args    formatting arguments
      */
-    public static void debug(@NotNull Message message, @NotNull Object... args) {
+    public static void debug(@NotNull Message message) {
+        debug(message, Placeholder.empty());
+    }
+
+    /**
+     * Logs a debug message with a stacktrace using the global logger if debug mode is enabled.
+     *
+     * @param message      the message to log
+     * @param throwable    the exception to log
+     * @param placeholders formatting placeholders
+     */
+    public static void debug(@NotNull String message, @NotNull Throwable throwable, @NotNull Placeholder placeholders) {
         if (logger != null && logger.debugEnabled) {
-            logger.log(LogType.DEBUG, message, args);
+            logger.log(LogType.DEBUG, throwable, message, placeholders);
         }
     }
 
@@ -165,11 +250,21 @@ public abstract class Logger implements TextFormatter {
      *
      * @param message   the message to log
      * @param throwable the exception to log
-     * @param args      formatting arguments
      */
-    public static void debug(@NotNull String message, @NotNull Throwable throwable, @NotNull Object... args) {
+    public static void debug(@NotNull String message, @NotNull Throwable throwable) {
+        debug(message, throwable, Placeholder.empty());
+    }
+
+    /**
+     * Logs a debug message with a stacktrace using the global logger if debug mode is enabled.
+     *
+     * @param message      the Message object to log
+     * @param throwable    the exception to log
+     * @param placeholders formatting placeholders
+     */
+    public static void debug(@NotNull Message message, @NotNull Throwable throwable, @NotNull Placeholder placeholders) {
         if (logger != null && logger.debugEnabled) {
-            logger.log(LogType.DEBUG, throwable, message, args);
+            logger.log(LogType.DEBUG, throwable, message, placeholders);
         }
     }
 
@@ -178,11 +273,21 @@ public abstract class Logger implements TextFormatter {
      *
      * @param message   the Message object to log
      * @param throwable the exception to log
-     * @param args      formatting arguments
      */
-    public static void debug(@NotNull Message message, @NotNull Throwable throwable, @NotNull Object... args) {
-        if (logger != null && logger.debugEnabled) {
-            logger.log(LogType.DEBUG, throwable, message, args);
+    public static void debug(@NotNull Message message, @NotNull Throwable throwable) {
+        debug(message, throwable, Placeholder.empty());
+    }
+
+    /**
+     * Logs a warning message with a stacktrace using the global logger.
+     *
+     * @param message      the message to log
+     * @param throwable    the exception to log
+     * @param placeholders formatting placeholders
+     */
+    public static void warn(@NotNull String message, @NotNull Throwable throwable, @NotNull Placeholder placeholders) {
+        if (logger != null) {
+            logger.log(LogType.WARNING, throwable, message, placeholders);
         }
     }
 
@@ -191,11 +296,21 @@ public abstract class Logger implements TextFormatter {
      *
      * @param message   the message to log
      * @param throwable the exception to log
-     * @param args      formatting arguments
      */
-    public static void warn(@NotNull String message, @NotNull Throwable throwable, @NotNull Object... args) {
+    public static void warn(@NotNull String message, @NotNull Throwable throwable) {
+        warn(message, throwable, Placeholder.empty());
+    }
+
+    /**
+     * Logs a warning message with a stacktrace using the global logger.
+     *
+     * @param message      the Message object to log
+     * @param throwable    the exception to log
+     * @param placeholders formatting placeholders
+     */
+    public static void warn(@NotNull Message message, @NotNull Throwable throwable, @NotNull Placeholder placeholders) {
         if (logger != null) {
-            logger.log(LogType.WARNING, throwable, message, args);
+            logger.log(LogType.WARNING, throwable, message, placeholders);
         }
     }
 
@@ -204,11 +319,21 @@ public abstract class Logger implements TextFormatter {
      *
      * @param message   the Message object to log
      * @param throwable the exception to log
-     * @param args      formatting arguments
      */
-    public static void warn(@NotNull Message message, @NotNull Throwable throwable, @NotNull Object... args) {
+    public static void warn(@NotNull Message message, @NotNull Throwable throwable) {
+        warn(message, throwable, Placeholder.empty());
+    }
+
+    /**
+     * Logs an error message with a stacktrace using the global logger.
+     *
+     * @param message      the message to log
+     * @param throwable    the exception to log
+     * @param placeholders formatting placeholders
+     */
+    public static void error(@NotNull String message, @NotNull Throwable throwable, @NotNull Placeholder placeholders) {
         if (logger != null) {
-            logger.log(LogType.WARNING, throwable, message, args);
+            logger.log(LogType.ERROR, throwable, message, placeholders);
         }
     }
 
@@ -217,11 +342,21 @@ public abstract class Logger implements TextFormatter {
      *
      * @param message   the message to log
      * @param throwable the exception to log
-     * @param args      formatting arguments
      */
-    public static void error(@NotNull String message, @NotNull Throwable throwable, @NotNull Object... args) {
+    public static void error(@NotNull String message, @NotNull Throwable throwable) {
+        error(message, throwable, Placeholder.empty());
+    }
+
+    /**
+     * Logs an error message with a stacktrace using the global logger.
+     *
+     * @param message      the Message object to log
+     * @param throwable    the exception to log
+     * @param placeholders formatting placeholders
+     */
+    public static void error(@NotNull Message message, @NotNull Throwable throwable, @NotNull Placeholder placeholders) {
         if (logger != null) {
-            logger.log(LogType.ERROR, throwable, message, args);
+            logger.log(LogType.ERROR, throwable, message, placeholders);
         }
     }
 
@@ -230,12 +365,9 @@ public abstract class Logger implements TextFormatter {
      *
      * @param message   the Message object to log
      * @param throwable the exception to log
-     * @param args      formatting arguments
      */
-    public static void error(@NotNull Message message, @NotNull Throwable throwable, @NotNull Object... args) {
-        if (logger != null) {
-            logger.log(LogType.ERROR, throwable, message, args);
-        }
+    public static void error(@NotNull Message message, @NotNull Throwable throwable) {
+        error(message, throwable, Placeholder.empty());
     }
 
     /**
@@ -284,72 +416,147 @@ public abstract class Logger implements TextFormatter {
     /**
      * Logs an info message using this logger instance.
      *
-     * @param message the message to log
-     * @param args    formatting arguments
+     * @param message      the message to log
+     * @param placeholders formatting placeholders
      */
-    public void logInfo(@NotNull String message, @NotNull Object... args) {
-        this.log(LogType.INFO, message, args);
+    public void logInfo(@NotNull String message, @NotNull Placeholder placeholders) {
+        this.log(LogType.INFO, message, placeholders);
+    }
+
+    /**
+     * Logs an info message using this logger instance.
+     *
+     * @param message the message to log
+     */
+    public void logInfo(@NotNull String message) {
+        this.logInfo(message, Placeholder.empty());
+    }
+
+    /**
+     * Logs an info message using this logger instance.
+     *
+     * @param message      the Message object to log
+     * @param placeholders formatting placeholders
+     */
+    public void logInfo(@NotNull Message message, @NotNull Placeholder placeholders) {
+        this.log(LogType.INFO, message, placeholders);
     }
 
     /**
      * Logs an info message using this logger instance.
      *
      * @param message the Message object to log
-     * @param args    formatting arguments
      */
-    public void logInfo(@NotNull Message message, @NotNull Object... args) {
-        this.log(LogType.INFO, message, args);
+    public void logInfo(@NotNull Message message) {
+        this.logInfo(message, Placeholder.empty());
+    }
+
+    /**
+     * Logs a warning message using this logger instance.
+     *
+     * @param message      the message to log
+     * @param placeholders formatting placeholders
+     */
+    public void logWarn(@NotNull String message, @NotNull Placeholder placeholders) {
+        this.log(LogType.WARNING, message, placeholders);
     }
 
     /**
      * Logs a warning message using this logger instance.
      *
      * @param message the message to log
-     * @param args    formatting arguments
      */
-    public void logWarn(@NotNull String message, @NotNull Object... args) {
-        this.log(LogType.WARNING, message, args);
+    public void logWarn(@NotNull String message) {
+        this.logWarn(message, Placeholder.empty());
+    }
+
+    /**
+     * Logs a warning message using this logger instance.
+     *
+     * @param message      the Message object to log
+     * @param placeholders formatting placeholders
+     */
+    public void logWarn(@NotNull Message message, @NotNull Placeholder placeholders) {
+        this.log(LogType.WARNING, message, placeholders);
     }
 
     /**
      * Logs a warning message using this logger instance.
      *
      * @param message the Message object to log
-     * @param args    formatting arguments
      */
-    public void logWarn(@NotNull Message message, @NotNull Object... args) {
-        this.log(LogType.WARNING, message, args);
+    public void logWarn(@NotNull Message message) {
+        this.logWarn(message, Placeholder.empty());
+    }
+
+    /**
+     * Logs an error message using this logger instance.
+     *
+     * @param message      the message to log
+     * @param placeholders formatting placeholders
+     */
+    public void logError(@NotNull String message, @NotNull Placeholder placeholders) {
+        this.log(LogType.ERROR, message, placeholders);
     }
 
     /**
      * Logs an error message using this logger instance.
      *
      * @param message the message to log
-     * @param args    formatting arguments
      */
-    public void logError(@NotNull String message, @NotNull Object... args) {
-        this.log(LogType.ERROR, message, args);
+    public void logError(@NotNull String message) {
+        this.logError(message, Placeholder.empty());
+    }
+
+    /**
+     * Logs an error message using this logger instance.
+     *
+     * @param message      the Message object to log
+     * @param placeholders formatting placeholders
+     */
+    public void logError(@NotNull Message message, @NotNull Placeholder placeholders) {
+        this.log(LogType.ERROR, message, placeholders);
     }
 
     /**
      * Logs an error message using this logger instance.
      *
      * @param message the Message object to log
-     * @param args    formatting arguments
      */
-    public void logError(@NotNull Message message, @NotNull Object... args) {
-        this.log(LogType.ERROR, message, args);
+    public void logError(@NotNull Message message) {
+        this.logError(message, Placeholder.empty());
+    }
+
+    /**
+     * Logs a debug message using this logger instance if debug mode is enabled.
+     *
+     * @param message      the message to log
+     * @param placeholders formatting placeholders
+     */
+    public void logDebug(@NotNull String message, @NotNull Placeholder placeholders) {
+        if (this.debugEnabled) {
+            this.log(LogType.DEBUG, message, placeholders);
+        }
     }
 
     /**
      * Logs a debug message using this logger instance if debug mode is enabled.
      *
      * @param message the message to log
-     * @param args    formatting arguments
      */
-    public void logDebug(@NotNull String message, @NotNull Object... args) {
+    public void logDebug(@NotNull String message) {
+        this.logDebug(message, Placeholder.empty());
+    }
+
+    /**
+     * Logs a debug message using this logger instance if debug mode is enabled.
+     *
+     * @param message      the Message object to log
+     * @param placeholders formatting placeholders
+     */
+    public void logDebug(@NotNull Message message, @NotNull Placeholder placeholders) {
         if (this.debugEnabled) {
-            this.log(LogType.DEBUG, message, args);
+            this.log(LogType.DEBUG, message, placeholders);
         }
     }
 
@@ -357,11 +564,21 @@ public abstract class Logger implements TextFormatter {
      * Logs a debug message using this logger instance if debug mode is enabled.
      *
      * @param message the Message object to log
-     * @param args    formatting arguments
      */
-    public void logDebug(@NotNull Message message, @NotNull Object... args) {
+    public void logDebug(@NotNull Message message) {
+        this.logDebug(message, Placeholder.empty());
+    }
+
+    /**
+     * Logs a debug message with a stacktrace using this logger instance if debug mode is enabled.
+     *
+     * @param message      the message to log
+     * @param throwable    the exception to log
+     * @param placeholders formatting placeholders
+     */
+    public void logDebug(@NotNull String message, @NotNull Throwable throwable, @NotNull Placeholder placeholders) {
         if (this.debugEnabled) {
-            this.log(LogType.DEBUG, message, args);
+            this.log(LogType.DEBUG, throwable, message, placeholders);
         }
     }
 
@@ -370,11 +587,21 @@ public abstract class Logger implements TextFormatter {
      *
      * @param message   the message to log
      * @param throwable the exception to log
-     * @param args      formatting arguments
      */
-    public void logDebug(@NotNull String message, @NotNull Throwable throwable, @NotNull Object... args) {
+    public void logDebug(@NotNull String message, @NotNull Throwable throwable) {
+        this.logDebug(message, throwable, Placeholder.empty());
+    }
+
+    /**
+     * Logs a debug message with a stacktrace using this logger instance if debug mode is enabled.
+     *
+     * @param message      the Message object to log
+     * @param throwable    the exception to log
+     * @param placeholders formatting placeholders
+     */
+    public void logDebug(@NotNull Message message, @NotNull Throwable throwable, @NotNull Placeholder placeholders) {
         if (this.debugEnabled) {
-            this.log(LogType.DEBUG, throwable, message, args);
+            this.log(LogType.DEBUG, throwable, message, placeholders);
         }
     }
 
@@ -383,12 +610,20 @@ public abstract class Logger implements TextFormatter {
      *
      * @param message   the Message object to log
      * @param throwable the exception to log
-     * @param args      formatting arguments
      */
-    public void logDebug(@NotNull Message message, @NotNull Throwable throwable, @NotNull Object... args) {
-        if (this.debugEnabled) {
-            this.log(LogType.DEBUG, throwable, message, args);
-        }
+    public void logDebug(@NotNull Message message, @NotNull Throwable throwable) {
+        this.logDebug(message, throwable, Placeholder.empty());
+    }
+
+    /**
+     * Logs a warning message with a stacktrace using this logger instance.
+     *
+     * @param message      the message to log
+     * @param throwable    the exception to log
+     * @param placeholders formatting placeholders
+     */
+    public void logWarn(@NotNull String message, @NotNull Throwable throwable, @NotNull Placeholder placeholders) {
+        this.log(LogType.WARNING, throwable, message, placeholders);
     }
 
     /**
@@ -396,10 +631,20 @@ public abstract class Logger implements TextFormatter {
      *
      * @param message   the message to log
      * @param throwable the exception to log
-     * @param args      formatting arguments
      */
-    public void logWarn(@NotNull String message, @NotNull Throwable throwable, @NotNull Object... args) {
-        this.log(LogType.WARNING, throwable, message, args);
+    public void logWarn(@NotNull String message, @NotNull Throwable throwable) {
+        this.logWarn(message, throwable, Placeholder.empty());
+    }
+
+    /**
+     * Logs a warning message with a stacktrace using this logger instance.
+     *
+     * @param message      the Message object to log
+     * @param throwable    the exception to log
+     * @param placeholders formatting placeholders
+     */
+    public void logWarn(@NotNull Message message, @NotNull Throwable throwable, @NotNull Placeholder placeholders) {
+        this.log(LogType.WARNING, throwable, message, placeholders);
     }
 
     /**
@@ -407,10 +652,20 @@ public abstract class Logger implements TextFormatter {
      *
      * @param message   the Message object to log
      * @param throwable the exception to log
-     * @param args      formatting arguments
      */
-    public void logWarn(@NotNull Message message, @NotNull Throwable throwable, @NotNull Object... args) {
-        this.log(LogType.WARNING, throwable, message, args);
+    public void logWarn(@NotNull Message message, @NotNull Throwable throwable) {
+        this.logWarn(message, throwable, Placeholder.empty());
+    }
+
+    /**
+     * Logs an error message with a stacktrace using this logger instance.
+     *
+     * @param message      the message to log
+     * @param throwable    the exception to log
+     * @param placeholders formatting placeholders
+     */
+    public void logError(@NotNull String message, @NotNull Throwable throwable, @NotNull Placeholder placeholders) {
+        this.log(LogType.ERROR, throwable, message, placeholders);
     }
 
     /**
@@ -418,10 +673,20 @@ public abstract class Logger implements TextFormatter {
      *
      * @param message   the message to log
      * @param throwable the exception to log
-     * @param args      formatting arguments
      */
-    public void logError(@NotNull String message, @NotNull Throwable throwable, @NotNull Object... args) {
-        this.log(LogType.ERROR, throwable, message, args);
+    public void logError(@NotNull String message, @NotNull Throwable throwable) {
+        this.logError(message, throwable, Placeholder.empty());
+    }
+
+    /**
+     * Logs an error message with a stacktrace using this logger instance.
+     *
+     * @param message      the Message object to log
+     * @param throwable    the exception to log
+     * @param placeholders formatting placeholders
+     */
+    public void logError(@NotNull Message message, @NotNull Throwable throwable, @NotNull Placeholder placeholders) {
+        this.log(LogType.ERROR, throwable, message, placeholders);
     }
 
     /**
@@ -429,49 +694,48 @@ public abstract class Logger implements TextFormatter {
      *
      * @param message   the Message object to log
      * @param throwable the exception to log
-     * @param args      formatting arguments
      */
-    public void logError(@NotNull Message message, @NotNull Throwable throwable, @NotNull Object... args) {
-        this.log(LogType.ERROR, throwable, message, args);
+    public void logError(@NotNull Message message, @NotNull Throwable throwable) {
+        this.logError(message, throwable, Placeholder.empty());
     }
 
     /**
      * Implementation-specific logging logic.
      *
-     * @param type    the type of log
-     * @param message the message to log
-     * @param args    formatting arguments
+     * @param type         the type of log
+     * @param message      the message to log
+     * @param placeholders formatting placeholders
      */
-    protected abstract void log(@NotNull LogType type, @NotNull String message, @NotNull Object... args);
+    protected abstract void log(@NotNull LogType type, @NotNull String message, @NotNull Placeholder placeholders);
 
     /**
      * Implementation-specific logging logic with a stacktrace.
      *
-     * @param type      the type of log
-     * @param throwable the exception to log
-     * @param message   the message to log
-     * @param args      formatting arguments
+     * @param type         the type of log
+     * @param throwable    the exception to log
+     * @param message      the message to log
+     * @param placeholders formatting placeholders
      */
-    protected abstract void log(@NotNull LogType type, @NotNull Throwable throwable, @NotNull String message, @NotNull Object... args);
+    protected abstract void log(@NotNull LogType type, @NotNull Throwable throwable, @NotNull String message, @NotNull Placeholder placeholders);
 
     /**
      * Implementation-specific logging logic for Message objects.
      *
-     * @param type    the type of log
-     * @param message the Message object to log
-     * @param args    formatting arguments
+     * @param type         the type of log
+     * @param message      the Message object to log
+     * @param placeholders formatting placeholders
      */
-    protected abstract void log(@NotNull LogType type, @NotNull Message message, @NotNull Object... args);
+    protected abstract void log(@NotNull LogType type, @NotNull Message message, @NotNull Placeholder placeholders);
 
     /**
      * Implementation-specific logging logic for Message objects with a stacktrace.
      *
-     * @param type      the type of log
-     * @param throwable the exception to log
-     * @param message   the Message object to log
-     * @param args      formatting arguments
+     * @param type         the type of log
+     * @param throwable    the exception to log
+     * @param message      the Message object to log
+     * @param placeholders formatting placeholders
      */
-    protected abstract void log(@NotNull LogType type, @NotNull Throwable throwable, @NotNull Message message, @NotNull Object... args);
+    protected abstract void log(@NotNull LogType type, @NotNull Throwable throwable, @NotNull Message message, @NotNull Placeholder placeholders);
 
     /**
      * Gets the formatted prefix for a log type.

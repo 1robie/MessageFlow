@@ -2,6 +2,7 @@ package fr.robie.messageflow.logger;
 
 import com.google.common.base.Throwables;
 import fr.robie.messageflow.formatter.AdventureMessageFormatter;
+import fr.robie.messageflow.formatter.Placeholder;
 import fr.robie.messageflow.model.Message;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.Plugin;
@@ -27,27 +28,27 @@ public final class AdventureLogger extends Logger {
     }
 
     @Override
-    protected void log(@NotNull LogType type, @NotNull String message, @NotNull Object... args) {
+    protected void log(@NotNull LogType type, @NotNull String message, @NotNull Placeholder placeholders) {
         String fullMessage = this.prefixe(type) + message;
-        this.messageFormatter.sendMessage(Bukkit.getConsoleSender(), fullMessage, false, args);
+        this.messageFormatter.sendMessage(Bukkit.getConsoleSender(), fullMessage, false, placeholders);
     }
 
     @Override
-    protected void log(@NotNull LogType type, @NotNull Message message, @NonNull @NotNull Object... args) {
-        this.messageFormatter.sendMessage(message, type, Bukkit.getConsoleSender(), args);
+    protected void log(@NotNull LogType type, @NotNull Message message, @NotNull Placeholder placeholders) {
+        this.messageFormatter.sendMessage(message, type, Bukkit.getConsoleSender(), placeholders);
     }
 
     @Override
-    protected void log(@NotNull LogType type, @NotNull Throwable throwable, @NotNull Message message, @NotNull Object... args) {
-        this.log(type, message, args);
+    protected void log(@NotNull LogType type, @NotNull Throwable throwable, @NotNull Message message, @NotNull Placeholder placeholders) {
+        this.log(type, message, placeholders);
         String stackTrace = "\n<red>" + Throwables.getStackTraceAsString(throwable);
         this.messageFormatter.sendMessageWithoutPrefix(Bukkit.getConsoleSender(), stackTrace);
     }
 
     @Override
-    protected void log(@NotNull LogType type, @NotNull Throwable throwable, @NotNull String message, @NotNull Object... args) {
+    protected void log(@NotNull LogType type, @NotNull Throwable throwable, @NotNull String message, @NotNull Placeholder placeholders) {
         String fullMessage = this.prefixe(type) + message + "\n<red>" + Throwables.getStackTraceAsString(throwable);
-        this.messageFormatter.sendMessage(Bukkit.getConsoleSender(), fullMessage, false, args);
+        this.messageFormatter.sendMessage(Bukkit.getConsoleSender(), fullMessage, false, placeholders);
     }
 
 

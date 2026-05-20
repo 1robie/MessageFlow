@@ -2,6 +2,7 @@ package fr.robie.messageflow.model;
 
 import com.google.common.base.Preconditions;
 import fr.robie.messageflow.api.MessageTypeAdapter;
+import fr.robie.messageflow.formatter.Placeholder;
 import fr.robie.messageflow.logger.Logger;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarFlag;
@@ -69,7 +70,7 @@ public record LegacyBossBarMessage(
         try {
             color = BarColor.valueOf(((String) map.getOrDefault("color", "PINK")).toUpperCase());
         } catch (IllegalArgumentException e) {
-            Logger.warn("Invalid boss bar color value: %value%. Valid values are %valid_values%. Defaulting to PINK.", "value", map.get("color"), "valid_values", Stream.of(BarColor.values()).map(BarColor::name).toList());
+            Logger.warn("Invalid boss bar color value: %value%. Valid values are %valid_values%. Defaulting to PINK.", Placeholder.of("value", String.valueOf(map.get("color")), "valid_values", Stream.of(BarColor.values()).map(BarColor::name).toList().toString()));
             color = BarColor.PINK;
         }
 
@@ -77,7 +78,7 @@ public record LegacyBossBarMessage(
         try {
             style = BarStyle.valueOf(((String) map.getOrDefault("style", "SOLID")).toUpperCase());
         } catch (IllegalArgumentException e) {
-            Logger.warn("Invalid boss bar style value: %value%. Valid values are %valid_values%. Defaulting to SOLID.", "value", map.get("style"), "valid_values", Stream.of(BarStyle.values()).map(BarStyle::name).toList());
+            Logger.warn("Invalid boss bar style value: %value%. Valid values are %valid_values%. Defaulting to SOLID.", Placeholder.of("value", String.valueOf(map.get("style")), "valid_values", Stream.of(BarStyle.values()).map(BarStyle::name).toList().toString()));
             style = BarStyle.SOLID;
         }
 

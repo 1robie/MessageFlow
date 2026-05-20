@@ -133,7 +133,7 @@ public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatte
             @NotNull SimpleMessage message,
             boolean enablePrefix,
             @Nullable String prefix,
-            @NotNull Object[] placeholders,
+            @NotNull Placeholder placeholders,
             @NotNull BiConsumer<Audience, Component> sendAction
     ) {
         List<String> messages = message.messages();
@@ -148,7 +148,7 @@ public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatte
             @NotNull Collection<? extends @NotNull Player> players,
             @Nullable String title, @Nullable String subtitle,
             int fadeIn, int stay, int fadeOut,
-            @NonNull @NotNull Object... placeholders
+            @NotNull Placeholder placeholders
     ) {
         if (players.isEmpty()) {
             return;
@@ -167,7 +167,7 @@ public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatte
     public void sendActionBar(
             @NotNull Collection<? extends @NotNull Player> players,
             @Nullable String message,
-            @NonNull @NotNull Object... placeholders
+            @NotNull Placeholder placeholders
     ) {
         this.sendActionBar(players, message, false, placeholders);
     }
@@ -177,7 +177,7 @@ public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatte
             @NotNull Collection<? extends @NotNull Player> players,
             @Nullable String message,
             boolean prefix,
-            @NotNull Object... placeholders
+            @NotNull Placeholder placeholders
     ) {
         if (message == null || players.isEmpty()) {
             return;
@@ -187,7 +187,7 @@ public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatte
     }
 
     @Override
-    public void broadcastActionBar(@Nullable String message, boolean prefix, @NotNull Object... placeholders) {
+    public void broadcastActionBar(@Nullable String message, boolean prefix, @NotNull Placeholder placeholders) {
         this.sendActionBar(Bukkit.getOnlinePlayers(), message, prefix, placeholders);
     }
 
@@ -196,7 +196,7 @@ public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatte
             @NotNull Collection<? extends CommandSender> senders,
             @Nullable String message,
             boolean prefix,
-            @NotNull Object... placeholders
+            @NotNull Placeholder placeholders
     ) {
         if (message == null || senders.isEmpty()) {
             return;
@@ -206,7 +206,7 @@ public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatte
     }
 
     @Override
-    public void broadcast(@Nullable String message, boolean prefix, @NotNull Object... placeholders) {
+    public void broadcast(@Nullable String message, boolean prefix, @NotNull Placeholder placeholders) {
         this.sendMessage(Bukkit.getOnlinePlayers(), message, prefix, placeholders);
     }
 
@@ -214,7 +214,7 @@ public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatte
             @NotNull Message message,
             @NotNull Collection<? extends CommandSender> audiences,
             boolean prefix,
-            @NotNull Object... placeholders
+            @NotNull Placeholder placeholders
     ) {
         if (audiences.isEmpty()) {
             return;
@@ -295,7 +295,7 @@ public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatte
             @NotNull Message message,
             @NotNull Logger.LogType logType,
             @NotNull ConsoleCommandSender sender,
-            @NotNull Object... placeholders
+            @NotNull Placeholder placeholders
     ) {
         String logPrefix = Logger.getPrefix(logType);
         for (MessageTypeAdapter adapter : message.loaded()) {
@@ -315,7 +315,7 @@ public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatte
             @Nullable String subtitleText,
             int fadeIn, int stay, int fadeOut,
             @Nullable Player player,
-            @NotNull Object[] placeholders
+            @NotNull Placeholder placeholders
     ) {
         return Title.title(
                 this.format(titleText, player, placeholders),

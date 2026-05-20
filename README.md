@@ -235,7 +235,10 @@ MessageManager<MyPlugin, String> messageManager = ...; // Initialized as shown a
 @SuppressWarnings("DataFlowIssue")
 MessageFormatter<MyPlugin, ?> formatter = this.messageManager.formatter();
 
-formatter.sendMessage(player, MyMessages.WELCOME, "player",player.getName()); // Sends "Welcome to the server, PlayerName!" to the player
+Placeholders.Builder placeholders = Placeholders.builder();
+placeholders.put("player", player.getName());
+
+formatter.sendMessage(player, MyMessages.WELCOME, placeholders.build()); // Sends "Welcome to the server, PlayerName!" to the player
 
 ```
 
