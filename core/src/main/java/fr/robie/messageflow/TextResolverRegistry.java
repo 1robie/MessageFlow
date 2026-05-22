@@ -3,6 +3,7 @@ package fr.robie.messageflow;
 import com.google.common.base.Preconditions;
 import fr.robie.messageflow.api.ITextResolverRegistry;
 import fr.robie.messageflow.api.TextResolver;
+import fr.robie.messageflow.formatter.FunctionalPlaceholderResolver;
 import fr.robie.messageflow.formatter.Placeholder;
 import fr.robie.messageflow.hooks.placeholderapi.PlaceholderAPIResolver;
 import org.bukkit.Bukkit;
@@ -21,6 +22,7 @@ public class TextResolverRegistry implements ITextResolverRegistry {
         if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null) {
             this.register(new PlaceholderAPIResolver());
         }
+        this.register(new FunctionalPlaceholderResolver());
     }
 
     @Override

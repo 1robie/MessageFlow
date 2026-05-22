@@ -35,24 +35,51 @@ public class EnumLanguageConfiguration<E extends Enum<E>> implements LanguageCon
         this.activeLanguage = defaultLanguage;
     }
 
+    /**
+     * Sets the format string for language file paths.
+     * The %s placeholder will be replaced by the lowercase enum name.
+     *
+     * @param languagePathFormat the path format string
+     * @return this instance for fluent chaining
+     */
     public EnumLanguageConfiguration<E> languagePathFormat(@NotNull String languagePathFormat) {
         Preconditions.checkNotNull(languagePathFormat, "Language path format cannot be null");
         this.languagePathFormat = languagePathFormat;
         return this;
     }
 
+    /**
+     * Gets the enum class representing available languages.
+     *
+     * @return the available languages enum class
+     */
     public Class<E> getAvailableLanguages() {
         return this.availableLanguages;
     }
 
+    /**
+     * Gets the default language.
+     *
+     * @return the default language
+     */
     public @NotNull E getDefaultLanguage() {
         return this.defaultLanguage;
     }
 
+    /**
+     * Gets the currently active language.
+     *
+     * @return the active language
+     */
     public @NotNull E getActiveLanguage() {
         return this.activeLanguage;
     }
 
+    /**
+     * Gets the language file path format string.
+     *
+     * @return the path format string
+     */
     public @NotNull String getLanguagePathFormat() {
         return this.languagePathFormat;
     }

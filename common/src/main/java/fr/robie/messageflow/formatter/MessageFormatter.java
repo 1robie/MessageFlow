@@ -162,6 +162,16 @@ public abstract class MessageFormatter<T extends Plugin, V> {
         return this.textResolverRegistry.resolve(text, player, placeholders);
     }
 
+    /**
+     * Sends a message to a collection of audiences, optionally using player context
+     * if the registry has resolvers.
+     *
+     * @param <A>       the audience type
+     * @param audiences the collection of audiences
+     * @param text      the raw text to format and send
+     * @param placeholders the placeholders to apply
+     * @param action    the action to perform for each audience
+     */
     protected <A> void perAudienceOrShared(
             @NotNull Collection<? extends A> audiences,
             @NotNull String text,
@@ -179,6 +189,16 @@ public abstract class MessageFormatter<T extends Plugin, V> {
         }
     }
 
+    /**
+     * Sends multiple messages to a collection of audiences, optionally using player context.
+     *
+     * @param <A>       the audience type
+     * @param audiences the collection of audiences
+     * @param texts     the raw texts to format and send
+     * @param placeholders the placeholders to apply
+     * @param prefix    optional prefix to prepend to each text
+     * @param action    the action to perform for each audience/message
+     */
     protected <A> void perAudienceOrShared(
             @NotNull Collection<? extends A> audiences,
             @NotNull Collection<String> texts,
@@ -205,6 +225,15 @@ public abstract class MessageFormatter<T extends Plugin, V> {
         }
     }
 
+    /**
+     * Formats a raw message string by applying placeholders, text resolvers, and loading it
+     * into the platform-specific format.
+     *
+     * @param message      the raw message string
+     * @param player       the player context (optional)
+     * @param placeholders the placeholders to apply
+     * @return the formatted message object
+     */
     @NotNull
     protected V format(@Nullable String message, @Nullable Player player, @NotNull Placeholder placeholders) {
         if (message == null) {
@@ -226,6 +255,16 @@ public abstract class MessageFormatter<T extends Plugin, V> {
     @NotNull
     protected abstract V empty();
 
+    /**
+     * Schedules the removal of a boss bar after a certain duration.
+     *
+     * @param <A>           the player/audience type
+     * @param <B>           the boss bar type
+     * @param durationTicks the duration in ticks
+     * @param players       the players to hide the boss bar from
+     * @param hideAction    the action to hide the boss bar
+     * @param bossbar       the boss bar instance
+     */
     protected <A, B> void scheduleHideBossBar(
             long durationTicks,
             Collection<? extends A> players,
@@ -239,6 +278,16 @@ public abstract class MessageFormatter<T extends Plugin, V> {
         );
     }
 
+    /**
+     * Schedules the removal of a boss bar for a single player after a certain duration.
+     *
+     * @param <A>           the player/audience type
+     * @param <B>           the boss bar type
+     * @param durationTicks the duration in ticks
+     * @param player        the player to hide the boss bar from
+     * @param hideAction    the action to hide the boss bar
+     * @param bossbar       the boss bar instance
+     */
     protected <A, B> void scheduleHideBossBar(
             long durationTicks,
             A player,

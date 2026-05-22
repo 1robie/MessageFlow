@@ -50,16 +50,32 @@ public class NormalLanguageConfiguration implements LanguageConfiguration<String
         return this.languagesEntries.values().stream().toList();
     }
 
+    /**
+     * Gets the default language code.
+     *
+     * @return the default language code
+     */
     @Override
     public @NotNull String getDefaultLanguage() {
         return this.defaultLanguage;
     }
 
+    /**
+     * Gets the currently active language code.
+     *
+     * @return the active language code
+     */
     @Override
     public @NotNull String getActiveLanguage() {
         return this.activeLanguage;
     }
 
+    /**
+     * Normalizes a language code to a standard format (lowercase with underscores).
+     *
+     * @param languageCode the language code to normalize
+     * @return the normalized language code
+     */
     @Override
     public String getNormalizedLanguage(@NotNull String languageCode) {
         Preconditions.checkNotNull(languageCode, "Language code cannot be null");
