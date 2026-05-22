@@ -28,14 +28,14 @@ public record ConfigurationOptions<E>(LanguageConfiguration<E> languageConfigura
      * @return this instance for fluent chaining
      * @deprecated Use {@link ConfigurationManager.Setting#BACKUP_DATE_FORMAT} and call {@link ConfigurationManager.Setting#setDefaultValue(Object)}
      */
-    @Deprecated(since = "0.0.5", forRemoval = true)
+    @Deprecated(since = "1.0.0", forRemoval = true)
     public @NotNull ConfigurationOptions<E> backupDateFormat(@NotNull String format) {
         Preconditions.checkNotNull(format, "backupDateFormat cannot be null");
         ConfigurationManager.Setting.BACKUP_DATE_FORMAT.setDefaultValue(format);
         return this;
     }
 
-    @Deprecated(since = "0.0.5", forRemoval = true)
+    @Deprecated(since = "1.0.0", forRemoval = true)
     public @NotNull String backupDateFormat() {
         return ConfigurationManager.Setting.BACKUP_DATE_FORMAT.getDefaultValue();
     }
@@ -46,7 +46,7 @@ public record ConfigurationOptions<E>(LanguageConfiguration<E> languageConfigura
      * @param enabled {@code true} to enable automatic file creation
      * @return this instance for fluent chaining
      */
-    @Deprecated(since = "0.0.5", forRemoval = true)
+    @Deprecated(since = "1.0.0", forRemoval = true)
     public @NotNull ConfigurationOptions<E> autoCreateFiles(boolean enabled) {
         ConfigurationManager.Setting.SYNC_AUTO_CREATE.setDefaultValue(enabled);
         return this;
@@ -58,7 +58,7 @@ public record ConfigurationOptions<E>(LanguageConfiguration<E> languageConfigura
      * @param enabled {@code true} to enable automatic adding of missing keys
      * @return this instance for fluent chaining
      */
-    @Deprecated(since = "0.0.5", forRemoval = true)
+    @Deprecated(since = "1.0.0", forRemoval = true)
     public @NotNull ConfigurationOptions<E> autoAddMissingKeys(boolean enabled) {
         ConfigurationManager.Setting.SYNC_AUTO_ADD_MISSING.setDefaultValue(enabled);
         return this;
@@ -70,7 +70,7 @@ public record ConfigurationOptions<E>(LanguageConfiguration<E> languageConfigura
      * @param enabled {@code true} to enable automatic removal of obsolete keys
      * @return this instance for fluent chaining
      */
-    @Deprecated(since = "0.0.5", forRemoval = true)
+    @Deprecated(since = "1.0.0", forRemoval = true)
     public @NotNull ConfigurationOptions<E> autoRemoveObsoleteKeys(boolean enabled) {
         ConfigurationManager.Setting.SYNC_AUTO_REMOVE_OBSOLETE.setDefaultValue(enabled);
         return this;
@@ -83,7 +83,7 @@ public record ConfigurationOptions<E>(LanguageConfiguration<E> languageConfigura
      * @return this instance for fluent chaining
      * @deprecated Use {@link ConfigurationManager.Setting#BACKUP_ENABLED} and call {@link ConfigurationManager.Setting#setDefaultValue(Object)}
      */
-    @Deprecated(since = "0.0.5", forRemoval = true)
+    @Deprecated(since = "1.0.0", forRemoval = true)
     public @NotNull ConfigurationOptions<E> backupBeforeRemovingObsoleteKeys(boolean enabled) {
         ConfigurationManager.Setting.BACKUP_ENABLED.setDefaultValue(enabled);
         return this;
@@ -96,7 +96,7 @@ public record ConfigurationOptions<E>(LanguageConfiguration<E> languageConfigura
      * @return this instance for fluent chaining
      * @deprecated Use {@link ConfigurationManager.Setting#BACKUP_DIRECTORY} and call {@link ConfigurationManager.Setting#setDefaultValue(Object)}
      */
-    @Deprecated(since = "0.0.5", forRemoval = true)
+    @Deprecated(since = "1.0.0", forRemoval = true)
     public @NotNull ConfigurationOptions<E> backupFolder(@NotNull String relativeFolder) {
         Preconditions.checkNotNull(relativeFolder, "relativeFolder cannot be null");
         ConfigurationManager.Setting.BACKUP_DIRECTORY.setDefaultValue(relativeFolder);
@@ -109,7 +109,7 @@ public record ConfigurationOptions<E>(LanguageConfiguration<E> languageConfigura
      * @return {@code true} if enabled
      * @deprecated Use {@link ConfigurationManager.Setting#SYNC_AUTO_CREATE} and call {@link ConfigurationManager.Setting#getDefaultValue()}
      */
-    @Deprecated(since = "0.0.5", forRemoval = true)
+    @Deprecated(since = "1.0.0", forRemoval = true)
     public boolean autoCreateFiles() {
         return ConfigurationManager.Setting.SYNC_AUTO_CREATE.getDefaultValue();
     }
@@ -120,7 +120,7 @@ public record ConfigurationOptions<E>(LanguageConfiguration<E> languageConfigura
      * @return {@code true} if enabled
      * @deprecated Use {@link ConfigurationManager.Setting#SYNC_AUTO_ADD_MISSING} and call {@link ConfigurationManager.Setting#getDefaultValue()}
      */
-    @Deprecated(since = "0.0.5", forRemoval = true)
+    @Deprecated(since = "1.0.0", forRemoval = true)
     public boolean autoAddMissingKeys() {
         return ConfigurationManager.Setting.SYNC_AUTO_ADD_MISSING.getDefaultValue();
     }
@@ -131,7 +131,7 @@ public record ConfigurationOptions<E>(LanguageConfiguration<E> languageConfigura
      * @return {@code true} if enabled
      * @deprecated Use {@link ConfigurationManager.Setting#SYNC_AUTO_REMOVE_OBSOLETE} and call {@link ConfigurationManager.Setting#getDefaultValue()}
      */
-    @Deprecated(since = "0.0.5", forRemoval = true)
+    @Deprecated(since = "1.0.0", forRemoval = true)
     public boolean autoRemoveObsoleteKeys() {
         return ConfigurationManager.Setting.SYNC_AUTO_REMOVE_OBSOLETE.getDefaultValue();
     }
@@ -142,7 +142,7 @@ public record ConfigurationOptions<E>(LanguageConfiguration<E> languageConfigura
      * @return {@code true} if enabled
      * @deprecated Use {@link ConfigurationManager.Setting#BACKUP_ENABLED} and call {@link ConfigurationManager.Setting#getDefaultValue()}
      */
-    @Deprecated(since = "0.0.5", forRemoval = true)
+    @Deprecated(since = "1.0.0", forRemoval = true)
     public boolean backupBeforeRemovingObsoleteKeys() {
         return ConfigurationManager.Setting.BACKUP_ENABLED.getDefaultValue();
     }
@@ -153,7 +153,7 @@ public record ConfigurationOptions<E>(LanguageConfiguration<E> languageConfigura
      * @return the relative backup folder path
      * @deprecated Use {@link ConfigurationManager.Setting#BACKUP_DIRECTORY} and call {@link ConfigurationManager.Setting#getDefaultValue()}
      */
-    @Deprecated(since = "0.0.5", forRemoval = true)
+    @Deprecated(since = "1.0.0", forRemoval = true)
     public @NotNull String backupFolder() {
         return ConfigurationManager.Setting.BACKUP_DIRECTORY.getDefaultValue();
     }
@@ -164,7 +164,7 @@ public record ConfigurationOptions<E>(LanguageConfiguration<E> languageConfigura
      * @return the logger prefix, or null to use the default plugin name + version prefix
      * @deprecated Use {@link ConfigurationManager.Setting#LEGACY_LOGGER_PREFIX} or {@link ConfigurationManager.Setting#ADVENTURE_LOGGER_PREFIX} and call {@link ConfigurationManager.Setting#getDefaultValue()}
      */
-    @Deprecated(since = "0.0.5", forRemoval = true)
+    @Deprecated(since = "1.0.0", forRemoval = true)
     public @Nullable String loggerPrefix() {
         return ConfigurationManager.Setting.LEGACY_LOGGER_PREFIX.getDefaultValue();
     }
@@ -176,7 +176,7 @@ public record ConfigurationOptions<E>(LanguageConfiguration<E> languageConfigura
      * @return this instance for fluent chaining
      * @deprecated Use {@link ConfigurationManager.Setting#LEGACY_LOGGER_PREFIX} or {@link ConfigurationManager.Setting#ADVENTURE_LOGGER_PREFIX} and call {@link ConfigurationManager.Setting#setDefaultValue(Object)}
      */
-    @Deprecated(since = "0.0.5", forRemoval = true)
+    @Deprecated(since = "1.0.0", forRemoval = true)
     public @NotNull ConfigurationOptions<E> loggerPrefix(@Nullable String prefix) {
         ConfigurationManager.Setting.LEGACY_LOGGER_PREFIX.setDefaultValue(prefix);
         ConfigurationManager.Setting.ADVENTURE_LOGGER_PREFIX.setDefaultValue(prefix);
@@ -190,7 +190,7 @@ public record ConfigurationOptions<E>(LanguageConfiguration<E> languageConfigura
      * @return this instance for fluent chaining
      * @deprecated Use {@link ConfigurationManager.Setting#MESSAGE_CACHE_MAX_SIZE} and call {@link ConfigurationManager.Setting#setDefaultValue(Object)}
      */
-    @Deprecated(since = "0.0.5", forRemoval = true)
+    @Deprecated(since = "1.0.0", forRemoval = true)
     public @NotNull ConfigurationOptions<E> cacheMaximumSize(long maximumSize) {
         ConfigurationManager.Setting.MESSAGE_CACHE_MAX_SIZE.setDefaultValue(maximumSize);
         return this;
@@ -202,7 +202,7 @@ public record ConfigurationOptions<E>(LanguageConfiguration<E> languageConfigura
      * @return the maximum cache size
      * @deprecated Use {@link ConfigurationManager.Setting#MESSAGE_CACHE_MAX_SIZE} and call {@link ConfigurationManager.Setting#getDefaultValue()}
      */
-    @Deprecated(since = "0.0.5", forRemoval = true)
+    @Deprecated(since = "1.0.0", forRemoval = true)
     public long cacheMaximumSize() {
         return ConfigurationManager.Setting.MESSAGE_CACHE_MAX_SIZE.getDefaultValue();
     }
@@ -214,7 +214,7 @@ public record ConfigurationOptions<E>(LanguageConfiguration<E> languageConfigura
      * @return this instance for fluent chaining
      * @deprecated Use {@link ConfigurationManager.Setting#MESSAGE_CACHE_EXPIRE_AFTER_ACCESS} and call {@link ConfigurationManager.Setting#setDefaultValue(Object)}
      */
-    @Deprecated(since = "0.0.5", forRemoval = true)
+    @Deprecated(since = "1.0.0", forRemoval = true)
     public @NotNull ConfigurationOptions<E> cacheExpireAfterAccessMinutes(long minutes) {
         ConfigurationManager.Setting.MESSAGE_CACHE_EXPIRE_AFTER_ACCESS.setDefaultValue(minutes);
         return this;
@@ -226,7 +226,7 @@ public record ConfigurationOptions<E>(LanguageConfiguration<E> languageConfigura
      * @return the expiration time in minutes
      * @deprecated Use {@link ConfigurationManager.Setting#MESSAGE_CACHE_EXPIRE_AFTER_ACCESS} and call {@link ConfigurationManager.Setting#getDefaultValue()}
      */
-    @Deprecated(since = "0.0.5", forRemoval = true)
+    @Deprecated(since = "1.0.0", forRemoval = true)
     public long cacheExpireAfterAccessMinutes() {
         return ConfigurationManager.Setting.MESSAGE_CACHE_EXPIRE_AFTER_ACCESS.getDefaultValue();
     }
@@ -238,7 +238,7 @@ public record ConfigurationOptions<E>(LanguageConfiguration<E> languageConfigura
      * @return this instance for fluent chaining
      * @deprecated Use {@link ConfigurationManager.Setting#MESSAGE_CACHE_EXPIRE_AFTER_WRITE} and call {@link ConfigurationManager.Setting#setDefaultValue(Object)}
      */
-    @Deprecated(since = "0.0.5", forRemoval = true)
+    @Deprecated(since = "1.0.0", forRemoval = true)
     public @NotNull ConfigurationOptions<E> cacheExpireAfterWriteMinutes(long minutes) {
         ConfigurationManager.Setting.MESSAGE_CACHE_EXPIRE_AFTER_WRITE.setDefaultValue(minutes);
         return this;
@@ -250,7 +250,7 @@ public record ConfigurationOptions<E>(LanguageConfiguration<E> languageConfigura
      * @return the expiration time in minutes
      * @deprecated Use {@link ConfigurationManager.Setting#MESSAGE_CACHE_EXPIRE_AFTER_WRITE} and call {@link ConfigurationManager.Setting#getDefaultValue()}
      */
-    @Deprecated(since = "0.0.5", forRemoval = true)
+    @Deprecated(since = "1.0.0", forRemoval = true)
     public long cacheExpireAfterWriteMinutes() {
         return ConfigurationManager.Setting.MESSAGE_CACHE_EXPIRE_AFTER_WRITE.getDefaultValue();
     }
@@ -262,7 +262,7 @@ public record ConfigurationOptions<E>(LanguageConfiguration<E> languageConfigura
      * @return this instance for fluent chaining
      * @deprecated Use {@link ConfigurationManager.Setting#MESSAGE_CACHE_INITIAL_CAPACITY} and call {@link ConfigurationManager.Setting#setDefaultValue(Object)}
      */
-    @Deprecated(since = "0.0.5", forRemoval = true)
+    @Deprecated(since = "1.0.0", forRemoval = true)
     public @NotNull ConfigurationOptions<E> cacheInitialCapacity(int initialCapacity) {
         ConfigurationManager.Setting.MESSAGE_CACHE_INITIAL_CAPACITY.setDefaultValue(initialCapacity);
         return this;
@@ -274,7 +274,7 @@ public record ConfigurationOptions<E>(LanguageConfiguration<E> languageConfigura
      * @return the initial capacity
      * @deprecated Use {@link ConfigurationManager.Setting#MESSAGE_CACHE_INITIAL_CAPACITY} and call {@link ConfigurationManager.Setting#getDefaultValue()}
      */
-    @Deprecated(since = "0.0.5", forRemoval = true)
+    @Deprecated(since = "1.0.0", forRemoval = true)
     public int cacheInitialCapacity() {
         return ConfigurationManager.Setting.MESSAGE_CACHE_INITIAL_CAPACITY.getDefaultValue();
     }
@@ -286,7 +286,7 @@ public record ConfigurationOptions<E>(LanguageConfiguration<E> languageConfigura
      * @return this instance for fluent chaining
      * @deprecated Use {@link ConfigurationManager.Setting#MESSAGE_CACHE_CONCURRENCY_LEVEL} and call {@link ConfigurationManager.Setting#setDefaultValue(Object)}
      */
-    @Deprecated(since = "0.0.5", forRemoval = true)
+    @Deprecated(since = "1.0.0", forRemoval = true)
     public @NotNull ConfigurationOptions<E> cacheConcurrencyLevel(int concurrencyLevel) {
         ConfigurationManager.Setting.MESSAGE_CACHE_CONCURRENCY_LEVEL.setDefaultValue(concurrencyLevel);
         return this;
@@ -298,7 +298,7 @@ public record ConfigurationOptions<E>(LanguageConfiguration<E> languageConfigura
      * @return the concurrency level
      * @deprecated Use {@link ConfigurationManager.Setting#MESSAGE_CACHE_CONCURRENCY_LEVEL} and call {@link ConfigurationManager.Setting#getDefaultValue()}
      */
-    @Deprecated(since = "0.0.5", forRemoval = true)
+    @Deprecated(since = "1.0.0", forRemoval = true)
     public int cacheConcurrencyLevel() {
         return ConfigurationManager.Setting.MESSAGE_CACHE_CONCURRENCY_LEVEL.getDefaultValue();
     }
@@ -310,7 +310,7 @@ public record ConfigurationOptions<E>(LanguageConfiguration<E> languageConfigura
      * @return this instance for fluent chaining
      * @deprecated Use {@link ConfigurationManager.Setting#MESSAGE_CACHE_RECORD_STATS} and call {@link ConfigurationManager.Setting#setDefaultValue(Object)}
      */
-    @Deprecated(since = "0.0.5", forRemoval = true)
+    @Deprecated(since = "1.0.0", forRemoval = true)
     public @NotNull ConfigurationOptions<E> cacheRecordStats(boolean recordStats) {
         ConfigurationManager.Setting.MESSAGE_CACHE_RECORD_STATS.setDefaultValue(recordStats);
         return this;
@@ -322,7 +322,7 @@ public record ConfigurationOptions<E>(LanguageConfiguration<E> languageConfigura
      * @return {@code true} if enabled
      * @deprecated Use {@link ConfigurationManager.Setting#MESSAGE_CACHE_RECORD_STATS} and call {@link ConfigurationManager.Setting#getDefaultValue()}
      */
-    @Deprecated(since = "0.0.5", forRemoval = true)
+    @Deprecated(since = "1.0.0", forRemoval = true)
     public boolean cacheRecordStats() {
         return ConfigurationManager.Setting.MESSAGE_CACHE_RECORD_STATS.getDefaultValue();
     }
@@ -334,7 +334,7 @@ public record ConfigurationOptions<E>(LanguageConfiguration<E> languageConfigura
      * @return this instance for fluent chaining
      * @deprecated Use {@link ConfigurationManager.Setting#MESSAGE_CACHE_SOFT_VALUES} and call {@link ConfigurationManager.Setting#setDefaultValue(Object)}
      */
-    @Deprecated(since = "0.0.5", forRemoval = true)
+    @Deprecated(since = "1.0.0", forRemoval = true)
     public @NotNull ConfigurationOptions<E> cacheSoftValues(boolean softValues) {
         ConfigurationManager.Setting.MESSAGE_CACHE_SOFT_VALUES.setDefaultValue(softValues);
         return this;
@@ -346,7 +346,7 @@ public record ConfigurationOptions<E>(LanguageConfiguration<E> languageConfigura
      * @return {@code true} if enabled
      * @deprecated Use {@link ConfigurationManager.Setting#MESSAGE_CACHE_SOFT_VALUES} and call {@link ConfigurationManager.Setting#getDefaultValue()}
      */
-    @Deprecated(since = "0.0.5", forRemoval = true)
+    @Deprecated(since = "1.0.0", forRemoval = true)
     public boolean cacheSoftValues() {
         return ConfigurationManager.Setting.MESSAGE_CACHE_SOFT_VALUES.getDefaultValue();
     }
@@ -368,7 +368,7 @@ public record ConfigurationOptions<E>(LanguageConfiguration<E> languageConfigura
      * @return a new ConfigurationOptions instance configured for a single file
      * @deprecated Use {@link NormalLanguageConfiguration} directly
      */
-    @Deprecated(since = "0.0.5", forRemoval = true)
+    @Deprecated(since = "1.0.0", forRemoval = true)
     public static ConfigurationOptions<String> singleFile(String fileName) {
         NormalLanguageConfiguration normalLanguageConfiguration = new NormalLanguageConfiguration("default");
         normalLanguageConfiguration.addLanguage("default", fileName);
