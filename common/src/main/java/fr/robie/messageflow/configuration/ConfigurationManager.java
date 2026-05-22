@@ -189,7 +189,18 @@ public class ConfigurationManager<P extends Plugin> {
         /**
          * Whether to use soft references for player placeholder cache values.
          */
-        PLACEHOLDER_PLAYER_CACHE_SOFT_VALUES("cache.placeholders.player.soft-values", Boolean.class, false);
+        PLACEHOLDER_PLAYER_CACHE_SOFT_VALUES("cache.placeholders.player.soft-values", Boolean.class, false),
+
+        /**
+         * Whether to log a message when the PlaceholderAPI hook is loaded.
+         */
+        HOOK_PLACEHOLDER_API_LOG_ON_LOAD("hooks.placeholderapi.log-on-load", Boolean.class, true),
+
+        /**
+         * The message logged when a hook is loaded.
+         * Supports %hook% placeholder.
+         */
+        HOOK_LOAD_MESSAGE("hooks.load-message", String.class, "Hook %hook% loaded successfully!", true);
 
         private static final Set<Class<?>> ALLOWED_TYPES = Set.of(
                 String.class, Integer.class, Boolean.class, Long.class, Double.class

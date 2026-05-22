@@ -3,9 +3,11 @@ package fr.robie.messageflow;
 import com.google.common.base.Preconditions;
 import fr.robie.messageflow.api.ITextResolverRegistry;
 import fr.robie.messageflow.api.TextResolver;
+import fr.robie.messageflow.configuration.ConfigurationManager;
 import fr.robie.messageflow.formatter.FunctionalPlaceholderResolver;
 import fr.robie.messageflow.formatter.Placeholder;
 import fr.robie.messageflow.hooks.placeholderapi.PlaceholderAPIResolver;
+import fr.robie.messageflow.logger.Logger;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
@@ -21,6 +23,9 @@ public class TextResolverRegistry implements ITextResolverRegistry {
     public void initialize() {
         if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null) {
             this.register(new PlaceholderAPIResolver());
+            if (ConfigurationManager.Setting.HOOK_PLACEHOLDER_API_LOG_ON_LOAD.getValue()) {
+                Logger.info(ConfigurationManager.Setting.HOOK_LOAD_MESSAGE.<String>getValue(), Placeholder.of("hook", "PlaceholderAPI"));
+            }
         }
         this.register(new FunctionalPlaceholderResolver());
     }

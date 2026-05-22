@@ -90,16 +90,12 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
         Preconditions.checkNotNull(options, "Configuration options cannot be null");
         this.plugin = plugin;
         this.configurationManager = new ConfigurationManager<>(plugin);
+        this.configurationManager.load();
         this.messages = messages;
-
-        TextResolverRegistry registry = new TextResolverRegistry();
-        registry.initialize();
 
         this.messageFormatter = PlatformType.hasComponent()
                 ? new AdventureMessageFormatter<>(plugin)
                 : new LegacyMessageFormatter<>(plugin);
-
-        this.messageFormatter.setTextResolverRegistry(registry);
 
         Placeholder.Builder placeholders = Placeholder.builder();
         try {
@@ -125,6 +121,11 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
             new LegacyLogger(loggerPrefix, legacyFormatter);
         }
 
+        TextResolverRegistry registry = new TextResolverRegistry();
+        registry.initialize();
+
+        this.messageFormatter.setTextResolverRegistry(registry);
+
         this.BACKUP_DATE_FORMAT = DateTimeFormatter.ofPattern(ConfigurationManager.Setting.BACKUP_DATE_FORMAT.getValue());
         this.languageConfiguration = options.languageConfiguration();
     }
@@ -146,6 +147,7 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
 
     @Override
     public void reload() {
+        this.configurationManager.load();
         for (LanguageEntry languageEntry : this.languageConfiguration.getLanguagesEntries()) {
             String lang = languageEntry.language();
             String relFile = languageEntry.path();
