@@ -295,12 +295,18 @@ public class ConfigurationManager<P extends Plugin> {
                 if (!this.allowNull) {
                     throw new IllegalArgumentException("Null value not allowed for " + this.name());
                 }
+                this.value = null;
             } else if (!this.type.isInstance(value)) {
-                throw new IllegalArgumentException(
-                        "Expected " + this.type.getSimpleName() + " for " + this.name() + ", got " + value.getClass().getSimpleName()
-                );
+                switch (value) {
+                    case Integer i when this.type == Long.class -> this.value = i.longValue();
+                    case Long l when this.type == Integer.class -> this.value = l.intValue();
+                    case Number number when this.type == Double.class -> this.value = number.doubleValue();
+                    default ->
+                            throw new IllegalArgumentException("Expected " + this.type.getSimpleName() + " for " + this.name() + ", got " + value.getClass().getSimpleName());
+                }
+            } else {
+                this.value = value;
             }
-            this.value = value;
         }
 
         /**
