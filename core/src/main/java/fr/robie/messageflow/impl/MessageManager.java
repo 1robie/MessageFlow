@@ -112,10 +112,10 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
             placeholders.put("plugin-full", this.plugin.getDescription().getFullName());
         }
 
-        String loggerPrefix = switch (PlatformType.get()) {
+        String loggerPrefix = placeholders.build().parse(switch (PlatformType.get()) {
             case LEGACY -> ConfigurationManager.Setting.LEGACY_LOGGER_PREFIX.getValue();
             case COMPONENTS -> ConfigurationManager.Setting.ADVENTURE_LOGGER_PREFIX.getValue();
-        };
+        });
 
         if (this.messageFormatter instanceof AdventureMessageFormatter<?> adventureFormatter) {
             new AdventureLogger(loggerPrefix, adventureFormatter);
