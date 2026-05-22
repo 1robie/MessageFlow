@@ -339,8 +339,8 @@ class GlobalPlaceholderRegistryImplTest {
 
         this.registry.rebuildCaches();
 
-        assertEquals(500L, ConfigurationManager.Setting.PLACEHOLDER_GLOBAL_CACHE_MAX_SIZE.getValue());
-        assertEquals(5000L, ConfigurationManager.Setting.PLACEHOLDER_PLAYER_CACHE_MAX_SIZE.getValue());
+        assertEquals(500L, ConfigurationManager.Setting.PLACEHOLDER_GLOBAL_CACHE_MAX_SIZE.<Long>getValue());
+        assertEquals(5000L, ConfigurationManager.Setting.PLACEHOLDER_PLAYER_CACHE_MAX_SIZE.<Long>getValue());
     }
 
     @Test
@@ -358,7 +358,7 @@ class GlobalPlaceholderRegistryImplTest {
         this.registry.rebuildCaches();
 
         // Verify new configuration took effect
-        assertEquals(500L, ConfigurationManager.Setting.PLACEHOLDER_GLOBAL_CACHE_MAX_SIZE.getValue());
+        assertEquals(500L, ConfigurationManager.Setting.PLACEHOLDER_GLOBAL_CACHE_MAX_SIZE.<Long>getValue());
 
         // The placeholder should still exist in the registry even though cache was cleared
         assertTrue(this.registry.exists("test_cache"));
