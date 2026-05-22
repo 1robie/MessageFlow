@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import fr.robie.messageflow.TextResolverRegistry;
 import fr.robie.messageflow.api.IMessageManager;
 import fr.robie.messageflow.api.MessageTypeAdapter;
+import fr.robie.messageflow.configuration.ConfigurationManager;
 import fr.robie.messageflow.configuration.ConfigurationOptions;
 import fr.robie.messageflow.configuration.lang.LanguageConfiguration;
 import fr.robie.messageflow.configuration.lang.LanguageEntry;
@@ -41,8 +42,11 @@ import java.util.function.Supplier;
  */
 @SuppressWarnings("ResultOfMethodCallIgnored")
 public final class MessageManager<T extends Plugin, E> implements IMessageManager<T, E> {
+    private final ConfigurationManager<T> configurationManager;
+
     private final T plugin;
-    private final ConfigurationOptions<E> options;
+
+
     private final Supplier<? extends Iterable<? extends Message>> messages;
     private final MessageFormatter<T, ?> messageFormatter;
 
@@ -81,7 +85,7 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
         Preconditions.checkNotNull(plugin, "Plugin cannot be null");
         Preconditions.checkNotNull(options, "Configuration options cannot be null");
         this.plugin = plugin;
-        this.options = options;
+        this.configurationManager = new ConfigurationManager<>(plugin);
         this.messages = messages;
 
         TextResolverRegistry registry = new TextResolverRegistry();
@@ -90,12 +94,12 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
         registry.register(new FunctionalPlaceholderResolver());
 
         this.messageFormatter = PlatformType.hasComponent()
-                ? new AdventureMessageFormatter<>(plugin, options)
-                : new LegacyMessageFormatter<>(plugin, options);
+                ? new AdventureMessageFormatter<>(plugin)
+                : new LegacyMessageFormatter<>(plugin);
 
         this.messageFormatter.setTextResolverRegistry(registry);
 
-        String loggerPrefix = options.loggerPrefix();
+        String loggerPrefix = ConfigurationManager.Setting.LOGGER_PREFIX.getValue();
         if (loggerPrefix == null) {
             try {
                 loggerPrefix = "<dark_gray>[</dark_gray>" + this.plugin.getPluginMeta().getName() + " " + this.plugin.getPluginMeta().getVersion() + "<dark_gray>]</dark_gray>";
@@ -111,7 +115,7 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
             new LegacyLogger(loggerPrefix, legacyFormatter);
         }
 
-        this.BACKUP_DATE_FORMAT = DateTimeFormatter.ofPattern(options.backupDateFormat());
+        this.BACKUP_DATE_FORMAT = DateTimeFormatter.ofPattern(ConfigurationManager.Setting.BACKUP_DATE_FORMAT.getValue());
         this.languageConfiguration = options.languageConfiguration();
     }
 
@@ -126,13 +130,18 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
     }
 
     @Override
+    public @NotNull ConfigurationManager<T> configurationManager() {
+        return this.configurationManager;
+    }
+
+    @Override
     public void reload() {
         for (LanguageEntry languageEntry : this.languageConfiguration.getLanguagesEntries()) {
             String lang = languageEntry.language();
             String relFile = languageEntry.path();
             File file = new File(this.plugin.getDataFolder(), relFile);
 
-            if (!file.exists() && this.options.autoCreateFiles()) {
+            if (!file.exists() && ConfigurationManager.Setting.SYNC_AUTO_CREATE.<Boolean>getValue()) {
                 if (!this.tryCopyBundledResource(relFile)) {
                     ensureParentExists(file);
                     YamlConfiguration config = new YamlConfiguration();
@@ -164,7 +173,7 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
         }
 
         File file = new File(this.plugin.getDataFolder(), rel);
-        if (!file.exists() && this.options.autoCreateFiles()) {
+        if (!file.exists() && ConfigurationManager.Setting.SYNC_AUTO_CREATE.<Boolean>getValue()) {
             if (!this.tryCopyBundledResource(rel)) {
                 ensureParentExists(file);
                 YamlConfiguration config = new YamlConfiguration();
@@ -195,7 +204,7 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
 
         boolean changed = false;
 
-        if (this.options.autoRemoveObsoleteKeys()) {
+        if (ConfigurationManager.Setting.SYNC_AUTO_REMOVE_OBSOLETE.<Boolean>getValue()) {
             Set<String> valid = new LinkedHashSet<>();
             for (Message m : this.messages.get()) valid.add(m.key());
 
@@ -209,7 +218,7 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
                 }
             }
             if (!obsolete.isEmpty()) {
-                if (this.options.backupBeforeRemovingObsoleteKeys()) {
+                if (ConfigurationManager.Setting.BACKUP_ENABLED.<Boolean>getValue()) {
                     this.backupFile(file, lang);
                 }
                 for (String k : obsolete) config.set(k, null);
@@ -217,7 +226,7 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
             }
         }
 
-        if (this.options.autoAddMissingKeys()) {
+        if (ConfigurationManager.Setting.SYNC_AUTO_ADD_MISSING.<Boolean>getValue()) {
             for (Message m : this.messages.get()) {
                 if (config.contains(m.key())) {
                     continue;
@@ -368,7 +377,7 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
      * @param lang the language code used in the backup filename
      */
     private void backupFile(@NotNull File file, @NotNull String lang) {
-        File backupDir = new File(this.plugin.getDataFolder(), this.options.backupFolder());
+        File backupDir = new File(this.plugin.getDataFolder(), ConfigurationManager.Setting.BACKUP_DIRECTORY.getValue());
         if (!backupDir.exists() && !backupDir.mkdirs()) {
             Logger.warn("Failed to create backup directory: %dir%. Skipping backup.", Placeholder.of("dir", backupDir.getAbsolutePath()));
             return;

@@ -1,6 +1,6 @@
 package fr.robie.messageflow.api;
 
-import fr.robie.messageflow.configuration.PlaceholderCacheConfig;
+import fr.robie.messageflow.configuration.ConfigurationManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -21,14 +21,18 @@ class GlobalPlaceholderRegistryImplTest {
         this.registry = GlobalPlaceholderRegistry.getInstance();
         this.registry.clear();
         // Reset cache configuration to defaults before each test
-        this.registry.setCacheConfiguration(PlaceholderCacheConfig.defaults());
+        ConfigurationManager.Setting.PLACEHOLDER_GLOBAL_CACHE_MAX_SIZE.setValue(1000L);
+        ConfigurationManager.Setting.PLACEHOLDER_PLAYER_CACHE_MAX_SIZE.setValue(10000L);
+        this.registry.rebuildCaches();
     }
 
     @AfterEach
     void tearDown() {
         this.registry.clear();
         // Reset cache configuration to defaults after each test
-        this.registry.setCacheConfiguration(PlaceholderCacheConfig.defaults());
+        ConfigurationManager.Setting.PLACEHOLDER_GLOBAL_CACHE_MAX_SIZE.setValue(1000L);
+        ConfigurationManager.Setting.PLACEHOLDER_PLAYER_CACHE_MAX_SIZE.setValue(10000L);
+        this.registry.rebuildCaches();
     }
 
     // ========== Basic Registration and Retrieval Tests ==========
@@ -328,32 +332,20 @@ class GlobalPlaceholderRegistryImplTest {
     // ========== Cache Configuration Tests ==========
 
     @Test
-    @DisplayName("getCacheConfiguration returns default configuration")
-    void testGetCacheConfiguration() {
-        PlaceholderCacheConfig config = this.registry.getCacheConfiguration();
-        assertNotNull(config);
-        assertEquals(1000, config.getGlobalCacheMaximumSize());
-        assertEquals(10000, config.getPlayerCacheMaximumSize());
+    @DisplayName("rebuildCaches updates configuration")
+    void testRebuildCachesUpdatesConfiguration() {
+        ConfigurationManager.Setting.PLACEHOLDER_GLOBAL_CACHE_MAX_SIZE.setValue(500L);
+        ConfigurationManager.Setting.PLACEHOLDER_PLAYER_CACHE_MAX_SIZE.setValue(5000L);
+
+        this.registry.rebuildCaches();
+
+        assertEquals(500L, ConfigurationManager.Setting.PLACEHOLDER_GLOBAL_CACHE_MAX_SIZE.getValue());
+        assertEquals(5000L, ConfigurationManager.Setting.PLACEHOLDER_PLAYER_CACHE_MAX_SIZE.getValue());
     }
 
     @Test
-    @DisplayName("setCacheConfiguration updates configuration")
-    void testSetCacheConfiguration() {
-        PlaceholderCacheConfig newConfig = PlaceholderCacheConfig.builder()
-                .globalCacheMaximumSize(500)
-                .playerCacheMaximumSize(5000)
-                .build();
-
-        this.registry.setCacheConfiguration(newConfig);
-
-        PlaceholderCacheConfig config = this.registry.getCacheConfiguration();
-        assertEquals(500, config.getGlobalCacheMaximumSize());
-        assertEquals(5000, config.getPlayerCacheMaximumSize());
-    }
-
-    @Test
-    @DisplayName("setCacheConfiguration clears existing caches and rebuilds them")
-    void testSetCacheConfigurationRebuildsCaches() {
+    @DisplayName("rebuildCaches clears existing caches and rebuilds them")
+    void testRebuildCachesClearsCaches() {
         // Register and access a cached placeholder to populate the cache
         this.registry.registerCached("test_cache", () -> "test_value", 10000);
 
@@ -361,14 +353,12 @@ class GlobalPlaceholderRegistryImplTest {
         String value1 = this.registry.get("test_cache").orElse("");
         assertNotNull(value1);
 
-        // Change configuration (which should clear caches)
-        PlaceholderCacheConfig newConfig = PlaceholderCacheConfig.builder()
-                .globalCacheMaximumSize(500)
-                .build();
-        this.registry.setCacheConfiguration(newConfig);
+        // Change configuration
+        ConfigurationManager.Setting.PLACEHOLDER_GLOBAL_CACHE_MAX_SIZE.setValue(500L);
+        this.registry.rebuildCaches();
 
         // Verify new configuration took effect
-        assertEquals(500, this.registry.getCacheConfiguration().getGlobalCacheMaximumSize());
+        assertEquals(500L, ConfigurationManager.Setting.PLACEHOLDER_GLOBAL_CACHE_MAX_SIZE.getValue());
 
         // The placeholder should still exist in the registry even though cache was cleared
         assertTrue(this.registry.exists("test_cache"));

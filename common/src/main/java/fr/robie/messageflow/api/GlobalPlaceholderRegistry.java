@@ -1,8 +1,9 @@
 package fr.robie.messageflow.api;
 
+import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
-import fr.robie.messageflow.configuration.PlaceholderCacheConfig;
+import fr.robie.messageflow.configuration.ConfigurationManager;
 import fr.robie.messageflow.formatter.Placeholder;
 import fr.robie.messageflow.logger.Logger;
 import org.bukkit.entity.Player;
@@ -15,6 +16,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -35,16 +37,15 @@ import java.util.function.Supplier;
  *   <li>Player caches: For player-specific functions (per-player/key isolation)</li>
  * </ul>
  *
- * <p>Cache configuration is managed via {@link PlaceholderCacheConfig} and can be
- * dynamically updated via {@link #setCacheConfiguration(PlaceholderCacheConfig)}.
+ * <p>Cache configuration is managed via {@link ConfigurationManager.Setting}.
+ * Caches can be rebuilt via {@link #rebuildCaches()}.
  */
 public final class GlobalPlaceholderRegistry {
-    private static final GlobalPlaceholderRegistry INSTANCE = new GlobalPlaceholderRegistry(PlaceholderCacheConfig.defaults());
+    private static final GlobalPlaceholderRegistry INSTANCE = new GlobalPlaceholderRegistry();
 
     private final Map<String, PlaceholderValue> registry = new ConcurrentHashMap<>();
     private final Map<String, CacheConfig> cacheConfig = new ConcurrentHashMap<>();
 
-    private volatile PlaceholderCacheConfig cacheConfiguration;
     private volatile LoadingCache<String, CacheEntry> globalCache;
 
     private final ConcurrentHashMap<String, LoadingCache<String, CacheEntry>> playerCaches = new ConcurrentHashMap<>();
@@ -63,21 +64,18 @@ public final class GlobalPlaceholderRegistry {
     private record CacheConfig(long ttlMillis, boolean isPlayerSpecific) {
     }
 
-    private GlobalPlaceholderRegistry(@NotNull PlaceholderCacheConfig config) {
-        this.cacheConfiguration = config;
-        this.globalCache = this.createGlobalCache(config);
+    private GlobalPlaceholderRegistry() {
+        this.globalCache = this.createGlobalCache();
     }
 
     /**
      * Creates a new global cache using the provided configuration.
      *
-     * @param config the cache configuration
      * @return configured LoadingCache instance
      */
-    @SuppressWarnings("unchecked")
-    private LoadingCache<String, CacheEntry> createGlobalCache(@NotNull PlaceholderCacheConfig config) {
-        return config.createGlobalCacheBuilder()
-                .build(new CacheLoader<String, CacheEntry>() {
+    private LoadingCache<String, CacheEntry> createGlobalCache() {
+        return this.applyCacheSettings(CacheBuilder.newBuilder(), true)
+                .build(new CacheLoader<>() {
                     @Override
                     public @NonNull CacheEntry load(@NotNull String key) {
                         throw new UnsupportedOperationException("Use registry methods instead");
@@ -88,13 +86,11 @@ public final class GlobalPlaceholderRegistry {
     /**
      * Creates a new player cache using the provided configuration.
      *
-     * @param config the cache configuration
      * @return configured LoadingCache instance
      */
-    @SuppressWarnings("unchecked")
-    private @NotNull LoadingCache<String, CacheEntry> createPlayerCache(@NotNull PlaceholderCacheConfig config) {
-        return config.createPlayerCacheBuilder()
-                .build(new CacheLoader<String, CacheEntry>() {
+    private @NotNull LoadingCache<String, CacheEntry> createPlayerCache() {
+        return this.applyCacheSettings(CacheBuilder.newBuilder(), false)
+                .build(new CacheLoader<>() {
                     @Override
                     public @NonNull CacheEntry load(@NotNull String cacheKey) {
                         throw new UnsupportedOperationException("Use registry methods instead");
@@ -102,38 +98,71 @@ public final class GlobalPlaceholderRegistry {
                 });
     }
 
+    private @NotNull CacheBuilder<Object, Object> applyCacheSettings(@NotNull CacheBuilder<Object, Object> builder, boolean isGlobal) {
+        if (isGlobal) {
+            builder.maximumSize(ConfigurationManager.Setting.PLACEHOLDER_GLOBAL_CACHE_MAX_SIZE.getValue());
+            if (ConfigurationManager.Setting.PLACEHOLDER_GLOBAL_CACHE_INITIAL_CAPACITY.<Integer>getValue() > 0) {
+                builder.initialCapacity(ConfigurationManager.Setting.PLACEHOLDER_GLOBAL_CACHE_INITIAL_CAPACITY.getValue());
+            }
+            if (ConfigurationManager.Setting.PLACEHOLDER_GLOBAL_CACHE_CONCURRENCY_LEVEL.<Integer>getValue() > 0) {
+                builder.concurrencyLevel(ConfigurationManager.Setting.PLACEHOLDER_GLOBAL_CACHE_CONCURRENCY_LEVEL.getValue());
+            }
+            if (ConfigurationManager.Setting.PLACEHOLDER_GLOBAL_CACHE_EXPIRE_AFTER_WRITE.<Long>getValue() > 0) {
+                builder.expireAfterWrite(ConfigurationManager.Setting.PLACEHOLDER_GLOBAL_CACHE_EXPIRE_AFTER_WRITE.getValue(), TimeUnit.MINUTES);
+            }
+            if (ConfigurationManager.Setting.PLACEHOLDER_GLOBAL_CACHE_EXPIRE_AFTER_ACCESS.<Long>getValue() > 0) {
+                builder.expireAfterAccess(ConfigurationManager.Setting.PLACEHOLDER_GLOBAL_CACHE_EXPIRE_AFTER_ACCESS.getValue(), TimeUnit.MINUTES);
+            }
+            if (ConfigurationManager.Setting.PLACEHOLDER_GLOBAL_CACHE_RECORD_STATS.getValue()) {
+                builder.recordStats();
+            }
+            if (ConfigurationManager.Setting.PLACEHOLDER_GLOBAL_CACHE_SOFT_VALUES.getValue()) {
+                builder.softValues();
+            }
+        } else {
+            builder.maximumSize(ConfigurationManager.Setting.PLACEHOLDER_PLAYER_CACHE_MAX_SIZE.getValue());
+            if (ConfigurationManager.Setting.PLACEHOLDER_PLAYER_CACHE_INITIAL_CAPACITY.<Integer>getValue() > 0) {
+                builder.initialCapacity(ConfigurationManager.Setting.PLACEHOLDER_PLAYER_CACHE_INITIAL_CAPACITY.getValue());
+            }
+            if (ConfigurationManager.Setting.PLACEHOLDER_PLAYER_CACHE_CONCURRENCY_LEVEL.<Integer>getValue() > 0) {
+                builder.concurrencyLevel(ConfigurationManager.Setting.PLACEHOLDER_PLAYER_CACHE_CONCURRENCY_LEVEL.getValue());
+            }
+            if (ConfigurationManager.Setting.PLACEHOLDER_PLAYER_CACHE_EXPIRE_AFTER_WRITE.<Long>getValue() > 0) {
+                builder.expireAfterWrite(ConfigurationManager.Setting.PLACEHOLDER_PLAYER_CACHE_EXPIRE_AFTER_WRITE.getValue(), TimeUnit.MINUTES);
+            }
+            if (ConfigurationManager.Setting.PLACEHOLDER_PLAYER_CACHE_EXPIRE_AFTER_ACCESS.<Long>getValue() > 0) {
+                builder.expireAfterAccess(ConfigurationManager.Setting.PLACEHOLDER_PLAYER_CACHE_EXPIRE_AFTER_ACCESS.getValue(), TimeUnit.MINUTES);
+            }
+            if (ConfigurationManager.Setting.PLACEHOLDER_PLAYER_CACHE_RECORD_STATS.getValue()) {
+                builder.recordStats();
+            }
+            if (ConfigurationManager.Setting.PLACEHOLDER_PLAYER_CACHE_SOFT_VALUES.getValue()) {
+                builder.softValues();
+            }
+        }
+        return builder;
+    }
+
     public static @NotNull GlobalPlaceholderRegistry getInstance() {
         return INSTANCE;
     }
 
     /**
-     * Gets the current cache configuration.
-     *
-     * @return current PlaceholderCacheConfig
-     */
-    public @NotNull PlaceholderCacheConfig getCacheConfiguration() {
-        return this.cacheConfiguration;
-    }
-
-    /**
-     * Updates the cache configuration and rebuilds all caches with new settings.
+     * Rebuilds all caches with current settings from ConfigurationManager.
      * This method is thread-safe but will invalidate existing cache entries.
      *
      * <p>After calling this method:
      * <ul>
      *   <li>All global cache entries are invalidated</li>
-     *   <li>All per-player cache entries are cleared and rebuilt with new size limits</li>
+     *   <li>All per-player cache entries are cleared and rebuilt with new settings</li>
      *   <li>New cache entries will be created on next access</li>
      * </ul>
-     *
-     * @param newConfig the new cache configuration
      */
-    public synchronized void setCacheConfiguration(@NotNull PlaceholderCacheConfig newConfig) {
-        this.cacheConfiguration = newConfig;
+    public synchronized void rebuildCaches() {
         if (this.globalCache != null) {
             this.globalCache.invalidateAll();
         }
-        this.globalCache = this.createGlobalCache(newConfig);
+        this.globalCache = this.createGlobalCache();
         this.playerCaches.clear();
     }
 
@@ -304,7 +333,7 @@ public final class GlobalPlaceholderRegistry {
     }
 
     private @NotNull String evaluatePlayerCached(@NotNull String key, @NotNull PlaceholderValue value, @NotNull Player player, long ttlMillis) throws Exception {
-        LoadingCache<String, CacheEntry> playerCache = this.playerCaches.computeIfAbsent(key, k -> this.createPlayerCache(this.cacheConfiguration));
+        LoadingCache<String, CacheEntry> playerCache = this.playerCaches.computeIfAbsent(key, k -> this.createPlayerCache());
 
         String cacheKey = player.getName() + ":" + key;
         try {

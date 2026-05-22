@@ -1,7 +1,6 @@
 package fr.robie.messageflow.formatter;
 
 import fr.robie.messageflow.api.MessageTypeAdapter;
-import fr.robie.messageflow.configuration.ConfigurationOptions;
 import fr.robie.messageflow.logger.Logger;
 import fr.robie.messageflow.model.*;
 import net.md_5.bungee.api.ChatColor;
@@ -38,8 +37,8 @@ public class LegacyMessageFormatter<T extends Plugin> extends MessageFormatter<T
     private static final Pattern HEX_PATTERN = Pattern.compile("#([a-fA-F0-9]{6})");
     private static final Pattern MINI_MESSAGE_TAG_PATTERN = Pattern.compile("<[^>]+>");
 
-    public LegacyMessageFormatter(@NotNull T plugin, @NotNull ConfigurationOptions<?> options) {
-        super(plugin, options);
+    public LegacyMessageFormatter(@NotNull T plugin) {
+        super(plugin);
     }
 
     @Override

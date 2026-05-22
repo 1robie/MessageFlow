@@ -10,31 +10,7 @@ import org.jetbrains.annotations.Nullable;
  * Represents the configuration options for the MessageFlow library.
  * Allows customizing how language files are handled and how the message cache is built.
  */
-public class ConfigurationOptions<E> {
-    private final LanguageConfiguration<E> languageConfiguration;
-
-    private boolean autoCreateFiles = true;
-    private boolean autoAddMissingKeys = true;
-    private boolean autoRemoveObsoleteKeys = false;
-    private boolean backupBeforeRemovingObsoleteKeys = true;
-    private @NotNull String backupFolder = "messageflow/backup";
-
-    private @NotNull String backupDateFormat = "yyyy-MM-dd_HH-mm-ss";
-
-    private @Nullable String loggerPrefix = null;
-
-    private long cacheMaximumSize = 512;
-    private long cacheExpireAfterAccessMinutes = 10;
-    private long cacheExpireAfterWriteMinutes = -1;
-    private int cacheInitialCapacity = -1;
-    private int cacheConcurrencyLevel = -1;
-    private boolean cacheRecordStats = false;
-    private boolean cacheSoftValues = false;
-
-    public @NotNull String backupDateFormat() {
-        return this.backupDateFormat;
-    }
-
+public record ConfigurationOptions<E>(LanguageConfiguration<E> languageConfiguration) {
     /**
      * Creates a new ConfigurationOptions with the specified language configuration.
      *
@@ -45,10 +21,23 @@ public class ConfigurationOptions<E> {
         this.languageConfiguration = languageConfiguration;
     }
 
+    /**
+     * Sets the date format to use for backup file names. This is used when creating backups before removing obsolete keys.
+     *
+     * @param format the date format string (e.g. "yyyy-MM-dd_HH-mm-ss")
+     * @return this instance for fluent chaining
+     * @deprecated Use {@link ConfigurationManager.Setting#BACKUP_DATE_FORMAT} and call {@link ConfigurationManager.Setting#setDefaultValue(Object)}
+     */
+    @Deprecated(since = "0.0.5", forRemoval = true)
     public @NotNull ConfigurationOptions<E> backupDateFormat(@NotNull String format) {
         Preconditions.checkNotNull(format, "backupDateFormat cannot be null");
-        this.backupDateFormat = format;
+        ConfigurationManager.Setting.BACKUP_DATE_FORMAT.setDefaultValue(format);
         return this;
+    }
+
+    @Deprecated(since = "0.0.5", forRemoval = true)
+    public @NotNull String backupDateFormat() {
+        return ConfigurationManager.Setting.BACKUP_DATE_FORMAT.getDefaultValue();
     }
 
     /**
@@ -57,8 +46,9 @@ public class ConfigurationOptions<E> {
      * @param enabled {@code true} to enable automatic file creation
      * @return this instance for fluent chaining
      */
+    @Deprecated(since = "0.0.5", forRemoval = true)
     public @NotNull ConfigurationOptions<E> autoCreateFiles(boolean enabled) {
-        this.autoCreateFiles = enabled;
+        ConfigurationManager.Setting.SYNC_AUTO_CREATE.setDefaultValue(enabled);
         return this;
     }
 
@@ -68,8 +58,9 @@ public class ConfigurationOptions<E> {
      * @param enabled {@code true} to enable automatic adding of missing keys
      * @return this instance for fluent chaining
      */
+    @Deprecated(since = "0.0.5", forRemoval = true)
     public @NotNull ConfigurationOptions<E> autoAddMissingKeys(boolean enabled) {
-        this.autoAddMissingKeys = enabled;
+        ConfigurationManager.Setting.SYNC_AUTO_ADD_MISSING.setDefaultValue(enabled);
         return this;
     }
 
@@ -79,8 +70,9 @@ public class ConfigurationOptions<E> {
      * @param enabled {@code true} to enable automatic removal of obsolete keys
      * @return this instance for fluent chaining
      */
+    @Deprecated(since = "0.0.5", forRemoval = true)
     public @NotNull ConfigurationOptions<E> autoRemoveObsoleteKeys(boolean enabled) {
-        this.autoRemoveObsoleteKeys = enabled;
+        ConfigurationManager.Setting.SYNC_AUTO_REMOVE_OBSOLETE.setDefaultValue(enabled);
         return this;
     }
 
@@ -89,9 +81,11 @@ public class ConfigurationOptions<E> {
      *
      * @param enabled {@code true} to enable backups before removing keys
      * @return this instance for fluent chaining
+     * @deprecated Use {@link ConfigurationManager.Setting#BACKUP_ENABLED} and call {@link ConfigurationManager.Setting#setDefaultValue(Object)}
      */
+    @Deprecated(since = "0.0.5", forRemoval = true)
     public @NotNull ConfigurationOptions<E> backupBeforeRemovingObsoleteKeys(boolean enabled) {
-        this.backupBeforeRemovingObsoleteKeys = enabled;
+        ConfigurationManager.Setting.BACKUP_ENABLED.setDefaultValue(enabled);
         return this;
     }
 
@@ -100,10 +94,12 @@ public class ConfigurationOptions<E> {
      *
      * @param relativeFolder the relative path to the backup folder
      * @return this instance for fluent chaining
+     * @deprecated Use {@link ConfigurationManager.Setting#BACKUP_DIRECTORY} and call {@link ConfigurationManager.Setting#setDefaultValue(Object)}
      */
+    @Deprecated(since = "0.0.5", forRemoval = true)
     public @NotNull ConfigurationOptions<E> backupFolder(@NotNull String relativeFolder) {
         Preconditions.checkNotNull(relativeFolder, "relativeFolder cannot be null");
-        this.backupFolder = relativeFolder;
+        ConfigurationManager.Setting.BACKUP_DIRECTORY.setDefaultValue(relativeFolder);
         return this;
     }
 
@@ -111,64 +107,78 @@ public class ConfigurationOptions<E> {
      * Checks if automatic file creation is enabled.
      *
      * @return {@code true} if enabled
+     * @deprecated Use {@link ConfigurationManager.Setting#SYNC_AUTO_CREATE} and call {@link ConfigurationManager.Setting#getDefaultValue()}
      */
+    @Deprecated(since = "0.0.5", forRemoval = true)
     public boolean autoCreateFiles() {
-        return this.autoCreateFiles;
+        return ConfigurationManager.Setting.SYNC_AUTO_CREATE.getDefaultValue();
     }
 
     /**
      * Checks if automatic adding of missing keys is enabled.
      *
      * @return {@code true} if enabled
+     * @deprecated Use {@link ConfigurationManager.Setting#SYNC_AUTO_ADD_MISSING} and call {@link ConfigurationManager.Setting#getDefaultValue()}
      */
+    @Deprecated(since = "0.0.5", forRemoval = true)
     public boolean autoAddMissingKeys() {
-        return this.autoAddMissingKeys;
+        return ConfigurationManager.Setting.SYNC_AUTO_ADD_MISSING.getDefaultValue();
     }
 
     /**
      * Checks if automatic removal of obsolete keys is enabled.
      *
      * @return {@code true} if enabled
+     * @deprecated Use {@link ConfigurationManager.Setting#SYNC_AUTO_REMOVE_OBSOLETE} and call {@link ConfigurationManager.Setting#getDefaultValue()}
      */
+    @Deprecated(since = "0.0.5", forRemoval = true)
     public boolean autoRemoveObsoleteKeys() {
-        return this.autoRemoveObsoleteKeys;
+        return ConfigurationManager.Setting.SYNC_AUTO_REMOVE_OBSOLETE.getDefaultValue();
     }
 
     /**
      * Checks if backups before removing obsolete keys are enabled.
      *
      * @return {@code true} if enabled
+     * @deprecated Use {@link ConfigurationManager.Setting#BACKUP_ENABLED} and call {@link ConfigurationManager.Setting#getDefaultValue()}
      */
+    @Deprecated(since = "0.0.5", forRemoval = true)
     public boolean backupBeforeRemovingObsoleteKeys() {
-        return this.backupBeforeRemovingObsoleteKeys;
+        return ConfigurationManager.Setting.BACKUP_ENABLED.getDefaultValue();
     }
 
     /**
      * Gets the backup folder path relative to the plugin data folder.
      *
      * @return the relative backup folder path
+     * @deprecated Use {@link ConfigurationManager.Setting#BACKUP_DIRECTORY} and call {@link ConfigurationManager.Setting#getDefaultValue()}
      */
+    @Deprecated(since = "0.0.5", forRemoval = true)
     public @NotNull String backupFolder() {
-        return this.backupFolder;
+        return ConfigurationManager.Setting.BACKUP_DIRECTORY.getDefaultValue();
     }
 
     /**
-     * Gets the logger getPrefix to use for log messages. If null, the library will use the plugin name + version as the getPrefix.
+     * Gets the logger prefix to use for log messages. If null, the library will use the plugin name + version as the prefix.
      *
-     * @return the logger getPrefix, or null to use the default plugin name + version getPrefix
+     * @return the logger prefix, or null to use the default plugin name + version prefix
+     * @deprecated Use {@link ConfigurationManager.Setting#LOGGER_PREFIX} and call {@link ConfigurationManager.Setting#getDefaultValue()}
      */
+    @Deprecated(since = "0.0.5", forRemoval = true)
     public @Nullable String loggerPrefix() {
-        return this.loggerPrefix;
+        return ConfigurationManager.Setting.LOGGER_PREFIX.getDefaultValue();
     }
 
     /**
-     * Sets the logger getPrefix to use for log messages. If set to null, the library will use the plugin name + version as the getPrefix.
+     * Sets the logger prefix to use for log messages. If set to null, the library will use the plugin name + version as the prefix.
      *
-     * @param prefix the logger getPrefix to use, or null to use the default plugin name + version getPrefix
+     * @param prefix the logger prefix to use, or null to use the default plugin name + version prefix
      * @return this instance for fluent chaining
+     * @deprecated Use {@link ConfigurationManager.Setting#LOGGER_PREFIX} and call {@link ConfigurationManager.Setting#setDefaultValue(Object)}
      */
+    @Deprecated(since = "0.0.5", forRemoval = true)
     public @NotNull ConfigurationOptions<E> loggerPrefix(@Nullable String prefix) {
-        this.loggerPrefix = prefix;
+        ConfigurationManager.Setting.LOGGER_PREFIX.setDefaultValue(prefix);
         return this;
     }
 
@@ -177,9 +187,11 @@ public class ConfigurationOptions<E> {
      *
      * @param maximumSize the maximum cache size
      * @return this instance for fluent chaining
+     * @deprecated Use {@link ConfigurationManager.Setting#MESSAGE_CACHE_MAX_SIZE} and call {@link ConfigurationManager.Setting#setDefaultValue(Object)}
      */
+    @Deprecated(since = "0.0.5", forRemoval = true)
     public @NotNull ConfigurationOptions<E> cacheMaximumSize(long maximumSize) {
-        this.cacheMaximumSize = maximumSize;
+        ConfigurationManager.Setting.MESSAGE_CACHE_MAX_SIZE.setDefaultValue(maximumSize);
         return this;
     }
 
@@ -187,9 +199,11 @@ public class ConfigurationOptions<E> {
      * Gets the maximum number of entries to keep in the message cache.
      *
      * @return the maximum cache size
+     * @deprecated Use {@link ConfigurationManager.Setting#MESSAGE_CACHE_MAX_SIZE} and call {@link ConfigurationManager.Setting#getDefaultValue()}
      */
+    @Deprecated(since = "0.0.5", forRemoval = true)
     public long cacheMaximumSize() {
-        return this.cacheMaximumSize;
+        return ConfigurationManager.Setting.MESSAGE_CACHE_MAX_SIZE.getDefaultValue();
     }
 
     /**
@@ -197,9 +211,11 @@ public class ConfigurationOptions<E> {
      *
      * @param minutes the expiration time in minutes
      * @return this instance for fluent chaining
+     * @deprecated Use {@link ConfigurationManager.Setting#MESSAGE_CACHE_EXPIRE_AFTER_ACCESS} and call {@link ConfigurationManager.Setting#setDefaultValue(Object)}
      */
+    @Deprecated(since = "0.0.5", forRemoval = true)
     public @NotNull ConfigurationOptions<E> cacheExpireAfterAccessMinutes(long minutes) {
-        this.cacheExpireAfterAccessMinutes = minutes;
+        ConfigurationManager.Setting.MESSAGE_CACHE_EXPIRE_AFTER_ACCESS.setDefaultValue(minutes);
         return this;
     }
 
@@ -207,9 +223,11 @@ public class ConfigurationOptions<E> {
      * Gets the time in minutes after last access when a cache entry should expire.
      *
      * @return the expiration time in minutes
+     * @deprecated Use {@link ConfigurationManager.Setting#MESSAGE_CACHE_EXPIRE_AFTER_ACCESS} and call {@link ConfigurationManager.Setting#getDefaultValue()}
      */
+    @Deprecated(since = "0.0.5", forRemoval = true)
     public long cacheExpireAfterAccessMinutes() {
-        return this.cacheExpireAfterAccessMinutes;
+        return ConfigurationManager.Setting.MESSAGE_CACHE_EXPIRE_AFTER_ACCESS.getDefaultValue();
     }
 
     /**
@@ -217,9 +235,11 @@ public class ConfigurationOptions<E> {
      *
      * @param minutes the expiration time in minutes
      * @return this instance for fluent chaining
+     * @deprecated Use {@link ConfigurationManager.Setting#MESSAGE_CACHE_EXPIRE_AFTER_WRITE} and call {@link ConfigurationManager.Setting#setDefaultValue(Object)}
      */
+    @Deprecated(since = "0.0.5", forRemoval = true)
     public @NotNull ConfigurationOptions<E> cacheExpireAfterWriteMinutes(long minutes) {
-        this.cacheExpireAfterWriteMinutes = minutes;
+        ConfigurationManager.Setting.MESSAGE_CACHE_EXPIRE_AFTER_WRITE.setDefaultValue(minutes);
         return this;
     }
 
@@ -227,9 +247,11 @@ public class ConfigurationOptions<E> {
      * Gets the time in minutes after creation when a cache entry should expire.
      *
      * @return the expiration time in minutes
+     * @deprecated Use {@link ConfigurationManager.Setting#MESSAGE_CACHE_EXPIRE_AFTER_WRITE} and call {@link ConfigurationManager.Setting#getDefaultValue()}
      */
+    @Deprecated(since = "0.0.5", forRemoval = true)
     public long cacheExpireAfterWriteMinutes() {
-        return this.cacheExpireAfterWriteMinutes;
+        return ConfigurationManager.Setting.MESSAGE_CACHE_EXPIRE_AFTER_WRITE.getDefaultValue();
     }
 
     /**
@@ -237,9 +259,11 @@ public class ConfigurationOptions<E> {
      *
      * @param initialCapacity the initial capacity
      * @return this instance for fluent chaining
+     * @deprecated Use {@link ConfigurationManager.Setting#MESSAGE_CACHE_INITIAL_CAPACITY} and call {@link ConfigurationManager.Setting#setDefaultValue(Object)}
      */
+    @Deprecated(since = "0.0.5", forRemoval = true)
     public @NotNull ConfigurationOptions<E> cacheInitialCapacity(int initialCapacity) {
-        this.cacheInitialCapacity = initialCapacity;
+        ConfigurationManager.Setting.MESSAGE_CACHE_INITIAL_CAPACITY.setDefaultValue(initialCapacity);
         return this;
     }
 
@@ -247,9 +271,11 @@ public class ConfigurationOptions<E> {
      * Gets the initial capacity of the message cache.
      *
      * @return the initial capacity
+     * @deprecated Use {@link ConfigurationManager.Setting#MESSAGE_CACHE_INITIAL_CAPACITY} and call {@link ConfigurationManager.Setting#getDefaultValue()}
      */
+    @Deprecated(since = "0.0.5", forRemoval = true)
     public int cacheInitialCapacity() {
-        return this.cacheInitialCapacity;
+        return ConfigurationManager.Setting.MESSAGE_CACHE_INITIAL_CAPACITY.getDefaultValue();
     }
 
     /**
@@ -257,9 +283,11 @@ public class ConfigurationOptions<E> {
      *
      * @param concurrencyLevel the concurrency level
      * @return this instance for fluent chaining
+     * @deprecated Use {@link ConfigurationManager.Setting#MESSAGE_CACHE_CONCURRENCY_LEVEL} and call {@link ConfigurationManager.Setting#setDefaultValue(Object)}
      */
+    @Deprecated(since = "0.0.5", forRemoval = true)
     public @NotNull ConfigurationOptions<E> cacheConcurrencyLevel(int concurrencyLevel) {
-        this.cacheConcurrencyLevel = concurrencyLevel;
+        ConfigurationManager.Setting.MESSAGE_CACHE_CONCURRENCY_LEVEL.setDefaultValue(concurrencyLevel);
         return this;
     }
 
@@ -267,9 +295,11 @@ public class ConfigurationOptions<E> {
      * Gets the concurrency level for the message cache.
      *
      * @return the concurrency level
+     * @deprecated Use {@link ConfigurationManager.Setting#MESSAGE_CACHE_CONCURRENCY_LEVEL} and call {@link ConfigurationManager.Setting#getDefaultValue()}
      */
+    @Deprecated(since = "0.0.5", forRemoval = true)
     public int cacheConcurrencyLevel() {
-        return this.cacheConcurrencyLevel;
+        return ConfigurationManager.Setting.MESSAGE_CACHE_CONCURRENCY_LEVEL.getDefaultValue();
     }
 
     /**
@@ -277,9 +307,11 @@ public class ConfigurationOptions<E> {
      *
      * @param recordStats {@code true} to record statistics
      * @return this instance for fluent chaining
+     * @deprecated Use {@link ConfigurationManager.Setting#MESSAGE_CACHE_RECORD_STATS} and call {@link ConfigurationManager.Setting#setDefaultValue(Object)}
      */
+    @Deprecated(since = "0.0.5", forRemoval = true)
     public @NotNull ConfigurationOptions<E> cacheRecordStats(boolean recordStats) {
-        this.cacheRecordStats = recordStats;
+        ConfigurationManager.Setting.MESSAGE_CACHE_RECORD_STATS.setDefaultValue(recordStats);
         return this;
     }
 
@@ -287,9 +319,11 @@ public class ConfigurationOptions<E> {
      * Checks if cache statistics recording is enabled.
      *
      * @return {@code true} if enabled
+     * @deprecated Use {@link ConfigurationManager.Setting#MESSAGE_CACHE_RECORD_STATS} and call {@link ConfigurationManager.Setting#getDefaultValue()}
      */
+    @Deprecated(since = "0.0.5", forRemoval = true)
     public boolean cacheRecordStats() {
-        return this.cacheRecordStats;
+        return ConfigurationManager.Setting.MESSAGE_CACHE_RECORD_STATS.getDefaultValue();
     }
 
     /**
@@ -297,9 +331,11 @@ public class ConfigurationOptions<E> {
      *
      * @param softValues {@code true} to use soft references
      * @return this instance for fluent chaining
+     * @deprecated Use {@link ConfigurationManager.Setting#MESSAGE_CACHE_SOFT_VALUES} and call {@link ConfigurationManager.Setting#setDefaultValue(Object)}
      */
+    @Deprecated(since = "0.0.5", forRemoval = true)
     public @NotNull ConfigurationOptions<E> cacheSoftValues(boolean softValues) {
-        this.cacheSoftValues = softValues;
+        ConfigurationManager.Setting.MESSAGE_CACHE_SOFT_VALUES.setDefaultValue(softValues);
         return this;
     }
 
@@ -307,9 +343,11 @@ public class ConfigurationOptions<E> {
      * Checks if soft references for cache values are enabled.
      *
      * @return {@code true} if enabled
+     * @deprecated Use {@link ConfigurationManager.Setting#MESSAGE_CACHE_SOFT_VALUES} and call {@link ConfigurationManager.Setting#getDefaultValue()}
      */
+    @Deprecated(since = "0.0.5", forRemoval = true)
     public boolean cacheSoftValues() {
-        return this.cacheSoftValues;
+        return ConfigurationManager.Setting.MESSAGE_CACHE_SOFT_VALUES.getDefaultValue();
     }
 
     /**
@@ -317,6 +355,7 @@ public class ConfigurationOptions<E> {
      *
      * @return the language configuration
      */
+    @Override
     public LanguageConfiguration<E> languageConfiguration() {
         return this.languageConfiguration;
     }
@@ -326,7 +365,9 @@ public class ConfigurationOptions<E> {
      *
      * @param fileName the name of the single language file
      * @return a new ConfigurationOptions instance configured for a single file
+     * @deprecated Use {@link NormalLanguageConfiguration} directly
      */
+    @Deprecated(since = "0.0.5", forRemoval = true)
     public static ConfigurationOptions<String> singleFile(String fileName) {
         NormalLanguageConfiguration normalLanguageConfiguration = new NormalLanguageConfiguration("default");
         normalLanguageConfiguration.addLanguage("default", fileName);

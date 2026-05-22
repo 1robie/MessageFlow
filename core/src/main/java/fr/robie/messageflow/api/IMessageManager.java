@@ -37,6 +37,8 @@ public interface IMessageManager<T extends Plugin, E> {
         this.loadLanguage(language);
     }
 
+    @NotNull fr.robie.messageflow.configuration.ConfigurationManager<T> configurationManager();
+
     /**
      * Reloads all registered language files, updating keys if necessary.
      */

@@ -5,7 +5,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import fr.robie.messageflow.api.ITextResolverRegistry;
-import fr.robie.messageflow.configuration.ConfigurationOptions;
+import fr.robie.messageflow.configuration.ConfigurationManager;
 import fr.robie.messageflow.logger.Logger;
 import fr.robie.messageflow.model.Message;
 import fr.robie.messageflow.model.SoundMessage;
@@ -57,37 +57,35 @@ public abstract class MessageFormatter<T extends Plugin, V> {
     /**
      * Creates a new MessageFormatter with the specified plugin and configuration options.
      *
-     * @param plugin  the plugin instance
-     * @param options the configuration options for the message cache
+     * @param plugin the plugin instance
      */
-    public MessageFormatter(@NotNull T plugin, @NotNull ConfigurationOptions<?> options) {
+    public MessageFormatter(@NotNull T plugin) {
         Preconditions.checkNotNull(plugin, "Plugin cannot be null");
-        Preconditions.checkNotNull(options, "Configuration options cannot be null");
         this.plugin = plugin;
         CacheBuilder<Object, Object> builder = CacheBuilder.newBuilder()
-                .maximumSize(options.cacheMaximumSize());
+                .maximumSize(ConfigurationManager.Setting.MESSAGE_CACHE_MAX_SIZE.getValue());
 
-        if (options.cacheInitialCapacity() > 0) {
-            builder.initialCapacity(options.cacheInitialCapacity());
+        if (ConfigurationManager.Setting.MESSAGE_CACHE_INITIAL_CAPACITY.<Integer>getValue() > 0) {
+            builder.initialCapacity(ConfigurationManager.Setting.MESSAGE_CACHE_INITIAL_CAPACITY.getValue());
         }
 
-        if (options.cacheConcurrencyLevel() > 0) {
-            builder.concurrencyLevel(options.cacheConcurrencyLevel());
+        if (ConfigurationManager.Setting.MESSAGE_CACHE_CONCURRENCY_LEVEL.<Integer>getValue() > 0) {
+            builder.concurrencyLevel(ConfigurationManager.Setting.MESSAGE_CACHE_CONCURRENCY_LEVEL.getValue());
         }
 
-        if (options.cacheExpireAfterAccessMinutes() > 0) {
-            builder.expireAfterAccess(options.cacheExpireAfterAccessMinutes(), TimeUnit.MINUTES);
+        if (ConfigurationManager.Setting.MESSAGE_CACHE_EXPIRE_AFTER_ACCESS.<Long>getValue() > 0) {
+            builder.expireAfterAccess(ConfigurationManager.Setting.MESSAGE_CACHE_EXPIRE_AFTER_ACCESS.getValue(), TimeUnit.MINUTES);
         }
 
-        if (options.cacheExpireAfterWriteMinutes() > 0) {
-            builder.expireAfterWrite(options.cacheExpireAfterWriteMinutes(), TimeUnit.MINUTES);
+        if (ConfigurationManager.Setting.MESSAGE_CACHE_EXPIRE_AFTER_WRITE.<Long>getValue() > 0) {
+            builder.expireAfterWrite(ConfigurationManager.Setting.MESSAGE_CACHE_EXPIRE_AFTER_WRITE.getValue(), TimeUnit.MINUTES);
         }
 
-        if (options.cacheRecordStats()) {
+        if (ConfigurationManager.Setting.MESSAGE_CACHE_RECORD_STATS.getValue()) {
             builder.recordStats();
         }
 
-        if (options.cacheSoftValues()) {
+        if (ConfigurationManager.Setting.MESSAGE_CACHE_SOFT_VALUES.getValue()) {
             builder.softValues();
         }
 

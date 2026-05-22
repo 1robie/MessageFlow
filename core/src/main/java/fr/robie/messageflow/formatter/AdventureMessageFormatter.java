@@ -1,7 +1,6 @@
 package fr.robie.messageflow.formatter;
 
 import fr.robie.messageflow.api.MessageTypeAdapter;
-import fr.robie.messageflow.configuration.ConfigurationOptions;
 import fr.robie.messageflow.logger.Logger;
 import fr.robie.messageflow.model.*;
 import net.kyori.adventure.audience.Audience;
@@ -71,8 +70,8 @@ public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatte
             .build();
 
 
-    public AdventureMessageFormatter(@NotNull T plugin, @NotNull ConfigurationOptions<?> options) {
-        super(plugin, options);
+    public AdventureMessageFormatter(@NotNull T plugin) {
+        super(plugin);
     }
 
     @Override
