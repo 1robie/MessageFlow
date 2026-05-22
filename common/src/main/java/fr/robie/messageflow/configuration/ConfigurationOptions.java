@@ -162,11 +162,11 @@ public record ConfigurationOptions<E>(LanguageConfiguration<E> languageConfigura
      * Gets the logger prefix to use for log messages. If null, the library will use the plugin name + version as the prefix.
      *
      * @return the logger prefix, or null to use the default plugin name + version prefix
-     * @deprecated Use {@link ConfigurationManager.Setting#LOGGER_PREFIX} and call {@link ConfigurationManager.Setting#getDefaultValue()}
+     * @deprecated Use {@link ConfigurationManager.Setting#LEGACY_LOGGER_PREFIX} or {@link ConfigurationManager.Setting#ADVENTURE_LOGGER_PREFIX} and call {@link ConfigurationManager.Setting#getDefaultValue()}
      */
     @Deprecated(since = "0.0.5", forRemoval = true)
     public @Nullable String loggerPrefix() {
-        return ConfigurationManager.Setting.LOGGER_PREFIX.getDefaultValue();
+        return ConfigurationManager.Setting.LEGACY_LOGGER_PREFIX.getDefaultValue();
     }
 
     /**
@@ -174,11 +174,12 @@ public record ConfigurationOptions<E>(LanguageConfiguration<E> languageConfigura
      *
      * @param prefix the logger prefix to use, or null to use the default plugin name + version prefix
      * @return this instance for fluent chaining
-     * @deprecated Use {@link ConfigurationManager.Setting#LOGGER_PREFIX} and call {@link ConfigurationManager.Setting#setDefaultValue(Object)}
+     * @deprecated Use {@link ConfigurationManager.Setting#LEGACY_LOGGER_PREFIX} or {@link ConfigurationManager.Setting#ADVENTURE_LOGGER_PREFIX} and call {@link ConfigurationManager.Setting#setDefaultValue(Object)}
      */
     @Deprecated(since = "0.0.5", forRemoval = true)
     public @NotNull ConfigurationOptions<E> loggerPrefix(@Nullable String prefix) {
-        ConfigurationManager.Setting.LOGGER_PREFIX.setDefaultValue(prefix);
+        ConfigurationManager.Setting.LEGACY_LOGGER_PREFIX.setDefaultValue(prefix);
+        ConfigurationManager.Setting.ADVENTURE_LOGGER_PREFIX.setDefaultValue(prefix);
         return this;
     }
 

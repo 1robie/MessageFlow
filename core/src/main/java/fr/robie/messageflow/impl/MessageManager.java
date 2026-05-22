@@ -14,6 +14,7 @@ import fr.robie.messageflow.logger.LegacyLogger;
 import fr.robie.messageflow.logger.Logger;
 import fr.robie.messageflow.model.*;
 import fr.robie.messageflow.util.PlatformType;
+import io.papermc.paper.plugin.configuration.PluginMeta;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.Plugin;
@@ -99,14 +100,22 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
 
         this.messageFormatter.setTextResolverRegistry(registry);
 
-        String loggerPrefix = ConfigurationManager.Setting.LOGGER_PREFIX.getValue();
-        if (loggerPrefix == null) {
-            try {
-                loggerPrefix = "<dark_gray>[</dark_gray>" + this.plugin.getPluginMeta().getName() + " " + this.plugin.getPluginMeta().getVersion() + "<dark_gray>]</dark_gray>";
-            } catch (Throwable ignored) {
-                loggerPrefix = "§8[" + this.plugin.getDescription().getFullName() + "§8]";
-            }
+        Placeholder.Builder placeholders = Placeholder.builder();
+        try {
+            PluginMeta pluginMeta = this.plugin.getPluginMeta();
+            placeholders.put("plugin-name", pluginMeta.getName());
+            placeholders.put("plugin-version", pluginMeta.getVersion());
+            placeholders.put("plugin-full", pluginMeta.getName() + " " + pluginMeta.getVersion());
+        } catch (Exception e) {
+            placeholders.put("plugin-name", this.plugin.getDescription().getName());
+            placeholders.put("plugin-version", this.plugin.getDescription().getVersion());
+            placeholders.put("plugin-full", this.plugin.getDescription().getFullName());
         }
+
+        String loggerPrefix = switch (PlatformType.get()) {
+            case LEGACY -> ConfigurationManager.Setting.LEGACY_LOGGER_PREFIX.getValue();
+            case COMPONENTS -> ConfigurationManager.Setting.ADVENTURE_LOGGER_PREFIX.getValue();
+        };
 
         if (this.messageFormatter instanceof AdventureMessageFormatter<?> adventureFormatter) {
             new AdventureLogger(loggerPrefix, adventureFormatter);

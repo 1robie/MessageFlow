@@ -28,7 +28,8 @@ public class ConfigurationManager<P extends Plugin> {
         BACKUP_DIRECTORY("backup.directory", String.class, "messageflow/backup"),
         BACKUP_DATE_FORMAT("backup.date-format", String.class, "yyyy-MM-dd_HH-mm-ss"),
 
-        LOGGER_PREFIX("logger.prefix", String.class, null),
+        LEGACY_LOGGER_PREFIX("logger.legacy-prefix", String.class, "§8[%plugin-full-name%§8]", true),
+        ADVENTURE_LOGGER_PREFIX("logger.adventure-prefix", String.class, "<dark_gray>[</dark_gray>%plugin-name% %plugin-version%<dark_gray>]</dark_gray>", true),
 
         MESSAGE_CACHE_MAX_SIZE("cache.messages.maximum-size", Long.class, 512L),
         MESSAGE_CACHE_EXPIRE_AFTER_ACCESS("cache.messages.expire-after-access-minutes", Long.class, 10L),
