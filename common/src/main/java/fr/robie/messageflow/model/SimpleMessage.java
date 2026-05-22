@@ -39,21 +39,23 @@ public record SimpleMessage(@NotNull MessageType messageType,
         }
     }
 
-    /**
-     * Deserializes a SimpleMessage from a YAML map.
-     *
-     * @param messageType the expected message type
-     * @param map         the map containing message data
-     * @return the deserialized message, or null if parsing failed
-     */
-    @Nullable
-    public static SimpleMessage deserialize(MessageType messageType, Map<String, Object> map) {
-        List<String> messages;
-        if (map.containsKey("message")) {
-            messages = List.of((String) map.get("message"));
-        } else {
-            messages = (List<String>) map.get("messages");
-        }
-        return messages != null ? new SimpleMessage(messageType, messages) : null;
-    }
+     /**
+      * Deserializes a SimpleMessage from a YAML map.
+      *
+      * @param messageType the expected message type
+      * @param map         the map containing message data
+      * @return the deserialized message, or null if parsing failed
+      */
+     @Nullable
+     public static SimpleMessage deserialize(MessageType messageType, Map<String, Object> map) {
+         List<String> messages;
+         if (map.containsKey("message")) {
+             messages = List.of((String) map.get("message"));
+         } else {
+             @SuppressWarnings("unchecked")
+             List<String> temp = (List<String>) map.get("messages");
+             messages = temp;
+         }
+         return messages != null ? new SimpleMessage(messageType, messages) : null;
+     }
 }
