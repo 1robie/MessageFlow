@@ -44,7 +44,7 @@ import java.util.function.Supplier;
  * @param <T> the type of the plugin using this manager
  * @param <E> the type used to represent languages (e.g., String or an Enum)
  */
-@SuppressWarnings("ResultOfMethodCallIgnored")
+@SuppressWarnings({"ResultOfMethodCallIgnored", "deprecation"})
 public final class MessageManager<T extends Plugin, E> implements IMessageManager<T, E> {
     private final ConfigurationManager<T> configurationManager;
 
