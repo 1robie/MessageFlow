@@ -27,10 +27,23 @@
                             <shadedArtifactAttached>false</shadedArtifactAttached>
                             <outputFile>${project.build.directory}/${project.build.finalName}.jar</outputFile>
                             <filters>
+                                <!-- Exclude META-INF from all internal dependencies -->
                                 <filter>
-                                    <artifact>*:*</artifact>
+                                    <artifact>fr.robie.messageflow:common</artifact>
                                     <excludes>
-                                        <exclude>META-INF/MANIFEST.MF</exclude>
+                                        <exclude>META-INF/**</exclude>
+                                    </excludes>
+                                </filter>
+                                <filter>
+                                    <artifact>fr.robie.messageflow:BOM</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/**</exclude>
+                                    </excludes>
+                                </filter>
+                                <filter>
+                                    <artifact>fr.robie.messageflow:PlaceholderAPI</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/**</exclude>
                                     </excludes>
                                 </filter>
                             </filters>
@@ -41,45 +54,47 @@
         </plugins>
     </build>
 
-    <dependencies>
-        <dependency>
-            <groupId>fr.robie.messageflow</groupId>
-            <artifactId>common</artifactId>
-        </dependency>
+     <dependencies>
+         <dependency>
+             <groupId>fr.robie.messageflow</groupId>
+             <artifactId>common</artifactId>
+             <scope>compile</scope>
+         </dependency>
 
-        <dependency>
-            <groupId>fr.robie.messageflow</groupId>
-            <artifactId>BOM</artifactId>
-        </dependency>
+         <dependency>
+             <groupId>fr.robie.messageflow</groupId>
+             <artifactId>BOM</artifactId>
+             <scope>compile</scope>
+         </dependency>
 
-        <dependency>
-            <groupId>io.papermc.paper</groupId>
-            <artifactId>paper-api</artifactId>
-        </dependency>
+         <dependency>
+             <groupId>io.papermc.paper</groupId>
+             <artifactId>paper-api</artifactId>
+         </dependency>
 
-        <!-- JUnit 5 for testing -->
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-api</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-engine</artifactId>
-            <scope>test</scope>
-        </dependency>
+         <!-- JUnit 5 for testing -->
+         <dependency>
+             <groupId>org.junit.jupiter</groupId>
+             <artifactId>junit-jupiter-api</artifactId>
+             <scope>test</scope>
+         </dependency>
+         <dependency>
+             <groupId>org.junit.jupiter</groupId>
+             <artifactId>junit-jupiter-engine</artifactId>
+             <scope>test</scope>
+         </dependency>
 
-        <!-- Mockito for mocking -->
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-core</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-junit-jupiter</artifactId>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
+         <!-- Mockito for mocking -->
+         <dependency>
+             <groupId>org.mockito</groupId>
+             <artifactId>mockito-core</artifactId>
+             <scope>test</scope>
+         </dependency>
+         <dependency>
+             <groupId>org.mockito</groupId>
+             <artifactId>mockito-junit-jupiter</artifactId>
+             <scope>test</scope>
+         </dependency>
+     </dependencies>
 
 </project>

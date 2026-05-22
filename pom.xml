@@ -67,7 +67,7 @@
                 <groupId>fr.robie.messageflow</groupId>
                 <artifactId>BOM</artifactId>
                 <version>${project.version}</version>
-                <scope>compile</scope>
+                <scope>provided</scope>
             </dependency>
 
             <dependency>

@@ -26,6 +26,15 @@
                         <configuration>
                             <shadedArtifactAttached>false</shadedArtifactAttached>
                             <outputFile>${project.build.directory}/${project.build.finalName}.jar</outputFile>
+                            <filters>
+                                <!-- Exclude META-INF from message-flow JAR -->
+                                <filter>
+                                    <artifact>fr.robie.messageflow:message-flow</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/**</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
                         </configuration>
                     </execution>
                 </executions>
