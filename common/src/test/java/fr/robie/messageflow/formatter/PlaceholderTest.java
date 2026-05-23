@@ -1,7 +1,6 @@
 package fr.robie.messageflow.formatter;
 
 import fr.robie.messageflow.api.PlaceholderValue;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -33,8 +32,8 @@ class PlaceholderTest {
     @DisplayName("Builder supports static placeholder values")
     void testBuilderWithStaticValues() {
         Placeholder p = Placeholder.builder()
-                .put("name", "Alice")
-                .put("status", "online")
+                .register("name", "Alice")
+                .register("status", "online")
                 .build();
         String result = p.parse("%name% is %status%");
         assertEquals("Alice is online", result);
@@ -75,7 +74,7 @@ class PlaceholderTest {
     @DisplayName("Builder supports dynamic placeholders via Supplier")
     void testBuilderWithSupplier() {
         Placeholder p = Placeholder.builder()
-                .put("count", () -> "42")
+                .register("count", () -> "42")
                 .build();
         String result = p.parse("Count: %count%");
         assertEquals("Count: 42", result);
@@ -85,7 +84,7 @@ class PlaceholderTest {
     @DisplayName("Supplier returning null becomes empty string")
     void testSupplierReturningNull() {
         Placeholder p = Placeholder.builder()
-                .put("value", () -> null)
+                .register("value", () -> null)
                 .build();
         String result = p.parse("Value: %value%");
         assertEquals("Value: ", result);
@@ -95,8 +94,8 @@ class PlaceholderTest {
     @DisplayName("Mixed static and dynamic placeholders work together")
     void testMixedStaticAndDynamic() {
         Placeholder p = Placeholder.builder()
-                .put("name", "John")
-                .put("time", () -> "12:00")
+                .register("name", "John")
+                .register("time", () -> "12:00")
                 .build();
         String result = p.parse("%name% logged in at %time%");
         assertEquals("John logged in at 12:00", result);
@@ -122,7 +121,7 @@ class PlaceholderTest {
     @DisplayName("Multiple parse calls produce consistent results")
     void testMultipleParseCalls() {
         Placeholder p = Placeholder.builder()
-                .put("value", () -> "same")
+                .register("value", () -> "same")
                 .build();
         String result1 = p.parse("Test %value%");
         String result2 = p.parse("Test %value%");
@@ -141,7 +140,7 @@ class PlaceholderTest {
     @DisplayName("Supplier exception results in unchanged placeholder")
     void testSupplierException() {
         Placeholder p = Placeholder.builder()
-                .put("broken", () -> {
+                .register("broken", () -> {
                     throw new RuntimeException("Intentional error");
                 })
                 .build();

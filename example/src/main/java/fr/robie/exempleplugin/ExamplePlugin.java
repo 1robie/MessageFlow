@@ -45,6 +45,15 @@ public class ExamplePlugin extends JavaPlugin {
         // This automatically uses the active language and formats the message
         Logger.info(ExampleMessages.HELLO);
 
+        // --- Fluent Builder Examples ---
+        // Allows sending messages on-the-fly without pre-defining them in an Enum
+        examplePluginLangsMessageManager.builder()
+                .chat("<green>Fluent Builder: <white>This message was sent using the builder!</white>")
+                .placeholder("author", "1robie")
+                .actionBar("<gold>Author: %author%")
+                .sound("entity.experience_orb.pickup")
+                .send(this.getServer().getConsoleSender());
+
         // 4) Global Color Toggle (Colors the entire log line)
         Logger.setColorWhole(true);
         Logger.info("This entire line is now colored for ALL log types.");

@@ -2,6 +2,7 @@ package fr.robie.messageflow.impl;
 
 import com.google.common.base.Preconditions;
 import fr.robie.messageflow.TextResolverRegistry;
+import fr.robie.messageflow.api.IMessageBuilder;
 import fr.robie.messageflow.api.IMessageManager;
 import fr.robie.messageflow.api.MessageTypeAdapter;
 import fr.robie.messageflow.configuration.ConfigurationManager;
@@ -100,13 +101,13 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
         Placeholder.Builder placeholders = Placeholder.builder();
         try {
             PluginMeta pluginMeta = this.plugin.getPluginMeta();
-            placeholders.put("plugin-name", pluginMeta.getName());
-            placeholders.put("plugin-version", pluginMeta.getVersion());
-            placeholders.put("plugin-full", pluginMeta.getName() + " " + pluginMeta.getVersion());
+            placeholders.register("plugin-name", pluginMeta.getName());
+            placeholders.register("plugin-version", pluginMeta.getVersion());
+            placeholders.register("plugin-full", pluginMeta.getName() + " " + pluginMeta.getVersion());
         } catch (Exception e) {
-            placeholders.put("plugin-name", this.plugin.getDescription().getName());
-            placeholders.put("plugin-version", this.plugin.getDescription().getVersion());
-            placeholders.put("plugin-full", this.plugin.getDescription().getFullName());
+            placeholders.register("plugin-name", this.plugin.getDescription().getName());
+            placeholders.register("plugin-version", this.plugin.getDescription().getVersion());
+            placeholders.register("plugin-full", this.plugin.getDescription().getFullName());
         }
 
         String loggerPrefix = placeholders.build().parse(switch (PlatformType.get()) {
@@ -143,6 +144,11 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
     @Override
     public @NotNull ConfigurationManager<T> configurationManager() {
         return this.configurationManager;
+    }
+
+    @Override
+    public @NotNull IMessageBuilder builder() {
+        return new MessageBuilder(this);
     }
 
     @Override

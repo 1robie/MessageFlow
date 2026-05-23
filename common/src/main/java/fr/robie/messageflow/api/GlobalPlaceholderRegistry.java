@@ -239,9 +239,9 @@ public final class GlobalPlaceholderRegistry {
         } catch (Exception e) {
             Logger.warn("Exception evaluating global placeholder '%key%' for player '%player%': %error%",
                     Placeholder.builder()
-                            .put("key", key)
-                            .put("player", player.getName())
-                            .put("error", e.getMessage())
+                            .register("key", key)
+                            .register("player", player.getName())
+                            .register("error", e.getMessage())
                             .build());
             return Optional.empty();
         }

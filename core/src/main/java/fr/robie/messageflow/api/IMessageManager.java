@@ -40,6 +40,13 @@ public interface IMessageManager<T extends Plugin, E> {
     @NotNull fr.robie.messageflow.configuration.ConfigurationManager<T> configurationManager();
 
     /**
+     * Creates a new fluent message builder for creating and sending messages on-the-fly.
+     *
+     * @return a new message builder instance
+     */
+    @NotNull IMessageBuilder builder();
+
+    /**
      * Reloads all registered language files, updating keys if necessary.
      */
     void reload();

@@ -40,9 +40,9 @@ import java.util.regex.Pattern;
  *
  * // Multiple placeholders using builder
  * Placeholder p4 = Placeholder.builder()
- *     .put("name", "John")
- *     .put("level", "10")
- *     .put("ping", player -> String.valueOf(player.getPing()))
+ *     .register("name", "John")
+ *     .register("level", "10")
+ *     .register("ping", player -> String.valueOf(player.getPing()))
  *     .build();
  *
  * // Empty placeholders (no replacements)
@@ -115,7 +115,6 @@ public final class Placeholder {
                 String evaluated = value.evaluate(player);
                 replacements.put("%" + key + "%", evaluated);
             } catch (Exception e) {
-                // Leave placeholder as-is on error, will be handled by resolver
                 replacements.put("%" + key + "%", "%" + key + "%");
             }
         }
@@ -149,9 +148,7 @@ public final class Placeholder {
      * @return a Placeholder containing the single key-value pair
      */
     public static @NotNull Placeholder of(@NotNull String key, String value) {
-        Map<String, PlaceholderValue> map = new HashMap<>();
-        map.put(key, PlaceholderValue.ofStatic(value == null ? "" : value));
-        return new Placeholder(Collections.unmodifiableMap(map));
+        return new Placeholder(Map.of(key, PlaceholderValue.ofStatic(value == null ? "" : value)));
     }
 
     /**
@@ -162,9 +159,7 @@ public final class Placeholder {
      * @return a Placeholder containing the single key-value pair
      */
     public static @NotNull Placeholder of(@NotNull String key, @NotNull Supplier<String> supplier) {
-        Map<String, PlaceholderValue> map = new HashMap<>();
-        map.put(key, PlaceholderValue.ofDynamic(supplier));
-        return new Placeholder(Collections.unmodifiableMap(map));
+        return new Placeholder(Map.of(key, PlaceholderValue.ofDynamic(supplier)));
     }
 
     /**
@@ -175,9 +170,7 @@ public final class Placeholder {
      * @return a Placeholder containing the single key-value pair
      */
     public static @NotNull Placeholder of(@NotNull String key, @NotNull Function<Player, String> function) {
-        Map<String, PlaceholderValue> map = new HashMap<>();
-        map.put(key, PlaceholderValue.ofPlayer(function));
-        return new Placeholder(Collections.unmodifiableMap(map));
+        return new Placeholder(Map.of(key, PlaceholderValue.ofPlayer(function)));
     }
 
     /**
@@ -212,6 +205,7 @@ public final class Placeholder {
      * Supports static, dynamic, and player-specific values.
      * Useful for complex cases with many placeholders.
      */
+    @SuppressWarnings("UnusedReturnValue")
     public static final class Builder {
         private final Map<String, PlaceholderValue> map = new HashMap<>();
 
@@ -222,7 +216,7 @@ public final class Placeholder {
          * @param value the placeholder value (null values become empty strings)
          * @return this Builder instance for method chaining
          */
-        public @NotNull Builder put(@NotNull String key, String value) {
+        public @NotNull Builder register(@NotNull String key, String value) {
             this.map.put(key, PlaceholderValue.ofStatic(value == null ? "" : value));
             return this;
         }
@@ -234,7 +228,7 @@ public final class Placeholder {
          * @param supplier the supplier that provides the placeholder value
          * @return this Builder instance for method chaining
          */
-        public @NotNull Builder put(@NotNull String key, @NotNull Supplier<String> supplier) {
+        public @NotNull Builder register(@NotNull String key, @NotNull Supplier<String> supplier) {
             this.map.put(key, PlaceholderValue.ofDynamic(supplier));
             return this;
         }
@@ -246,7 +240,7 @@ public final class Placeholder {
          * @param function the function that provides the placeholder value based on a player
          * @return this Builder instance for method chaining
          */
-        public @NotNull Builder put(@NotNull String key, @NotNull Function<Player, String> function) {
+        public @NotNull Builder register(@NotNull String key, @NotNull Function<Player, String> function) {
             this.map.put(key, PlaceholderValue.ofPlayer(function));
             return this;
         }
