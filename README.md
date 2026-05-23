@@ -31,6 +31,27 @@ message formatting using both modern **Adventure** (MiniMessage) and **Legacy** 
 
 ---
 
+## Breaking Changes
+
+version 1.0.0 introduced major changes to the API, including:
+
+Usage of a new `Placeholder` class instead of a Object array for placeholders.
+  `formatter.sendMessage(MY_MESSAGES.WELCOME, player, "player", player.getName())` becomes
+  `formatter.sendMessage(MY_MESSAGES.WELCOME, player, Placeholders.of("player", player.getName()))`
+  Introducing a builder for placeholders allows for more flexibility and better readability, supporting static placeholders, dynamic values and player dynamic placeholders.
+
+```java
+Placeholder.Builder() builder = Placeholder.builder();
+builder.register("player", (player) -> player.getName());
+builder.register("server_version", Bukkit.getVersion());
+builder.register("dynamic_value", () -> "someDynamicValue");
+
+Placeholder p = builder.build();
+
+```
+
+---
+
 ## 💻 Installation
 
 ### 1. Add Dependency
@@ -236,7 +257,7 @@ MessageManager<MyPlugin, String> messageManager = ...; // Initialized as shown a
 MessageFormatter<MyPlugin, ?> formatter = this.messageManager.formatter();
 
 Placeholders.Builder placeholders = Placeholders.builder();
-placeholders.put("player", player.getName());
+placeholders.register("player", player.getName());
 
 formatter.sendMessage(player, MyMessages.WELCOME, placeholders.build()); // Sends "Welcome to the server, PlayerName!" to the player
 
