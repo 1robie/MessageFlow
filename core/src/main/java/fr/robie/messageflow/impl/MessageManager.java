@@ -2,6 +2,7 @@ package fr.robie.messageflow.impl;
 
 import com.google.common.base.Preconditions;
 import fr.robie.messageflow.TextResolverRegistry;
+import fr.robie.messageflow.api.GlobalPlaceholderRegistry;
 import fr.robie.messageflow.api.IMessageBuilder;
 import fr.robie.messageflow.api.IMessageManager;
 import fr.robie.messageflow.api.MessageTypeAdapter;
@@ -153,6 +154,8 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
 
     @Override
     public void reload() {
+        GlobalPlaceholderRegistry.getInstance().clear();
+        this.formatter().clearCache();
         this.configurationManager.load();
         for (LanguageEntry languageEntry : this.languageConfiguration.getLanguagesEntries()) {
             String lang = languageEntry.language();

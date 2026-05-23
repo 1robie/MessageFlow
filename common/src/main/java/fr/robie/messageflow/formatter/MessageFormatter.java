@@ -166,11 +166,11 @@ public abstract class MessageFormatter<T extends Plugin, V> {
      * Sends a message to a collection of audiences, optionally using player context
      * if the registry has resolvers.
      *
-     * @param <A>       the audience type
-     * @param audiences the collection of audiences
-     * @param text      the raw text to format and send
+     * @param <A>          the audience type
+     * @param audiences    the collection of audiences
+     * @param text         the raw text to format and send
      * @param placeholders the placeholders to apply
-     * @param action    the action to perform for each audience
+     * @param action       the action to perform for each audience
      */
     protected <A> void perAudienceOrShared(
             @NotNull Collection<? extends A> audiences,
@@ -192,12 +192,12 @@ public abstract class MessageFormatter<T extends Plugin, V> {
     /**
      * Sends multiple messages to a collection of audiences, optionally using player context.
      *
-     * @param <A>       the audience type
-     * @param audiences the collection of audiences
-     * @param texts     the raw texts to format and send
+     * @param <A>          the audience type
+     * @param audiences    the collection of audiences
+     * @param texts        the raw texts to format and send
      * @param placeholders the placeholders to apply
-     * @param prefix    optional prefix to prepend to each text
-     * @param action    the action to perform for each audience/message
+     * @param prefix       optional prefix to prepend to each text
+     * @param action       the action to perform for each audience/message
      */
     protected <A> void perAudienceOrShared(
             @NotNull Collection<? extends A> audiences,
@@ -728,5 +728,10 @@ public abstract class MessageFormatter<T extends Plugin, V> {
      */
     public void sendMessage(@NotNull Message message, @NotNull Logger.LogType logType, @NotNull ConsoleCommandSender sender) {
         this.sendMessage(message, logType, sender, Placeholder.empty());
+    }
+
+    public void clearCache() {
+        this.cache.cleanUp();
+
     }
 }
