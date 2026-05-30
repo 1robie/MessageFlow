@@ -21,7 +21,6 @@ import org.jspecify.annotations.NonNull;
 
 import java.time.Duration;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -215,48 +214,56 @@ public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatte
             boolean prefix,
             @NotNull Placeholder placeholders
     ) {
-        if (audiences.isEmpty()) {
-            return;
-        }
-
         for (MessageTypeAdapter messageAdapter : message.loaded()) {
+            Collection<? extends CommandSender> resolvedAudiences = this.resolveRecipients(messageAdapter, audiences);
+            if (resolvedAudiences.isEmpty()) {
+                continue;
+            }
+
             switch (messageAdapter.messageType()) {
 
                 case TITLE -> {
-                    if (messageAdapter instanceof TitleMessage(
-                            String title, String subtitle, int fadeIn, int stay, int fadeOut
-                    )) {
+                    if (messageAdapter instanceof TitleMessage tm) {
+                        String title = tm.title();
+                        String subtitle = tm.subtitle();
+                        int fadeIn = tm.fadeIn();
+                        int stay = tm.stay();
+                        int fadeOut = tm.fadeOut();
                         if (this.textResolverRegistry.hasResolvers()) {
-                            audiences.forEach(a -> {
+                            resolvedAudiences.forEach(a -> {
                                 Player player = a instanceof Player p ? p : null;
                                 a.showTitle(this.buildTitle(title, subtitle, fadeIn, stay, fadeOut, player, placeholders));
                             });
                         } else {
                             Title shared = this.buildTitle(title, subtitle, fadeIn, stay, fadeOut, null, placeholders);
-                            audiences.forEach(a -> a.showTitle(shared));
+                            resolvedAudiences.forEach(a -> a.showTitle(shared));
                         }
                     }
                 }
 
                 case TCHAT -> {
                     if (messageAdapter instanceof SimpleMessage sm) {
-                        this.sendComponents(audiences, sm, prefix, this.prefix, placeholders, Audience::sendMessage);
+                        this.sendComponents(resolvedAudiences, sm, prefix, this.prefix, placeholders, Audience::sendMessage);
                     }
                 }
 
                 case ACTION_BAR -> {
                     if (messageAdapter instanceof SimpleMessage sm) {
-                        this.sendComponents(audiences, sm, prefix, this.prefix, placeholders, Audience::sendActionBar);
+                        this.sendComponents(resolvedAudiences, sm, prefix, this.prefix, placeholders, Audience::sendActionBar);
                     }
                 }
 
                 case BOSS_BAR -> {
-                    if (messageAdapter instanceof AdventureBossBarMessage(
-                            String title, BossBar.Color color, BossBar.Overlay overlay,
-                            Set<BossBar.Flag> flags, long duration, float progress
-                    )) {
+                    if (messageAdapter instanceof AdventureBossBarMessage abm) {
+                        String title = abm.title();
+                        BossBar.Color color = abm.color();
+                        BossBar.Overlay overlay = abm.overlay();
+                        Set<BossBar.Flag> flags = abm.flags();
+                        long duration = abm.duration();
+                        float progress = abm.progress();
+
                         if (this.textResolverRegistry.hasResolvers()) {
-                            audiences.forEach(a -> {
+                            resolvedAudiences.forEach(a -> {
                                 Player player = a instanceof Player p ? p : null;
                                 BossBar bar = BossBar.bossBar(
                                         this.format(title, player, placeholders),
@@ -268,15 +275,15 @@ public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatte
                             BossBar bar = BossBar.bossBar(
                                     this.format(title, null, placeholders),
                                     progress, color, overlay, flags);
-                            audiences.forEach(a -> a.showBossBar(bar));
-                            this.scheduleHideBossBar(duration, audiences, Audience::hideBossBar, bar);
+                            resolvedAudiences.forEach(a -> a.showBossBar(bar));
+                            this.scheduleHideBossBar(duration, resolvedAudiences, Audience::hideBossBar, bar);
                         }
                     }
                 }
 
                 case WITHOUT_PREFIX -> {
                     if (messageAdapter instanceof SimpleMessage sm) {
-                        this.sendComponents(audiences, sm, false, null, placeholders, Audience::sendMessage);
+                        this.sendComponents(resolvedAudiences, sm, false, null, placeholders, Audience::sendMessage);
                     }
                 }
 
@@ -288,7 +295,7 @@ public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatte
 
                 case SOUND -> {
                     if (messageAdapter instanceof SoundMessage soundMessage) {
-                        this.playSound(audiences.stream().filter(a -> a instanceof Player).map(a -> (Player) a).toList(), soundMessage);
+                        this.playSound(resolvedAudiences.stream().filter(a -> a instanceof Player).map(a -> (Player) a).toList(), soundMessage);
                     }
                 }
             }
@@ -333,16 +340,4 @@ public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatte
         );
     }
 
-    private void scheduleHideBossBar(
-            @NotNull BossBar bar,
-            long durationTicks,
-            @NotNull Collection<? extends Audience> audiences
-    ) {
-        this.plugin.getServer().getAsyncScheduler().runDelayed(
-                this.plugin,
-                w -> audiences.forEach(a -> a.hideBossBar(bar)),
-                durationTicks * 50L,
-                TimeUnit.MILLISECONDS
-        );
-    }
 }

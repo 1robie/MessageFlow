@@ -7,10 +7,17 @@
 - Support for `PlaceholderAPI` in each message.
 - New `GlobalPlaceholderRegistry` class to register global placeholders that can be used in any message. Support for static placeholders, dynamic values and player dynamic placeholders.
 - New `IMessageBuilder` class to create messages using a builder pattern. It allows to set the message type, the content, the placeholders and other options in a fluent way.
+- New granular message delivery settings: `broadcast`, `send-to-console`, and `exclude-senders`.
+- Settings can now be configured per-component (e.g., specific title or chat line) or globally for a message.
+- Refactored message model from records to classes with an `AbstractMessageTypeAdapter` to centralize common delivery logic and settings.
+- Added fluent builder methods: `withBroadcast()`, `withSendToConsole()`, and `withExcludeSenders()` for per-component configuration.
 - New `SoundMessage` class to represent messages that play a sound when sent. It has a sound, a volume and a pitch, and can be used to play sounds to players when sending messages.
 ```yaml
 sound: "entity.experience_orb.pickup"
 # category: MASTER
 # volume: 1.0
 # pitch: 1.0
+# broadcast: false
+# send-to-console: false
+# exclude-senders: false
 ```

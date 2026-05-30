@@ -144,19 +144,23 @@ public class LegacyMessageFormatter<T extends Plugin> extends MessageFormatter<T
             boolean prefix,
             @NotNull Placeholder placeholders
     ) {
-        if (senders.isEmpty()) {
-            return;
-        }
-
         for (MessageTypeAdapter messageAdapter : message.loaded()) {
+            Collection<? extends CommandSender> resolvedSenders = this.resolveRecipients(messageAdapter, senders);
+            if (resolvedSenders.isEmpty()) {
+                continue;
+            }
+
             switch (messageAdapter.messageType()) {
 
                 case TITLE -> {
-                    if (messageAdapter instanceof TitleMessage(
-                            String title, String subtitle, int fadeIn, int stay, int fadeOut
-                    )) {
+                    if (messageAdapter instanceof TitleMessage tm) {
+                        String title = tm.title();
+                        String subtitle = tm.subtitle();
+                        int fadeIn = tm.fadeIn();
+                        int stay = tm.stay();
+                        int fadeOut = tm.fadeOut();
                         if (this.textResolverRegistry.hasResolvers()) {
-                            senders.forEach(sender -> {
+                            resolvedSenders.forEach(sender -> {
                                 Player player = sender instanceof Player p ? p : null;
                                 String coloredTitle = this.format(title, player, placeholders);
                                 String coloredSubtitle = this.format(subtitle, player, placeholders);
@@ -170,7 +174,7 @@ public class LegacyMessageFormatter<T extends Plugin> extends MessageFormatter<T
                         } else {
                             String sharedTitle = this.format(title, null, placeholders);
                             String sharedSubtitle = this.format(subtitle, null, placeholders);
-                            senders.forEach(sender -> {
+                            resolvedSenders.forEach(sender -> {
                                 if (sender instanceof Player p) {
                                     p.sendTitle(sharedTitle, sharedSubtitle, fadeIn, stay, fadeOut);
                                 } else {
@@ -184,14 +188,14 @@ public class LegacyMessageFormatter<T extends Plugin> extends MessageFormatter<T
 
                 case TCHAT -> {
                     if (messageAdapter instanceof SimpleMessage sm) {
-                        this.sendComponents(senders, sm, prefix, this.prefix, placeholders);
+                        this.sendComponents(resolvedSenders, sm, prefix, this.prefix, placeholders);
                     }
                 }
 
                 case ACTION_BAR -> {
                     if (messageAdapter instanceof SimpleMessage sm) {
                         String line = sm.messages().isEmpty() ? null : sm.messages().getFirst();
-                        List<? extends Player> players = senders.stream()
+                        List<? extends Player> players = resolvedSenders.stream()
                                 .filter(s -> s instanceof Player)
                                 .map(s -> (Player) s)
                                 .toList();
@@ -200,11 +204,15 @@ public class LegacyMessageFormatter<T extends Plugin> extends MessageFormatter<T
                 }
 
                 case BOSS_BAR -> {
-                    if (messageAdapter instanceof LegacyBossBarMessage(
-                            String title, BarColor color, BarStyle style,
-                            BarFlag[] flags, long duration, float progress
-                    )) {
-                        List<Player> players = senders.stream()
+                    if (messageAdapter instanceof LegacyBossBarMessage lbm) {
+                        String title = lbm.title();
+                        BarColor color = lbm.color();
+                        BarStyle style = lbm.style();
+                        BarFlag[] flags = lbm.flags();
+                        long duration = lbm.duration();
+                        float progress = lbm.progress();
+
+                        List<Player> players = resolvedSenders.stream()
                                 .filter(s -> s instanceof Player)
                                 .map(s -> (Player) s)
                                 .toList();
@@ -228,7 +236,7 @@ public class LegacyMessageFormatter<T extends Plugin> extends MessageFormatter<T
 
                 case WITHOUT_PREFIX -> {
                     if (messageAdapter instanceof SimpleMessage sm) {
-                        this.sendComponents(senders, sm, false, null, placeholders);
+                        this.sendComponents(resolvedSenders, sm, false, null, placeholders);
                     }
                 }
 
@@ -240,7 +248,7 @@ public class LegacyMessageFormatter<T extends Plugin> extends MessageFormatter<T
 
                 case SOUND -> {
                     if (messageAdapter instanceof SoundMessage soundMessage) {
-                        this.playSound(senders.stream()
+                        this.playSound(resolvedSenders.stream()
                                 .filter(s -> s instanceof Player)
                                 .map(s -> (Player) s)
                                 .toList(), soundMessage);

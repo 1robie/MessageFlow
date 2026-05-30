@@ -33,6 +33,7 @@ import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
 /**
@@ -124,9 +125,9 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
         }
 
         TextResolverRegistry registry = new TextResolverRegistry();
+        this.messageFormatter.setTextResolverRegistry(registry);
         registry.initialize();
 
-        this.messageFormatter.setTextResolverRegistry(registry);
 
         this.BACKUP_DATE_FORMAT = DateTimeFormatter.ofPattern(ConfigurationManager.Setting.BACKUP_DATE_FORMAT.getValue());
         this.languageConfiguration = options.languageConfiguration();
@@ -276,13 +277,20 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
     private void loadLanguageFileIntoMessages(@NotNull File file) {
         YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
         for (Message m : this.messages.get()) {
-            if (!config.contains(m.key())) {
+            Object raw = config.get(m.key());
+            if (raw == null) {
                 m.setLoaded(m.defaults());
                 continue;
             }
-            List<MessageTypeAdapter> parsed = this.parseMessageList(config, m.key());
+
+            MessageSettings globalSettings = this.parseSettings(raw, m.settings());
+            m.setSettings(globalSettings);
+
+            List<MessageTypeAdapter> parsed = this.parseMessageList(raw, globalSettings);
+
+            final MessageSettings finalSettings = globalSettings;
             List<MessageTypeAdapter> filtered = parsed.stream()
-                    .filter(adapter -> m.settings().isTypeAllowed(adapter.messageType()))
+                    .filter(adapter -> finalSettings.isTypeAllowed(adapter.messageType()))
                     .toList();
 
             if (filtered.isEmpty() && !parsed.isEmpty()) {
@@ -292,6 +300,43 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
                 m.setLoaded(filtered);
             }
         }
+    }
+
+    /**
+     * Parses message settings from a raw YAML object.
+     *
+     * @param raw     the raw YAML object (Map or ConfigurationSection)
+     * @param initial the initial settings to merge with
+     * @return the parsed message settings
+     */
+    private @NotNull MessageSettings parseSettings(@Nullable Object raw, @NotNull MessageSettings initial) {
+        Map<?, ?> map = null;
+        if (raw instanceof ConfigurationSection section) {
+            map = section.getValues(false);
+        } else if (raw instanceof Map<?, ?> m) {
+            map = m;
+        }
+
+        if (map == null) {
+            return initial;
+        }
+
+        MessageSettings settings = initial;
+        settings = this.applySetting(settings, map, "broadcast", MessageSettings::withBroadcast);
+        settings = this.applySetting(settings, map, "send-to-console", MessageSettings::withSendToConsole);
+        settings = this.applySetting(settings, map, "exclude-senders", MessageSettings::withExcludeSenders);
+
+        return settings;
+    }
+
+    private MessageSettings applySetting(MessageSettings s, Map<?, ?> map, String key, BiFunction<MessageSettings, Boolean, MessageSettings> func) {
+        Object val = map.get(key);
+        if (val instanceof Boolean b) {
+            return func.apply(s, b);
+        } else if (val instanceof String str) {
+            return func.apply(s, Boolean.parseBoolean(str));
+        }
+        return s;
     }
 
     /**
@@ -448,67 +493,85 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
      * Parses a raw YAML value into a list of message type adapters.
      * Handles various input formats: plain strings, string lists, and structured message maps.
      *
-     * @param config the YAML configuration containing the value
-     * @param key    the key to read from the configuration
+     * @param raw      the raw YAML object to parse
+     * @param defaults default settings to use for adapters
      * @return a list of parsed message type adapters
      */
-    private List<MessageTypeAdapter> parseMessageList(YamlConfiguration config, String key) {
-        Object raw = config.get(key);
-        switch (raw) {
-            case null -> {
+    private List<MessageTypeAdapter> parseMessageList(@Nullable Object raw, @NotNull MessageSettings defaults) {
+        if (raw == null) {
+            return List.of();
+        }
+
+        if (raw instanceof String str) {
+            return List.of(new SimpleMessage(MessageType.TCHAT, List.of(str), defaults.broadcast(), defaults.sendToConsole(), defaults.excludeSenders()));
+        }
+
+        if (raw instanceof List<?> list) {
+            if (list.isEmpty()) {
                 return List.of();
             }
-            case String str -> {
-                return List.of(new SimpleMessage(MessageType.TCHAT, List.of(str)));
+
+            if (list.getFirst() instanceof String) {
+                List<String> lines = list.stream()
+                        .filter(e -> e instanceof String)
+                        .map(e -> (String) e)
+                        .toList();
+                return List.of(new SimpleMessage(MessageType.TCHAT, lines, defaults.broadcast(), defaults.sendToConsole(), defaults.excludeSenders()));
             }
-            case List<?> list -> {
-                if (list.isEmpty()) {
-                    return List.of();
-                }
 
-                if (list.getFirst() instanceof String) {
-                    List<String> lines = list.stream()
-                            .filter(e -> e instanceof String)
-                            .map(e -> (String) e)
-                            .toList();
-                    return List.of(new SimpleMessage(MessageType.TCHAT, lines));
-                }
-
-                if (list.getFirst() instanceof Map<?, ?>) {
-                    List<MessageTypeAdapter> result = new ArrayList<>();
-                    for (Object entry : list) {
-                        if (!(entry instanceof Map<?, ?> map)) {
-                            continue;
-                        }
-                        MessageTypeAdapter parsed = this.parseAdapterFromMap(map);
-                        if (parsed != null) {
-                            result.add(parsed);
-                        }
+            if (list.getFirst() instanceof Map<?, ?>) {
+                List<MessageTypeAdapter> result = new ArrayList<>();
+                for (Object entry : list) {
+                    if (!(entry instanceof Map<?, ?> map)) {
+                        continue;
                     }
-                    return result;
+                    // For items in a list, we merge the global defaults with the item's own settings
+                    MessageSettings adapterSettings = this.parseSettings(map, defaults);
+                    MessageTypeAdapter parsed = this.parseAdapterFromMap(map, adapterSettings);
+                    if (parsed != null) {
+                        result.add(parsed);
+                    }
                 }
+                return result;
             }
-            case ConfigurationSection section -> {
-                MessageTypeAdapter parsed = this.parseAdapterFromMap(section.getValues(true));
-                return parsed != null ? List.of(parsed) : List.of();
-            }
-            case Map<?, ?> map -> {
-                MessageTypeAdapter parsed = this.parseAdapterFromMap(map);
-                return parsed != null ? List.of(parsed) : List.of();
-            }
-            default -> {
-            }
+            return List.of();
         }
+
+        Map<?, ?> map = null;
+        if (raw instanceof ConfigurationSection section) {
+            map = section.getValues(true);
+        } else if (raw instanceof Map<?, ?> m) {
+            map = m;
+        }
+
+        if (map != null) {
+            // Check for "wrapped" list structure (e.g., settings + messages key)
+            Object messages = map.get("messages");
+            if (messages == null) {
+                messages = map.get("list");
+            }
+            if (messages instanceof List<?>) {
+                // Here we pass the settings parsed from the CURRENT map as defaults for the list items
+                return this.parseMessageList(messages, this.parseSettings(map, defaults));
+            }
+
+            // Otherwise, try parsing the whole map as a single adapter
+            MessageSettings adapterSettings = this.parseSettings(map, defaults);
+            MessageTypeAdapter parsed = this.parseAdapterFromMap(map, adapterSettings);
+            return parsed != null ? List.of(parsed) : List.of();
+        }
+
         return List.of();
     }
 
     /**
      * Parses a single message type adapter from a map of values.
      *
-     * @param map the map containing message data (type, message content, etc.)
+     * @param map      the map containing message data (type, message content, etc.)
+     * @param settings the settings to apply to the adapter
      * @return the parsed message type adapter, or null if parsing failed
      */
-    private @Nullable MessageTypeAdapter parseAdapterFromMap(Map<?, ?> map) {
+    private @Nullable MessageTypeAdapter parseAdapterFromMap(Map<?, ?> map, @NotNull MessageSettings settings) {
         Object rawType = map.get("type");
         MessageType type = MessageType.TCHAT;
         if (rawType instanceof String s) {
@@ -527,6 +590,11 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
             }
             values.put(k, e.getValue());
         }
+
+        // Put settings back into values for deserializers to pick up
+        values.put("broadcast", settings.broadcast());
+        values.put("send-to-console", settings.sendToConsole());
+        values.put("exclude-senders", settings.excludeSenders());
 
         try {
             return switch (type) {

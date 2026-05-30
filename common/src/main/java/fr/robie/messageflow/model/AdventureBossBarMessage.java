@@ -6,35 +6,41 @@ import fr.robie.messageflow.formatter.Placeholder;
 import fr.robie.messageflow.logger.Logger;
 import net.kyori.adventure.bossbar.BossBar;
 import org.jetbrains.annotations.NotNull;
-import org.jspecify.annotations.NonNull;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Stream;
 
 /**
  * A message adapter for boss bar messages using the Adventure API.
  * Contains title, color, overlay, flags, duration, and progress settings.
- *
- * @param title    the boss bar text
- * @param color    the boss bar color
- * @param overlay  the boss bar overlay style
- * @param flags    boss bar flags
- * @param duration the display duration in milliseconds
- * @param progress the progress value (0.0 to 1.0)
  */
-public record AdventureBossBarMessage(@NotNull String title, @NotNull BossBar.Color color,
-                                      @NotNull BossBar.Overlay overlay,
-                                      @NotNull Set<BossBar.Flag> flags, long duration,
-                                      float progress) implements MessageTypeAdapter {
+public final class AdventureBossBarMessage extends MessageTypeAdapter {
+    private final String title;
+    private final BossBar.Color color;
+    private final BossBar.Overlay overlay;
+    private final Set<BossBar.Flag> flags;
+    private final long duration;
+    private final float progress;
 
-    public AdventureBossBarMessage {
-        Preconditions.checkNotNull(title, "Title cannot be null");
-        Preconditions.checkNotNull(color, "Color cannot be null");
-        Preconditions.checkNotNull(overlay, "Overlay cannot be null");
-        Preconditions.checkNotNull(flags, "Flags cannot be null");
+    public AdventureBossBarMessage(@NotNull String title, @NotNull BossBar.Color color,
+                                   @NotNull BossBar.Overlay overlay,
+                                   @NotNull Set<BossBar.Flag> flags, long duration,
+                                   float progress) {
+        this(title, color, overlay, flags, duration, progress, false, false, false);
+    }
+
+    public AdventureBossBarMessage(@NotNull String title, @NotNull BossBar.Color color,
+                                   @NotNull BossBar.Overlay overlay,
+                                   @NotNull Set<BossBar.Flag> flags, long duration,
+                                   float progress, boolean broadcast, boolean sendToConsole,
+                                   boolean excludeSenders) {
+        super(broadcast, sendToConsole, excludeSenders);
+        this.title = Preconditions.checkNotNull(title, "Title cannot be null");
+        this.color = Preconditions.checkNotNull(color, "Color cannot be null");
+        this.overlay = Preconditions.checkNotNull(overlay, "Overlay cannot be null");
+        this.flags = Preconditions.checkNotNull(flags, "Flags cannot be null");
+        this.duration = duration;
+        this.progress = progress;
     }
 
     @Override
@@ -42,29 +48,43 @@ public record AdventureBossBarMessage(@NotNull String title, @NotNull BossBar.Co
         return MessageType.BOSS_BAR;
     }
 
-    /**
-     * Serializes this boss bar message to a map for YAML storage.
-     *
-     * @return the serialized map containing boss bar configuration
-     */
-    @Override
-    public @NonNull Map<String, Object> serialize() {
-        return Map.of(
-                "title", this.title,
-                "color", this.color.name(),
-                "overlay", this.overlay.name(),
-                "flags", this.flags.stream().map(BossBar.Flag::name).toList(),
-                "duration", this.duration,
-                "progress", this.progress
-        );
+    public @NotNull String title() {
+        return this.title;
     }
 
-    /**
-     * Deserializes an AdventureBossBarMessage from a YAML map.
-     *
-     * @param map the map containing boss bar data
-     * @return the deserialized boss bar message
-     */
+    public @NotNull BossBar.Color color() {
+        return this.color;
+    }
+
+    public @NotNull BossBar.Overlay overlay() {
+        return this.overlay;
+    }
+
+    public @NotNull Set<BossBar.Flag> flags() {
+        return this.flags;
+    }
+
+    public long duration() {
+        return this.duration;
+    }
+
+    public float progress() {
+        return this.progress;
+    }
+
+    @Override
+    public @NotNull Map<String, Object> serialize() {
+        Map<String, Object> map = new HashMap<>();
+        map.put("title", this.title);
+        map.put("color", this.color.name());
+        map.put("overlay", this.overlay.name());
+        map.put("flags", this.flags.stream().map(BossBar.Flag::name).toList());
+        map.put("duration", this.duration);
+        map.put("progress", this.progress);
+        this.serializeSettings(map);
+        return map;
+    }
+
     public static AdventureBossBarMessage deserialize(Map<String, Object> map) {
         String title = (String) map.getOrDefault("title", "");
 
@@ -107,6 +127,48 @@ public record AdventureBossBarMessage(@NotNull String title, @NotNull BossBar.Co
 
         long duration = ((Number) map.getOrDefault("duration", 100L)).longValue();
         float progress = ((Number) map.getOrDefault("progress", 1.0f)).floatValue();
-        return new AdventureBossBarMessage(title, color, overlay, flags == null ? Collections.emptySet() : flags, duration, progress);
+
+        boolean[] settings = parseSettings(map);
+        return new AdventureBossBarMessage(title, color, overlay, flags == null ? Collections.emptySet() : flags, duration, progress, settings[0], settings[1], settings[2]);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || this.getClass() != o.getClass()) {
+            return false;
+        }
+        AdventureBossBarMessage that = (AdventureBossBarMessage) o;
+        return this.broadcast() == that.broadcast() &&
+                this.sendToConsole() == that.sendToConsole() &&
+                this.excludeSenders() == that.excludeSenders() &&
+                this.duration == that.duration &&
+                Float.compare(that.progress, this.progress) == 0 &&
+                Objects.equals(this.title, that.title) &&
+                this.color == that.color &&
+                this.overlay == that.overlay &&
+                Objects.equals(this.flags, that.flags);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(this.title, this.color, this.overlay, this.flags, this.duration, this.progress, this.broadcast(), this.sendToConsole(), this.excludeSenders());
+    }
+
+    @Override
+    public String toString() {
+        return "AdventureBossBarMessage[" +
+                "title='" + this.title + '\'' +
+                ", color=" + this.color +
+                ", overlay=" + this.overlay +
+                ", flags=" + this.flags +
+                ", duration=" + this.duration +
+                ", progress=" + this.progress +
+                ", broadcast=" + this.broadcast() +
+                ", sendToConsole=" + this.sendToConsole() +
+                ", excludeSenders=" + this.excludeSenders() +
+                ']';
     }
 }

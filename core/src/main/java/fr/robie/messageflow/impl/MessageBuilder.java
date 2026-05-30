@@ -7,7 +7,10 @@ import fr.robie.messageflow.api.PlaceholderValue;
 import fr.robie.messageflow.formatter.MessageFormatter;
 import fr.robie.messageflow.formatter.Placeholder;
 import fr.robie.messageflow.model.*;
-import org.bukkit.*;
+import org.bukkit.NamespacedKey;
+import org.bukkit.Registry;
+import org.bukkit.Sound;
+import org.bukkit.SoundCategory;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
@@ -27,6 +30,9 @@ public final class MessageBuilder implements IMessageBuilder {
     private final List<MessageTypeAdapter> adapters = new ArrayList<>();
     private final Placeholder.Builder placeholders = Placeholder.builder();
     private boolean usePrefix = true;
+    private boolean broadcast = false;
+    private boolean sendToConsole = false;
+    private boolean excludeSenders = false;
 
     public MessageBuilder(@NotNull IMessageManager<?, ?> manager) {
         this.formatter = manager.formatter();
@@ -113,17 +119,85 @@ public final class MessageBuilder implements IMessageBuilder {
     }
 
     @Override
+    public @NotNull IMessageBuilder broadcast(boolean broadcast) {
+        this.broadcast = broadcast;
+        return this;
+    }
+
+    @Override
+    public @NotNull IMessageBuilder sendToConsole(boolean sendToConsole) {
+        this.sendToConsole = sendToConsole;
+        return this;
+    }
+
+    @Override
+    public @NotNull IMessageBuilder excludeSenders(boolean exclude) {
+        this.excludeSenders = exclude;
+        return this;
+    }
+
+    @Override
+    public @NotNull IMessageBuilder withBroadcast(boolean broadcast) {
+        if (this.adapters.isEmpty()) {
+            return this;
+        }
+        MessageTypeAdapter last = this.adapters.removeLast();
+        last.setBroadcast(broadcast);
+        this.adapters.add(last);
+        return this;
+    }
+
+    @Override
+    public @NotNull IMessageBuilder withSendToConsole(boolean sendToConsole) {
+        if (this.adapters.isEmpty()) {
+            return this;
+        }
+        MessageTypeAdapter last = this.adapters.removeLast();
+        last.setSendToConsole(sendToConsole);
+        this.adapters.add(last);
+        return this;
+    }
+
+    @Override
+    public @NotNull IMessageBuilder withExcludeSenders(boolean exclude) {
+        if (this.adapters.isEmpty()) {
+            return this;
+        }
+        MessageTypeAdapter last = this.adapters.removeLast();
+        last.setExcludeSenders(exclude);
+        this.adapters.add(last);
+        return this;
+    }
+
+    @Override
     public void send(@NotNull CommandSender sender) {
         this.send(List.of(sender));
     }
 
     @Override
     public void send(@NotNull Collection<? extends CommandSender> senders) {
-        if (this.adapters.isEmpty() || senders.isEmpty()) {
+        if (this.adapters.isEmpty() && !this.broadcast && !this.sendToConsole) {
             return;
         }
 
+        for (MessageTypeAdapter adapter : this.adapters) {
+            if (this.broadcast) {
+                adapter.setBroadcast(true);
+            }
+            if (this.sendToConsole) {
+                adapter.setSendToConsole(true);
+            }
+            if (this.excludeSenders) {
+                adapter.setExcludeSenders(true);
+            }
+        }
+
         Message transientMessage = new Message() {
+            private final MessageSettings settings = MessageSettings.DEFAULT
+                    .withBroadcast(MessageBuilder.this.broadcast)
+                    .withSendToConsole(MessageBuilder.this.sendToConsole)
+                    .withExcludeSenders(MessageBuilder.this.excludeSenders);
+
             @Override
             public @NotNull String key() {
                 return "__transient__";
@@ -142,6 +216,11 @@ public final class MessageBuilder implements IMessageBuilder {
             @Override
             public void setLoaded(@NotNull List<? extends MessageTypeAdapter> loaded) {
             }
+
+            @Override
+            public @NotNull MessageSettings settings() {
+                return this.settings;
+            }
         };
 
         this.formatter.sendMessage(transientMessage, senders, this.usePrefix, this.placeholders.build());
@@ -149,6 +228,7 @@ public final class MessageBuilder implements IMessageBuilder {
 
     @Override
     public void broadcast() {
-        this.send(Bukkit.getOnlinePlayers());
+        this.broadcast = true;
+        this.send(List.of());
     }
 }

@@ -5,6 +5,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import fr.robie.messageflow.api.ITextResolverRegistry;
+import fr.robie.messageflow.api.MessageTypeAdapter;
 import fr.robie.messageflow.configuration.ConfigurationManager;
 import fr.robie.messageflow.logger.Logger;
 import fr.robie.messageflow.model.Message;
@@ -19,7 +20,9 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 
@@ -732,6 +735,60 @@ public abstract class MessageFormatter<T extends Plugin, V> {
 
     public void clearCache() {
         this.cache.cleanUp();
+    }
 
+    /**
+     * Resolves the final set of recipients for a message based on its settings and the initial senders.
+     *
+     * @param message        the message definition
+     * @param initialSenders the initial collection of recipients
+     * @return a resolved collection of command senders
+     * @deprecated Use {@link #resolveRecipients(MessageTypeAdapter, Collection)} instead.
+     */
+    @Deprecated
+    protected @NotNull Collection<? extends CommandSender> resolveRecipients(@NotNull Message message, @NotNull Collection<? extends CommandSender> initialSenders) {
+        return this.resolveRecipients(message.settings().broadcast(), message.settings().sendToConsole(), message.settings().excludeSenders(), initialSenders);
+    }
+
+    /**
+     * Resolves the final set of recipients for an adapter based on its settings and the initial senders.
+     *
+     * @param adapter        the message adapter
+     * @param initialSenders the initial collection of recipients
+     * @return a resolved collection of command senders
+     */
+    protected @NotNull Collection<? extends CommandSender> resolveRecipients(@NotNull MessageTypeAdapter adapter, @NotNull Collection<? extends CommandSender> initialSenders) {
+        return this.resolveRecipients(adapter.broadcast(), adapter.sendToConsole(), adapter.excludeSenders(), initialSenders);
+    }
+
+    /**
+     * Resolves the final set of recipients based on the provided settings.
+     *
+     * @param broadcast      whether to broadcast to all players
+     * @param sendToConsole  whether to send to the console
+     * @param excludeSenders whether to exclude the initial recipients
+     * @param initialSenders the initial collection of recipients
+     * @return a resolved collection of command senders
+     */
+    protected @NotNull Collection<? extends CommandSender> resolveRecipients(boolean broadcast, boolean sendToConsole, boolean excludeSenders, @NotNull Collection<? extends CommandSender> initialSenders) {
+        Set<CommandSender> resolved = new HashSet<>();
+
+        if (broadcast) {
+            resolved.addAll(Bukkit.getOnlinePlayers());
+        }
+
+        if (sendToConsole) {
+            resolved.add(Bukkit.getConsoleSender());
+        }
+
+        if (!broadcast && !excludeSenders) {
+            resolved.addAll(initialSenders);
+        }
+
+        if (excludeSenders) {
+            resolved.removeAll(initialSenders);
+        }
+
+        return resolved;
     }
 }

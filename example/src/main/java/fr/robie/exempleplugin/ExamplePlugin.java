@@ -4,7 +4,10 @@ import fr.robie.messageflow.configuration.ConfigurationOptions;
 import fr.robie.messageflow.configuration.lang.EnumLanguageConfiguration;
 import fr.robie.messageflow.impl.MessageManager;
 import fr.robie.messageflow.logger.Logger;
+import net.kyori.adventure.audience.Audience;
 import org.bukkit.plugin.java.JavaPlugin;
+
+import java.util.Collection;
 
 public class ExamplePlugin extends JavaPlugin {
 
@@ -95,8 +98,11 @@ public class ExamplePlugin extends JavaPlugin {
             Logger.debug("Debug information with stacktrace", e);
         }
 
-        Logger.info("ExamplePlugin enabled successfully!");
+        Logger.info("ExamplePlugin enabled successfully!");;
+
     }
+
+
 
     @Override
     public void onDisable() {

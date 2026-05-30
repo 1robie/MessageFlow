@@ -10,12 +10,21 @@ import java.util.Set;
  */
 public record MessageSettings(
         @NotNull Set<MessageType> allowedTypes,
-        @NotNull Set<MessageType> blockedTypes
+        @NotNull Set<MessageType> blockedTypes,
+        boolean broadcast,
+        boolean sendToConsole,
+        boolean excludeSenders
 ) {
     /**
      * Default settings that allow all message types.
      */
-    public static final MessageSettings DEFAULT = new MessageSettings(Collections.emptySet(), Collections.emptySet());
+    public static final MessageSettings DEFAULT = new MessageSettings(
+            Collections.emptySet(),
+            Collections.emptySet(),
+            false,
+            false,
+            false
+    );
 
     /**
      * Creates a new MessageSettings that only allows the specified message types.
@@ -24,7 +33,7 @@ public record MessageSettings(
      * @return a new MessageSettings instance with a whitelist
      */
     public static @NotNull MessageSettings whitelist(@NotNull MessageType... types) {
-        return new MessageSettings(Set.of(types), Collections.emptySet());
+        return new MessageSettings(Set.of(types), Collections.emptySet(), false, false, false);
     }
 
     /**
@@ -34,11 +43,38 @@ public record MessageSettings(
      * @return a new MessageSettings instance with a blacklist
      */
     public static @NotNull MessageSettings blacklist(@NotNull MessageType... types) {
-        return new MessageSettings(Collections.emptySet(), Set.of(types));
+        return new MessageSettings(Collections.emptySet(), Set.of(types), false, false, false);
     }
 
     /**
-     * Checks if a message type is allowed for this message.
+     * Creates a new MessageSettings with broadcast enabled.
+     *
+     * @return a new MessageSettings instance
+     */
+    public @NotNull MessageSettings withBroadcast(boolean broadcast) {
+        return new MessageSettings(this.allowedTypes, this.blockedTypes, broadcast, this.sendToConsole, this.excludeSenders);
+    }
+
+    /**
+     * Creates a new MessageSettings with console sending enabled.
+     *
+     * @return a new MessageSettings instance
+     */
+    public @NotNull MessageSettings withSendToConsole(boolean sendToConsole) {
+        return new MessageSettings(this.allowedTypes, this.blockedTypes, this.broadcast, sendToConsole, this.excludeSenders);
+    }
+
+    /**
+     * Creates a new MessageSettings with sender exclusion enabled.
+     *
+     * @return a new MessageSettings instance
+     */
+    public @NotNull MessageSettings withExcludeSenders(boolean excludeSenders) {
+        return new MessageSettings(this.allowedTypes, this.blockedTypes, this.broadcast, this.sendToConsole, excludeSenders);
+    }
+
+    /**
+     * Checks whether a message type is allowed based on these settings.
      *
      * @param type the message type to check
      * @return true if the type is allowed, false otherwise

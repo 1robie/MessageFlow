@@ -16,28 +16,63 @@ import java.util.stream.Stream;
 /**
  * A message adapter for boss bar messages using the legacy Bukkit API.
  * Contains title, color, style, flags, duration, and progress settings.
- *
- * @param title    the boss bar text
- * @param color    the boss bar color
- * @param style    the boss bar style
- * @param flags    optional boss bar flags
- * @param duration the display duration in milliseconds
- * @param progress the progress value (0.0 to 1.0)
  */
-public record LegacyBossBarMessage(
-        @NotNull String title, @NotNull BarColor color, @NotNull BarStyle style,
-        @Nullable BarFlag[] flags, long duration, float progress
-) implements MessageTypeAdapter {
+public final class LegacyBossBarMessage extends MessageTypeAdapter {
+    private final String title;
+    private final BarColor color;
+    private final BarStyle style;
+    private final BarFlag[] flags;
+    private final long duration;
+    private final float progress;
 
-    public LegacyBossBarMessage {
-        Preconditions.checkNotNull(title, "Title cannot be null");
-        Preconditions.checkNotNull(color, "Color cannot be null");
-        Preconditions.checkNotNull(style, "Style cannot be null");
+    public LegacyBossBarMessage(
+            @NotNull String title, @NotNull BarColor color, @NotNull BarStyle style,
+            @Nullable BarFlag[] flags, long duration, float progress
+    ) {
+        this(title, color, style, flags, duration, progress, false, false, false);
+    }
+
+    public LegacyBossBarMessage(
+            @NotNull String title, @NotNull BarColor color, @NotNull BarStyle style,
+            @Nullable BarFlag[] flags, long duration, float progress,
+            boolean broadcast, boolean sendToConsole, boolean excludeSenders
+    ) {
+        super(broadcast, sendToConsole, excludeSenders);
+        this.title = Preconditions.checkNotNull(title, "Title cannot be null");
+        this.color = Preconditions.checkNotNull(color, "Color cannot be null");
+        this.style = Preconditions.checkNotNull(style, "Style cannot be null");
+        this.flags = flags;
+        this.duration = duration;
+        this.progress = progress;
     }
 
     @Override
     public @NotNull MessageType messageType() {
         return MessageType.BOSS_BAR;
+    }
+
+    public @NotNull String title() {
+        return this.title;
+    }
+
+    public @NotNull BarColor color() {
+        return this.color;
+    }
+
+    public @NotNull BarStyle style() {
+        return this.style;
+    }
+
+    public @Nullable BarFlag[] flags() {
+        return this.flags;
+    }
+
+    public long duration() {
+        return this.duration;
+    }
+
+    public float progress() {
+        return this.progress;
     }
 
     /**
@@ -47,14 +82,15 @@ public record LegacyBossBarMessage(
      */
     @Override
     public @NotNull Map<String, Object> serialize() {
-        return Map.of(
-                "title", this.title,
-                "color", this.color.name(),
-                "style", this.style.name(),
-                "flags", (this.flags != null && this.flags.length > 0) ? Set.of(this.flags).stream().map(BarFlag::name).toList() : List.of(),
-                "duration", this.duration,
-                "progress", this.progress
-        );
+        Map<String, Object> map = new HashMap<>();
+        map.put("title", this.title);
+        map.put("color", this.color.name());
+        map.put("style", this.style.name());
+        map.put("flags", (this.flags != null && this.flags.length > 0) ? Set.of(this.flags).stream().map(BarFlag::name).toList() : List.of());
+        map.put("duration", this.duration);
+        map.put("progress", this.progress);
+        this.serializeSettings(map);
+        return map;
     }
 
     /**
@@ -100,6 +136,50 @@ public record LegacyBossBarMessage(
 
         long duration = ((Number) map.getOrDefault("duration", 100L)).longValue();
         float progress = ((Number) map.getOrDefault("progress", 1.0f)).floatValue();
-        return new LegacyBossBarMessage(title, color, style, flags, duration, progress);
+
+        boolean[] settings = parseSettings(map);
+        return new LegacyBossBarMessage(title, color, style, flags, duration, progress, settings[0], settings[1], settings[2]);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || this.getClass() != o.getClass()) {
+            return false;
+        }
+        LegacyBossBarMessage that = (LegacyBossBarMessage) o;
+        return this.broadcast() == that.broadcast() &&
+                this.sendToConsole() == that.sendToConsole() &&
+                this.excludeSenders() == that.excludeSenders() &&
+                this.duration == that.duration &&
+                Float.compare(that.progress, this.progress) == 0 &&
+                Objects.equals(this.title, that.title) &&
+                this.color == that.color &&
+                this.style == that.style &&
+                Arrays.equals(this.flags, that.flags);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Objects.hash(this.title, this.color, this.style, this.duration, this.progress, this.broadcast(), this.sendToConsole(), this.excludeSenders());
+        result = 31 * result + Arrays.hashCode(this.flags);
+        return result;
+    }
+
+    @Override
+    public String toString() {
+        return "LegacyBossBarMessage[" +
+                "title='" + this.title + '\'' +
+                ", color=" + this.color +
+                ", style=" + this.style +
+                ", flags=" + Arrays.toString(this.flags) +
+                ", duration=" + this.duration +
+                ", progress=" + this.progress +
+                ", broadcast=" + this.broadcast() +
+                ", sendToConsole=" + this.sendToConsole() +
+                ", excludeSenders=" + this.excludeSenders() +
+                ']';
     }
 }

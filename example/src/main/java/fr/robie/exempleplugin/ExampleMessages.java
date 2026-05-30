@@ -19,8 +19,9 @@ public enum ExampleMessages implements Message {
 
     private final String key;
     private final List<? extends MessageTypeAdapter> defaults;
-    private final MessageSettings settings;
+    private final MessageSettings staticSettings;
     private List<? extends MessageTypeAdapter> loaded;
+    private MessageSettings loadedSettings;
 
     ExampleMessages(String key, List<? extends MessageTypeAdapter> defaults) {
         this(key, defaults, MessageSettings.DEFAULT);
@@ -29,7 +30,7 @@ public enum ExampleMessages implements Message {
     ExampleMessages(String key, List<? extends MessageTypeAdapter> defaults, MessageSettings settings) {
         this.key = key;
         this.defaults = defaults;
-        this.settings = settings;
+        this.staticSettings = settings;
     }
 
     @Override
@@ -53,8 +54,13 @@ public enum ExampleMessages implements Message {
     }
 
     @Override
+    public void setSettings(@NotNull MessageSettings settings) {
+        this.loadedSettings = settings;
+    }
+
+    @Override
     public @NotNull MessageSettings settings() {
-        return this.settings;
+        return this.loadedSettings != null ? this.loadedSettings : this.staticSettings;
     }
 }
 

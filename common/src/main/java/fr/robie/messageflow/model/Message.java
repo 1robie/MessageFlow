@@ -21,6 +21,14 @@ public interface Message {
     void setLoaded(@NotNull List<? extends MessageTypeAdapter> loaded);
 
     /**
+     * Sets the loaded settings for this message.
+     *
+     * @param settings the loaded settings
+     */
+    default void setSettings(@NotNull MessageSettings settings) {
+    }
+
+    /**
      * @return The message settings for this message.
      */
     default @NotNull MessageSettings settings() {

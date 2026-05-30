@@ -117,6 +117,55 @@ public interface IMessageBuilder {
     @NotNull IMessageBuilder prefix(boolean prefix);
 
     /**
+     * Sets whether to broadcast the message to all online players.
+     *
+     * @param broadcast true to broadcast, false otherwise
+     * @return this builder
+     */
+    @NotNull IMessageBuilder broadcast(boolean broadcast);
+
+    /**
+     * Sets whether to send the message to the console.
+     *
+     * @param sendToConsole true to send to console, false otherwise
+     * @return this builder
+     */
+    @NotNull IMessageBuilder sendToConsole(boolean sendToConsole);
+
+    /**
+     * Sets whether to exclude the recipients passed to {@link #send(Collection)} from the broadcast.
+     *
+     * @param exclude true to exclude recipients, false otherwise
+     * @return this builder
+     */
+    @NotNull IMessageBuilder excludeSenders(boolean exclude);
+
+    /**
+     * Sets whether the most recently added message component should be broadcast to all players.
+     *
+     * @param broadcast true to broadcast, false otherwise
+     * @return this builder
+     */
+    @NotNull IMessageBuilder withBroadcast(boolean broadcast);
+
+    /**
+     * Sets whether the most recently added message component should be sent to the console.
+     *
+     * @param sendToConsole true to send to console, false otherwise
+     * @return this builder
+     */
+    @NotNull IMessageBuilder withSendToConsole(boolean sendToConsole);
+
+    /**
+     * Sets whether the initial recipients should be excluded from the broadcast for the most
+     * recently added message component.
+     *
+     * @param exclude true to exclude recipients, false otherwise
+     * @return this builder
+     */
+    @NotNull IMessageBuilder withExcludeSenders(boolean exclude);
+
+    /**
      * Sends the constructed message to a single command sender.
      *
      * @param sender the recipient
