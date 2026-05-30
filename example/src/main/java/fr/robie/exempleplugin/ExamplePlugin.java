@@ -98,7 +98,7 @@ public class ExamplePlugin extends JavaPlugin {
             Logger.debug("Debug information with stacktrace", e);
         }
 
-        Logger.info("ExamplePlugin enabled successfully!");;
+        Logger.info("ExamplePlugin enabled successfully!");
 
     }
 

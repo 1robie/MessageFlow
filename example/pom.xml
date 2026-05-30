@@ -25,9 +25,17 @@
                         </goals>
                         <configuration>
                             <shadedArtifactAttached>false</shadedArtifactAttached>
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
                             <outputFile>${project.build.directory}/${project.build.finalName}.jar</outputFile>
+                            <relocations>
+                                <!-- Relocate message-flow classes -->
+                                <relocation>
+                                    <pattern>fr.robie.messageflow</pattern>
+                                    <shadedPattern>fr.robie.exempleplugin.libs.messageflow</shadedPattern>
+                                </relocation>
+                            </relocations>
                             <filters>
-                                <!-- Exclude META-INF from message-flow JAR -->
+                                <!-- Exclude META-INF from message-flow JAR to avoid duplicate resources -->
                                 <filter>
                                     <artifact>fr.robie.messageflow:message-flow</artifact>
                                     <excludes>

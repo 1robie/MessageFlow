@@ -25,6 +25,7 @@
                         </goals>
                         <configuration>
                             <shadedArtifactAttached>false</shadedArtifactAttached>
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
                             <outputFile>${project.build.directory}/${project.build.finalName}.jar</outputFile>
                             <filters>
                                 <!-- Exclude META-INF from all internal dependencies -->
