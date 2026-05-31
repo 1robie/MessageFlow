@@ -4,10 +4,7 @@ import fr.robie.messageflow.configuration.ConfigurationOptions;
 import fr.robie.messageflow.configuration.lang.EnumLanguageConfiguration;
 import fr.robie.messageflow.impl.MessageManager;
 import fr.robie.messageflow.logger.Logger;
-import net.kyori.adventure.audience.Audience;
 import org.bukkit.plugin.java.JavaPlugin;
-
-import java.util.Collection;
 
 public class ExamplePlugin extends JavaPlugin {
 
@@ -18,7 +15,7 @@ public class ExamplePlugin extends JavaPlugin {
         // --- Choose ONE of the configurations below ---
 
         // 1) Single file at plugin root (plugins/ExamplePlugin/messages.yml)
-//        ConfigurationOptions<String> options = ConfigurationOptions.singleFile("messages.yml");
+//        MessageManager<ExamplePlugin, String> messageManager = MessageManager.withSingleFile(this, "messages.yml", ExampleMessages.class);
 
         // 2) Multi-language with custom paths
         EnumLanguageConfiguration<Langs> langsEnumLanguageConfiguration = new EnumLanguageConfiguration<>(Langs.class, Langs.EN_US);
@@ -101,7 +98,6 @@ public class ExamplePlugin extends JavaPlugin {
         Logger.info("ExamplePlugin enabled successfully!");
 
     }
-
 
 
     @Override

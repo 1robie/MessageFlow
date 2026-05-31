@@ -10,6 +10,7 @@ import fr.robie.messageflow.configuration.ConfigurationManager;
 import fr.robie.messageflow.configuration.ConfigurationOptions;
 import fr.robie.messageflow.configuration.lang.LanguageConfiguration;
 import fr.robie.messageflow.configuration.lang.LanguageEntry;
+import fr.robie.messageflow.configuration.lang.NormalLanguageConfiguration;
 import fr.robie.messageflow.formatter.AdventureMessageFormatter;
 import fr.robie.messageflow.formatter.LegacyMessageFormatter;
 import fr.robie.messageflow.formatter.MessageFormatter;
@@ -49,34 +50,27 @@ import java.util.function.Supplier;
  */
 @SuppressWarnings({"ResultOfMethodCallIgnored", "deprecation"})
 public final class MessageManager<T extends Plugin, E> implements IMessageManager<T, E> {
+
     private final ConfigurationManager<T> configurationManager;
-
     private final T plugin;
-
-
     private final Supplier<? extends Iterable<? extends Message>> messages;
     private final MessageFormatter<T, ?> messageFormatter;
-
     private final DateTimeFormatter BACKUP_DATE_FORMAT;
-
     private final LanguageConfiguration<E> languageConfiguration;
 
     /**
-     * Creates a new MessageManager with the specified plugin, configuration options, and message provider.
+     * Creates a new MessageManager with the specified plugin, configuration options, and message iterable.
      *
      * @param plugin   the plugin instance
      * @param options  the configuration options for this manager
      * @param messages an iterable collection of message definitions
      */
     public MessageManager(@NotNull T plugin, @NotNull ConfigurationOptions<E> options, @NotNull Iterable<? extends Message> messages) {
-        this(plugin, options, () -> {
-            Preconditions.checkNotNull(messages, "Messages iterable cannot be null");
-            return messages;
-        });
+        this(plugin, options.languageConfiguration(), toSupplier(messages));
     }
 
     /**
-     * Creates a new MessageManager with an enum-based message provider.
+     * Creates a new MessageManager with an enum-based message provider and configuration options.
      *
      * @param plugin           the plugin instance
      * @param options          the configuration options for this manager
@@ -85,52 +79,112 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
      * @throws IllegalArgumentException if the provided class is not a valid enum or does not implement Message
      */
     public <En extends Enum<En> & Message> MessageManager(@NotNull T plugin, @NotNull ConfigurationOptions<E> options, @NotNull Class<En> messageEnumClass) throws IllegalArgumentException {
-        this(plugin, options, () -> iterableEnum(Preconditions.checkNotNull(messageEnumClass, "Message enum class cannot be null")));
+        this(plugin, options.languageConfiguration(), toEnumSupplier(messageEnumClass));
     }
 
-    private MessageManager(@NotNull T plugin, @NotNull ConfigurationOptions<E> options, @NotNull Supplier<? extends Iterable<? extends Message>> messages) {
+    /**
+     * Creates a new MessageManager with the specified plugin, language configuration, and message iterable.
+     *
+     * @param plugin                the plugin instance
+     * @param languageConfiguration the language configuration to use for message resolution
+     * @param messages              an iterable collection of message definitions
+     */
+    public MessageManager(@NotNull T plugin, @NotNull LanguageConfiguration<E> languageConfiguration, @NotNull Iterable<? extends Message> messages) {
+        this(plugin, languageConfiguration, toSupplier(messages));
+    }
+
+    /**
+     * Creates a new MessageManager with an enum-based message provider and a language configuration.
+     *
+     * @param plugin                the plugin instance
+     * @param languageConfiguration the language configuration to use for message resolution
+     * @param messageEnumClass      the enum class containing message definitions (must implement {@link Message})
+     * @throws IllegalArgumentException if the provided class is not a valid enum or does not implement Message
+     */
+    public MessageManager(@NotNull T plugin, @NotNull LanguageConfiguration<E> languageConfiguration, @NotNull Class<? extends Enum<?>> messageEnumClass) throws IllegalArgumentException {
+        this(plugin, languageConfiguration, toEnumSupplier(messageEnumClass));
+    }
+
+    /**
+     * Internal constructor used by all public constructors. Initializes the message formatter,
+     * placeholder registry, logger, and language configuration.
+     *
+     * @param plugin                the plugin instance
+     * @param languageConfiguration the language configuration to use for message resolution
+     * @param messages              a supplier providing an iterable collection of message definitions
+     */
+    private MessageManager(@NotNull T plugin, @NotNull LanguageConfiguration<E> languageConfiguration, @NotNull Supplier<? extends Iterable<? extends Message>> messages) {
         Preconditions.checkNotNull(plugin, "Plugin cannot be null");
-        Preconditions.checkNotNull(options, "Configuration options cannot be null");
+        Preconditions.checkNotNull(languageConfiguration, "Language configuration cannot be null");
+        Preconditions.checkNotNull(messages, "Messages supplier cannot be null");
+
         this.plugin = plugin;
+        this.messages = messages;
+        this.languageConfiguration = languageConfiguration;
+
         this.configurationManager = new ConfigurationManager<>(plugin);
         this.configurationManager.load();
-        this.messages = messages;
 
         this.messageFormatter = PlatformType.hasComponent()
                 ? new AdventureMessageFormatter<>(plugin)
                 : new LegacyMessageFormatter<>(plugin);
 
-        Placeholder.Builder placeholders = Placeholder.builder();
-        try {
-            PluginMeta pluginMeta = this.plugin.getPluginMeta();
-            placeholders.register("plugin-name", pluginMeta.getName());
-            placeholders.register("plugin-version", pluginMeta.getVersion());
-            placeholders.register("plugin-full", pluginMeta.getName() + " " + pluginMeta.getVersion());
-        } catch (Exception e) {
-            placeholders.register("plugin-name", this.plugin.getDescription().getName());
-            placeholders.register("plugin-version", this.plugin.getDescription().getVersion());
-            placeholders.register("plugin-full", this.plugin.getDescription().getFullName());
-        }
-
-        String loggerPrefix = placeholders.build().parse(switch (PlatformType.get()) {
-            case LEGACY -> ConfigurationManager.Setting.LEGACY_LOGGER_PREFIX.getValue();
-            case COMPONENTS -> ConfigurationManager.Setting.ADVENTURE_LOGGER_PREFIX.getValue();
-        });
-
-        if (this.messageFormatter instanceof AdventureMessageFormatter<?> adventureFormatter) {
-            new AdventureLogger(loggerPrefix, adventureFormatter);
-        } else {
-            LegacyMessageFormatter<?> legacyFormatter = (LegacyMessageFormatter<?>) this.messageFormatter;
-            new LegacyLogger(loggerPrefix, legacyFormatter);
-        }
+        String loggerPrefix = this.buildLoggerPrefix();
+        this.initLogger(loggerPrefix);
 
         TextResolverRegistry registry = new TextResolverRegistry();
         this.messageFormatter.setTextResolverRegistry(registry);
         registry.initialize();
 
-
         this.BACKUP_DATE_FORMAT = DateTimeFormatter.ofPattern(ConfigurationManager.Setting.BACKUP_DATE_FORMAT.getValue());
-        this.languageConfiguration = options.languageConfiguration();
+    }
+
+    /**
+     * Creates a MessageManager backed by a single language file mapped to the {@code "default"} language key.
+     *
+     * @param plugin   the plugin instance
+     * @param fileName the name of the YAML file (relative to the plugin data folder)
+     * @param messages an iterable collection of message definitions
+     * @param <T>      the type of the plugin
+     * @return a new MessageManager configured with a single language file
+     */
+    @NotNull
+    public static <T extends Plugin> MessageManager<T, String> withSingleFile(@NotNull T plugin, @NotNull String fileName, @NotNull Iterable<? extends Message> messages) {
+        Preconditions.checkNotNull(plugin, "Plugin cannot be null");
+        Preconditions.checkNotNull(fileName, "File name cannot be null");
+        Preconditions.checkNotNull(messages, "Messages iterable cannot be null");
+
+        NormalLanguageConfiguration languageConfiguration = new NormalLanguageConfiguration("default");
+        languageConfiguration.addLanguage("default", fileName);
+
+        return new MessageManager<>(plugin, languageConfiguration, messages);
+    }
+
+    /**
+     * Creates a MessageManager backed by a single language file mapped to the {@code "default"} language key,
+     * using an enum class as the message provider.
+     *
+     * @param plugin           the plugin instance
+     * @param fileName         the name of the YAML file (relative to the plugin data folder)
+     * @param messageEnumClass the enum class containing message definitions (must implement {@link Message})
+     * @param <T>              the type of the plugin
+     * @param <En>             the enum type representing messages
+     * @return a new MessageManager configured with a single language file
+     * @throws IllegalArgumentException if the provided class is not a valid enum or does not implement Message
+     */
+    @NotNull
+    public static <T extends Plugin, En extends Enum<En> & Message> MessageManager<T, String> withSingleFile(
+            @NotNull T plugin,
+            @NotNull String fileName,
+            @NotNull Class<En> messageEnumClass) throws IllegalArgumentException {
+        Preconditions.checkNotNull(plugin, "Plugin cannot be null");
+        Preconditions.checkNotNull(fileName, "File name cannot be null");
+        Preconditions.checkNotNull(messageEnumClass, "Message enum class cannot be null");
+
+        NormalLanguageConfiguration languageConfiguration = new NormalLanguageConfiguration("default");
+        languageConfiguration.addLanguage("default", fileName);
+
+        return new MessageManager<>(plugin, languageConfiguration, toEnumSupplier(messageEnumClass));
     }
 
     @Override
@@ -158,6 +212,7 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
         GlobalPlaceholderRegistry.getInstance().clear();
         this.formatter().clearCache();
         this.configurationManager.load();
+
         for (LanguageEntry languageEntry : this.languageConfiguration.getLanguagesEntries()) {
             String lang = languageEntry.language();
             String relFile = languageEntry.path();
@@ -177,15 +232,16 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
             }
         }
 
-
         this.loadLanguage(this.languageConfiguration.getActiveLanguage());
     }
 
     @Override
     public void loadLanguage(@NotNull E language) {
         Preconditions.checkNotNull(language, "language cannot be null");
+
         String lang = this.languageConfiguration.getNormalizedLanguage(language);
         String rel = this.languageConfiguration.getRelativePath(language);
+
         if (rel == null) {
             lang = this.languageConfiguration.getNormalizedLanguage(language = this.languageConfiguration.getDefaultLanguage());
             rel = this.languageConfiguration.getRelativePath(language);
@@ -195,6 +251,7 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
         }
 
         File file = new File(this.plugin.getDataFolder(), rel);
+
         if (!file.exists() && ConfigurationManager.Setting.SYNC_AUTO_CREATE.<Boolean>getValue()) {
             if (!this.tryCopyBundledResource(rel)) {
                 ensureParentExists(file);
@@ -208,8 +265,75 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
             this.updateKeysIfNeeded(lang, rel, file);
             this.loadLanguageFileIntoMessages(file);
         }
+
         this.languageConfiguration.setActiveLanguage(language);
     }
+
+    /**
+     * Builds the logger prefix string by resolving plugin meta placeholders
+     * and applying the platform-specific prefix pattern.
+     *
+     * @return the resolved logger prefix
+     */
+    private @NotNull String buildLoggerPrefix() {
+        Placeholder.Builder placeholders = Placeholder.builder();
+        try {
+            PluginMeta pluginMeta = this.plugin.getPluginMeta();
+            placeholders.register("plugin-name", pluginMeta.getName());
+            placeholders.register("plugin-version", pluginMeta.getVersion());
+            placeholders.register("plugin-full", pluginMeta.getName() + " " + pluginMeta.getVersion());
+        } catch (Exception e) {
+            placeholders.register("plugin-name", this.plugin.getDescription().getName());
+            placeholders.register("plugin-version", this.plugin.getDescription().getVersion());
+            placeholders.register("plugin-full", this.plugin.getDescription().getFullName());
+        }
+
+        return placeholders.build().parse(switch (PlatformType.get()) {
+            case LEGACY -> ConfigurationManager.Setting.LEGACY_LOGGER_PREFIX.getValue();
+            case COMPONENTS -> ConfigurationManager.Setting.ADVENTURE_LOGGER_PREFIX.getValue();
+        });
+    }
+
+    /**
+     * Initializes the platform-appropriate logger using the given prefix.
+     *
+     * @param loggerPrefix the resolved prefix string for the logger
+     */
+    private void initLogger(@NotNull String loggerPrefix) {
+        if (this.messageFormatter instanceof AdventureMessageFormatter<?> adventureFormatter) {
+            new AdventureLogger(loggerPrefix, adventureFormatter);
+        } else {
+            new LegacyLogger(loggerPrefix, (LegacyMessageFormatter<?>) this.messageFormatter);
+        }
+    }
+
+    /**
+     * Wraps an {@link Iterable} of messages in a null-checked {@link Supplier}.
+     *
+     * @param messages the iterable to wrap
+     * @param <M>      the message type
+     * @return a supplier that returns the iterable
+     */
+    private static <M extends Message> @NotNull Supplier<Iterable<M>> toSupplier(@NotNull Iterable<M> messages) {
+        Preconditions.checkNotNull(messages, "Messages iterable cannot be null");
+        return () -> messages;
+    }
+
+    /**
+     * Creates a null-checked {@link Supplier} that produces an iterable view of an enum class.
+     *
+     * @param enumClass the enum class (must implement {@link Message})
+     * @param <En>      the enum type
+     * @return a supplier wrapping the enum constants
+     * @throws IllegalArgumentException if the class is not a valid enum
+     */
+    @SuppressWarnings("unchecked")
+    private static <En extends Enum<En> & Message> @NotNull Supplier<Iterable<En>> toEnumSupplier(@NotNull Class<?> enumClass) {
+        Preconditions.checkNotNull(enumClass, "Message enum class cannot be null");
+        Class<En> typed = (Class<En>) enumClass.asSubclass(Message.class);
+        return () -> iterableEnum(typed);
+    }
+
 
     /**
      * Updates the keys in a language file by adding missing keys and/or removing obsolete keys
@@ -239,6 +363,7 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
                     obsolete.add(key);
                 }
             }
+
             if (!obsolete.isEmpty()) {
                 if (ConfigurationManager.Setting.BACKUP_ENABLED.<Boolean>getValue()) {
                     this.backupFile(file, lang);
@@ -254,11 +379,7 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
                     continue;
                 }
                 Object fromBundled = bundled != null ? bundled.get(m.key()) : null;
-                if (fromBundled != null) {
-                    config.set(m.key(), fromBundled);
-                } else {
-                    config.set(m.key(), toYamlValue(m.defaults()));
-                }
+                config.set(m.key(), fromBundled != null ? fromBundled : toYamlValue(m.defaults()));
                 changed = true;
             }
         }
@@ -276,6 +397,7 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
      */
     private void loadLanguageFileIntoMessages(@NotNull File file) {
         YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
+
         for (Message m : this.messages.get()) {
             Object raw = config.get(m.key());
             if (raw == null) {
@@ -287,10 +409,8 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
             m.setSettings(globalSettings);
 
             List<MessageTypeAdapter> parsed = this.parseMessageList(raw, globalSettings);
-
-            final MessageSettings finalSettings = globalSettings;
             List<MessageTypeAdapter> filtered = parsed.stream()
-                    .filter(adapter -> finalSettings.isTypeAllowed(adapter.messageType()))
+                    .filter(adapter -> globalSettings.isTypeAllowed(adapter.messageType()))
                     .toList();
 
             if (filtered.isEmpty() && !parsed.isEmpty()) {
@@ -329,7 +449,16 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
         return settings;
     }
 
-    private MessageSettings applySetting(MessageSettings s, Map<?, ?> map, String key, BiFunction<MessageSettings, Boolean, MessageSettings> func) {
+    /**
+     * Applies a single boolean setting from a map to a {@link MessageSettings} instance using the given function.
+     *
+     * @param s    the current settings
+     * @param map  the map to read the value from
+     * @param key  the setting key to look up
+     * @param func the function to apply if the value is present
+     * @return the updated settings, or the original if the key was absent or not a boolean
+     */
+    private MessageSettings applySetting(@NotNull MessageSettings s, @NotNull Map<?, ?> map, @NotNull String key, @NotNull BiFunction<MessageSettings, Boolean, MessageSettings> func) {
         Object val = map.get(key);
         if (val instanceof Boolean b) {
             return func.apply(s, b);
@@ -344,7 +473,7 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
      *
      * @param config the configuration to populate with default values
      */
-    private void writeAllDefaults(YamlConfiguration config) {
+    private void writeAllDefaults(@NotNull YamlConfiguration config) {
         for (Message m : this.messages.get()) {
             config.set(m.key(), toYamlValue(m.defaults()));
         }
@@ -357,7 +486,7 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
      * @param validRoots the set of valid root keys
      * @return true if the key is under a valid root, false otherwise
      */
-    private static boolean isUnderValidRoot(String key, Set<String> validRoots) {
+    private static boolean isUnderValidRoot(@NotNull String key, @NotNull Set<String> validRoots) {
         if (validRoots.contains(key)) {
             return true;
         }
@@ -377,7 +506,7 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
      *
      * @param file the file whose parent directory should exist
      */
-    private static void ensureParentExists(File file) {
+    private static void ensureParentExists(@NotNull File file) {
         File parent = file.getParentFile();
         if (parent != null && !parent.exists()) {
             parent.mkdirs();
@@ -390,7 +519,7 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
      * @param config the configuration to save
      * @param file   the file to save to
      */
-    private static void saveQuietly(YamlConfiguration config, File file) {
+    private static void saveQuietly(@NotNull YamlConfiguration config, @NotNull File file) {
         try {
             config.save(file);
         } catch (IOException ignored) {
@@ -462,13 +591,13 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
 
     /**
      * Converts a list of message type adapters to a YAML-compatible value.
-     * Single simple messages with one line are serialized as a plain string,
-     * while complex messages are serialized as a list of maps.
+     * A single {@link SimpleMessage} with one line is serialized as a plain string;
+     * complex messages are serialized as a list of maps or a single map if there's only one adapter.
      *
      * @param defaults the list of message type adapters to convert
      * @return a YAML-compatible value (String, List, or Map)
      */
-    private static Object toYamlValue(List<? extends MessageTypeAdapter> defaults) {
+    private static Object toYamlValue(@Nullable List<? extends MessageTypeAdapter> defaults) {
         if (defaults == null || defaults.isEmpty()) {
             return List.of();
         }
@@ -497,71 +626,108 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
      * @param defaults default settings to use for adapters
      * @return a list of parsed message type adapters
      */
-    private List<MessageTypeAdapter> parseMessageList(@Nullable Object raw, @NotNull MessageSettings defaults) {
-        if (raw == null) {
-            return List.of();
-        }
-
-        if (raw instanceof String str) {
-            return List.of(new SimpleMessage(MessageType.TCHAT, List.of(str), defaults.broadcast(), defaults.sendToConsole(), defaults.excludeSenders()));
-        }
-
-        if (raw instanceof List<?> list) {
-            if (list.isEmpty()) {
+    private @NotNull List<MessageTypeAdapter> parseMessageList(@Nullable Object raw, @NotNull MessageSettings defaults) {
+        switch (raw) {
+            case null -> {
                 return List.of();
             }
-
-            if (list.getFirst() instanceof String) {
-                List<String> lines = list.stream()
-                        .filter(e -> e instanceof String)
-                        .map(e -> (String) e)
-                        .toList();
-                return List.of(new SimpleMessage(MessageType.TCHAT, lines, defaults.broadcast(), defaults.sendToConsole(), defaults.excludeSenders()));
+            case String str -> {
+                return List.of(new SimpleMessage(MessageType.TCHAT, List.of(str),
+                        defaults.broadcast(), defaults.sendToConsole(), defaults.excludeSenders()));
             }
-
-            if (list.getFirst() instanceof Map<?, ?>) {
-                List<MessageTypeAdapter> result = new ArrayList<>();
-                for (Object entry : list) {
-                    if (!(entry instanceof Map<?, ?> map)) {
-                        continue;
-                    }
-                    // For items in a list, we merge the global defaults with the item's own settings
-                    MessageSettings adapterSettings = this.parseSettings(map, defaults);
-                    MessageTypeAdapter parsed = this.parseAdapterFromMap(map, adapterSettings);
-                    if (parsed != null) {
-                        result.add(parsed);
-                    }
-                }
-                return result;
+            case List<?> list -> {
+                return this.parseListValue(list, defaults);
             }
-            return List.of();
+            default -> {
+            }
         }
 
-        Map<?, ?> map = null;
-        if (raw instanceof ConfigurationSection section) {
-            map = section.getValues(true);
-        } else if (raw instanceof Map<?, ?> m) {
-            map = m;
-        }
-
+        Map<?, ?> map = toMap(raw);
         if (map != null) {
-            // Check for "wrapped" list structure (e.g., settings + messages key)
-            Object messages = map.get("messages");
-            if (messages == null) {
-                messages = map.get("list");
-            }
-            if (messages instanceof List<?>) {
-                // Here we pass the settings parsed from the CURRENT map as defaults for the list items
-                return this.parseMessageList(messages, this.parseSettings(map, defaults));
-            }
-
-            // Otherwise, try parsing the whole map as a single adapter
-            MessageSettings adapterSettings = this.parseSettings(map, defaults);
-            MessageTypeAdapter parsed = this.parseAdapterFromMap(map, adapterSettings);
-            return parsed != null ? List.of(parsed) : List.of();
+            return this.parseMapValue(map, defaults);
         }
 
         return List.of();
+    }
+
+    /**
+     * Parses a raw YAML list value into message type adapters.
+     * Handles both plain string lists (treated as a single {@link SimpleMessage}) and
+     * lists of maps (each parsed as an individual adapter).
+     *
+     * @param list     the raw list to parse
+     * @param defaults the default settings to apply
+     * @return a list of parsed message type adapters
+     */
+    private @NotNull List<MessageTypeAdapter> parseListValue(@NotNull List<?> list, @NotNull MessageSettings defaults) {
+        if (list.isEmpty()) {
+            return List.of();
+        }
+
+        if (list.getFirst() instanceof String) {
+            List<String> lines = list.stream()
+                    .filter(e -> e instanceof String)
+                    .map(e -> (String) e)
+                    .toList();
+            return List.of(new SimpleMessage(MessageType.TCHAT, lines,
+                    defaults.broadcast(), defaults.sendToConsole(), defaults.excludeSenders()));
+        }
+
+        if (list.getFirst() instanceof Map<?, ?>) {
+            List<MessageTypeAdapter> result = new ArrayList<>();
+            for (Object entry : list) {
+                if (!(entry instanceof Map<?, ?> map)) {
+                    continue;
+                }
+                MessageSettings adapterSettings = this.parseSettings(map, defaults);
+                MessageTypeAdapter parsed = this.parseAdapterFromMap(map, adapterSettings);
+                if (parsed != null) {
+                    result.add(parsed);
+                }
+            }
+            return result;
+        }
+
+        return List.of();
+    }
+
+    /**
+     * Parses a raw YAML map value into message type adapters.
+     * Handles wrapped list structures (with a {@code messages} or {@code list} key)
+     * as well as single-adapter maps.
+     *
+     * @param map      the raw map to parse
+     * @param defaults the default settings to apply
+     * @return a list of parsed message type adapters
+     */
+    private @NotNull List<MessageTypeAdapter> parseMapValue(@NotNull Map<?, ?> map, @NotNull MessageSettings defaults) {
+        Object nested = map.get("messages");
+        if (nested == null) {
+            nested = map.get("list");
+        }
+        if (nested instanceof List<?>) {
+            return this.parseMessageList(nested, this.parseSettings(map, defaults));
+        }
+
+        MessageSettings adapterSettings = this.parseSettings(map, defaults);
+        MessageTypeAdapter parsed = this.parseAdapterFromMap(map, adapterSettings);
+        return parsed != null ? List.of(parsed) : List.of();
+    }
+
+    /**
+     * Converts a raw YAML object to a {@link Map}, handling both {@link ConfigurationSection}
+     * and plain {@link Map} inputs.
+     *
+     * @param raw the raw object to convert
+     * @return the map representation, or null if conversion is not possible
+     */
+    private static @Nullable Map<?, ?> toMap(@Nullable Object raw) {
+        if (raw instanceof ConfigurationSection section) {
+            return section.getValues(true);
+        } else if (raw instanceof Map<?, ?> map) {
+            return map;
+        }
+        return null;
     }
 
     /**
@@ -571,7 +737,7 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
      * @param settings the settings to apply to the adapter
      * @return the parsed message type adapter, or null if parsing failed
      */
-    private @Nullable MessageTypeAdapter parseAdapterFromMap(Map<?, ?> map, @NotNull MessageSettings settings) {
+    private @Nullable MessageTypeAdapter parseAdapterFromMap(@NotNull Map<?, ?> map, @NotNull MessageSettings settings) {
         Object rawType = map.get("type");
         MessageType type = MessageType.TCHAT;
         if (rawType instanceof String s) {
@@ -591,7 +757,6 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
             values.put(k, e.getValue());
         }
 
-        // Put settings back into values for deserializers to pick up
         values.put("broadcast", settings.broadcast());
         values.put("send-to-console", settings.sendToConsole());
         values.put("exclude-senders", settings.excludeSenders());
@@ -599,8 +764,9 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
         try {
             return switch (type) {
                 case TITLE -> TitleMessage.deserialize(values);
-                case BOSS_BAR ->
-                        PlatformType.hasComponent() ? AdventureBossBarMessage.deserialize(values) : LegacyBossBarMessage.deserialize(values);
+                case BOSS_BAR -> PlatformType.hasComponent()
+                        ? AdventureBossBarMessage.deserialize(values)
+                        : LegacyBossBarMessage.deserialize(values);
                 case ACTION_BAR, TCHAT, NONE, WITHOUT_PREFIX, BROADCAST -> SimpleMessage.deserialize(type, values);
                 case SOUND -> SoundMessage.deserialize(values);
             };
@@ -611,18 +777,18 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
     }
 
     /**
-     * Creates an iterable view of an enum class.
+     * Creates an iterable view of an enum class whose constants implement {@link Message}.
      *
      * @param enumClass the enum class to create an iterable for
+     * @param <En>      the enum type
      * @return an iterable over the enum constants
      * @throws IllegalArgumentException if the class is not an enum
      */
-    private static <E extends Enum<E> & Message> @NotNull Iterable<E> iterableEnum(@NotNull Class<E> enumClass) {
-        E[] constants = enumClass.getEnumConstants();
+    private static <En extends Enum<En> & Message> @NotNull Iterable<En> iterableEnum(@NotNull Class<En> enumClass) {
+        En[] constants = enumClass.getEnumConstants();
         if (constants == null) {
             throw new IllegalArgumentException("Not an enum: " + enumClass.getName());
         }
-
         return () -> new Iterator<>() {
             int i = 0;
 
@@ -632,7 +798,7 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
             }
 
             @Override
-            public E next() {
+            public En next() {
                 return constants[this.i++];
             }
         };
