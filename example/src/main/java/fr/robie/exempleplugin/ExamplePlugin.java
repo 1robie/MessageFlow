@@ -12,6 +12,11 @@ public class ExamplePlugin extends JavaPlugin {
     public void onEnable() {
         this.getLogger().info("ExamplePlugin enabled!");
 
+        // You can set up / change default value use by the library
+        // This settings disabled the saving of a yml file allowing users who use the plugin to change/configurate some settings
+//        ConfigurationManager.Setting.BYPASS_EXTERNAL_CONFIG.setValue(true);
+        // And some other settings. {#link ConfigurationManager.Setting}
+
         // --- Choose ONE of the configurations below ---
 
         // 1) Single file at plugin root (plugins/ExamplePlugin/messages.yml)
