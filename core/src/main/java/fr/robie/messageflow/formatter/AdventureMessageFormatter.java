@@ -9,6 +9,7 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import net.kyori.adventure.text.minimessage.tag.standard.StandardTags;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.kyori.adventure.title.Title;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
@@ -67,6 +68,8 @@ public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatte
     private static final MiniMessage MINI_MESSAGE = MiniMessage.builder()
             .tags(TagResolver.builder().resolver(StandardTags.defaults()).build())
             .build();
+    private static final LegacyComponentSerializer LEGACY_SERIALIZER =
+            LegacyComponentSerializer.legacyAmpersand();
 
 
     public AdventureMessageFormatter(@NotNull T plugin) {
@@ -78,11 +81,37 @@ public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatte
         return MINI_MESSAGE.deserialize(colorMiniMessage(message));
     }
 
+    @NotNull
     public Component getComponent(@Nullable String message) {
+        return this.getComponent(message, null, Placeholder.empty());
+    }
+
+    @NotNull
+    public Component getComponent(@Nullable String message, @Nullable Player player) {
+        return this.getComponent(message, player, Placeholder.empty());
+    }
+
+    @NotNull
+    public Component getComponent(@Nullable String message, @NotNull Placeholder placeholders) {
+        return this.getComponent(message, null, placeholders);
+    }
+
+    @NotNull
+    public Component getComponent(@Nullable String message, @Nullable Player player, @NotNull Placeholder placeholders) {
         if (message == null || message.isBlank()) {
             return this.empty();
         }
-        return this.load(message);
+        return this.format(message, player, placeholders);
+    }
+
+    @NotNull
+    public String serialize(@NotNull Component component) {
+        return MINI_MESSAGE.serialize(component);
+    }
+
+    @Override
+    public @NotNull String getLegacyColoredMessage(@NotNull String message, @Nullable Player player, @NotNull Placeholder placeholders) {
+        return LEGACY_SERIALIZER.serialize(this.format(message, player, placeholders));
     }
 
     @Override

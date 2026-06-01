@@ -56,6 +56,12 @@ public class LegacyMessageFormatter<T extends Plugin> extends MessageFormatter<T
     }
 
     @Override
+    public @NotNull String getLegacyColoredMessage(@NotNull String message, @Nullable Player player, @NotNull Placeholder placeholders) {
+        String resolved = this.format(message, player, placeholders);
+        return this.load(resolved);
+    }
+
+    @Override
     protected @NonNull String empty() {
         return "";
     }

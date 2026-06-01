@@ -18,11 +18,7 @@ import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 
@@ -238,7 +234,7 @@ public abstract class MessageFormatter<T extends Plugin, V> {
      * @return the formatted message object
      */
     @NotNull
-    protected V format(@Nullable String message, @Nullable Player player, @NotNull Placeholder placeholders) {
+    public V format(@Nullable String message, @Nullable Player player, @NotNull Placeholder placeholders) {
         if (message == null) {
             return this.empty();
         }
@@ -249,6 +245,56 @@ public abstract class MessageFormatter<T extends Plugin, V> {
         parsedText = this.applyResolvers(parsedText, player, placeholders);
         return this.load(parsedText);
     }
+
+    /**
+     * Converts a raw message string into a legacy colored string using the section symbol (§).
+     * <p>
+     * This is useful for plugins or systems that only support legacy color codes.
+     * For example, {@code <red>x} would be converted to {@code §cx}.
+     *
+     * @param message the raw message string to convert
+     * @return the legacy colored string
+     */
+    @NotNull
+    public String getLegacyColoredMessage(@NotNull String message) {
+        return this.getLegacyColoredMessage(message, null, Placeholder.empty());
+    }
+
+    /**
+     * Converts a raw message string into a legacy colored string using the section symbol (§),
+     * using the provided player context for resolvers.
+     *
+     * @param message the raw message string to convert
+     * @param player  the player context (optional)
+     * @return the legacy colored string
+     */
+    public String getLegacyColoredMessage(@NotNull String message, @Nullable Player player) {
+        return this.getLegacyColoredMessage(message, player, Placeholder.empty());
+    }
+
+    /**
+     * Converts a raw message string into a legacy colored string using the section symbol (§),
+     * applying the provided placeholders.
+     *
+     * @param message      the raw message string to convert
+     * @param placeholders the placeholders to apply
+     * @return the legacy colored string
+     */
+    public String getLegacyColoredMessage(@NotNull String message, @NotNull Placeholder placeholders) {
+        return this.getLegacyColoredMessage(message, null, placeholders);
+    }
+
+    /**
+     * Converts a raw message string into a legacy colored string using the section symbol (§),
+     * applying placeholders, text resolvers, and player context.
+     *
+     * @param message      the raw message string to convert
+     * @param player       the player context (optional)
+     * @param placeholders the placeholders to apply
+     * @return the legacy colored string
+     */
+    @NotNull
+    public abstract String getLegacyColoredMessage(@NotNull String message, @Nullable Player player, @NotNull Placeholder placeholders);
 
     /**
      * Provides an empty value of the formatted message type, used when the input message is null.
@@ -733,6 +779,9 @@ public abstract class MessageFormatter<T extends Plugin, V> {
         this.sendMessage(message, logType, sender, Placeholder.empty());
     }
 
+    /**
+     * Clears the message cache, forcing reparsing of all messages on next access.
+     */
     public void clearCache() {
         this.cache.cleanUp();
     }

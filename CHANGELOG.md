@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+- New function `String getLegacyColoredMessage(@NotNull String message, @Nullable Player player, @NotNull Placeholder placeholders)` inside `MessageFormatter` to get a legacy colored message with support for placeholders and player.
+- New function `Component getComponent(@Nullable String message, @Nullable Player player, @NotNull Placeholder placeholders)` inside `AdventureMessageFormatter` to get a component from a string message, with support for legacy color codes, placeholders and player.
 - Deprecate all setter/getter methods inside `ConfigurationOptions` in favor of a better way to configurate options using `ConfigurationManager.Setting.<name>.setDefault(value)` and `ConfigurationManager.Setting.<name>.getDefaultValue()`.
 - Allow if the programmer wants to let user customize some settings for the library inside a yml file. Automatically create the file if it doesn't exist and fill missing keys with default values. 
 - New `Placeholder` class to represent placeholders in messages. It has a name and a value, and can be used to replace placeholders in messages with their corresponding values.
