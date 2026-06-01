@@ -198,19 +198,27 @@ public final class GlobalPlaceholderRegistry {
     }
 
     public void registerCached(@NotNull String key, @NotNull Supplier<String> supplier, long ttlMillis) {
+        this.registerCached(key, supplier, ttlMillis, TimeUnit.MILLISECONDS);
+    }
+
+    public void registerCached(@NotNull String key, @NotNull Supplier<String> supplier, long time, @NotNull TimeUnit unit) {
         if (this.registry.containsKey(key)) {
             this.logOverwriteWarning(key);
         }
         this.registry.put(key, PlaceholderValue.ofDynamic(supplier));
-        this.cacheConfig.put(key, new CacheConfig(ttlMillis, false));
+        this.cacheConfig.put(key, new CacheConfig(unit.toMillis(time), false));
     }
 
     public void registerPlayerCached(@NotNull String key, @NotNull Function<Player, String> function, long ttlMillis) {
+        this.registerPlayerCached(key, function, ttlMillis, TimeUnit.MILLISECONDS);
+    }
+
+    public void registerPlayerCached(@NotNull String key, @NotNull Function<Player, String> function, long time, @NotNull TimeUnit unit) {
         if (this.registry.containsKey(key)) {
             this.logOverwriteWarning(key);
         }
         this.registry.put(key, PlaceholderValue.ofPlayer(function));
-        this.cacheConfig.put(key, new CacheConfig(ttlMillis, true));
+        this.cacheConfig.put(key, new CacheConfig(unit.toMillis(time), true));
         this.playerCaches.remove(key);
     }
 

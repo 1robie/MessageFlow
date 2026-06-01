@@ -249,8 +249,10 @@ With an enum for languages:
 EnumLanguageConfiguration<Langs> langConfig = new EnumLanguageConfiguration<>(Langs.class, Langs.EN_US);
 
 // Initialize Manager
-MessageManager<MyPlugin, Langs> messageManager = new MessageManager<>(this, langConfig, MyMessages.class);
+MessageManager<MyPlugin, Langs> messageManager = new MessageManager<>(this, this.langConfig, MyMessages.class);
 messageManager.reload(); 
+
+messageManager.setActiveLanguage(Langs.FR_FR); // Switch to French and load french messages
 ```
 
 With string-based language keys:
@@ -261,8 +263,10 @@ NormalLanguageConfiguration langConfig = new NormalLanguageConfiguration("en_us"
 langConfig.addLanguage("en_us","messages_en.yml");
 langConfig.addLanguage("fr_fr","messages_fr.yml");
 
-MessageManager<MyPlugin, String> messageManager = new MessageManager<>(this, langConfig, MyMessages.class);
+MessageManager<MyPlugin, String> messageManager = new MessageManager<>(this, this.langConfig, MyMessages.class);
 messageManager.reload();
+
+messageManager.setActiveLanguage("fr_fr"); // Switch to French and load french messages
 ```
 
 
@@ -315,6 +319,12 @@ registry.register("online_players", () -> String.valueOf(Bukkit.getOnlinePlayers
 
 // Player-specific (Function)
 registry.registerPlayer("ping", player -> String.valueOf(player.getPing()));
+
+// Cached dynamic placeholder
+registry.registerCached("tps", () -> String.format("%.2f", getServerTPS()), 5, TimeUnit.SECONDS);
+
+// Cached player-specific placeholder
+registry.registerPlayerCached("health", player -> String.valueOf(player.getHealth()), 1, TimeUnit.SECONDS);
 ```
 
 ### 5. Fluent Message Builder
@@ -324,7 +334,7 @@ Create and send multi-component messages on-the-fly without pre-defining them in
 ```java
 messageManager.builder()
     .chat("<green>Success!</green> You received a reward.")
-    .actionBar("<gold>+100 Coins")
+    .actionBar("<gold>+%reward%</gold>")
     .sound("entity.experience_orb.pickup")
     .placeholder("reward", "100 Coins")
     .broadcast(true) // Broadcast to everyone
