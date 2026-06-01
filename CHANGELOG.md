@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+- Refactored `Logger` system to centralize logging logic and eliminate code duplication between `AdventureLogger` and `LegacyLogger`.
+- Added support for a per-method `context` parameter in all logging methods (info, warn, error, debug).
 - New function `String getLegacyColoredMessage(@NotNull String message, @Nullable Player player, @NotNull Placeholder placeholders)` inside `MessageFormatter` to get a legacy colored message with support for placeholders and player.
 - New function `Component getComponent(@Nullable String message, @Nullable Player player, @NotNull Placeholder placeholders)` inside `AdventureMessageFormatter` to get a component from a string message, with support for legacy color codes, placeholders and player.
 - Deprecate all setter/getter methods inside `ConfigurationOptions` in favor of a better way to configurate options using `ConfigurationManager.Setting.<name>.setDefault(value)` and `ConfigurationManager.Setting.<name>.getDefaultValue()`.
