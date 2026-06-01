@@ -21,6 +21,13 @@ class PlaceholderTest {
     }
 
     @Test
+    void placeholder_shouldNotMatchStringFormatSpecifiers() {
+        Placeholder p = Placeholder.of("xxx", "yyy");
+        String result = p.parse("Hello %02d %xxx%!");
+        assertEquals("Hello %02d yyy!", result);
+    }
+
+    @Test
     @DisplayName("Multiple static placeholders parse correctly")
     void testMultiplePlaceholders() {
         Placeholder p = Placeholder.of("name", "John", "level", "10");
