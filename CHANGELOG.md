@@ -1,6 +1,8 @@
 # Changelog
 
-## [Unreleased]
+## Releases:
+
+### 1.0.0
 - Refactored `Logger` system to centralize logging logic and eliminate code duplication between `AdventureLogger` and `LegacyLogger`.
 - Added support for a per-method `context` parameter in all logging methods (info, warn, error, debug).
 - New function `String getLegacyColoredMessage(@NotNull String message, @Nullable Player player, @NotNull Placeholder placeholders)` inside `MessageFormatter` to get a legacy colored message with support for placeholders and player.
