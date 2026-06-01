@@ -78,6 +78,13 @@ public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatte
         return MINI_MESSAGE.deserialize(colorMiniMessage(message));
     }
 
+    public Component getComponent(@Nullable String message) {
+        if (message == null || message.isBlank()) {
+            return this.empty();
+        }
+        return this.load(message);
+    }
+
     @Override
     protected @NonNull Component empty() {
         return Component.empty();
