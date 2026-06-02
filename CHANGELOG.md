@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Change all `toLowerCase()` and `toUpperCase()` calls to use `Locale.ROOT` to avoid locale-specific issues.
+
 ## Releases:
 
 ### 1.0.0

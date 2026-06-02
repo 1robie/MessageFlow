@@ -742,7 +742,7 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
         MessageType type = MessageType.TCHAT;
         if (rawType instanceof String s) {
             try {
-                type = MessageType.valueOf(s.toUpperCase());
+                type = MessageType.valueOf(s.toUpperCase(Locale.ROOT));
             } catch (IllegalArgumentException ignored) {
                 return null;
             }

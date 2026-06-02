@@ -5,6 +5,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Language configuration implementation that uses an enum to define available languages.
@@ -87,13 +88,13 @@ public class EnumLanguageConfiguration<E extends Enum<E>> implements LanguageCon
     @Override
     public String getNormalizedLanguage(@NotNull E language) {
         Preconditions.checkNotNull(language, "Language cannot be null");
-        return language.name().toLowerCase();
+        return language.name().toLowerCase(Locale.ROOT);
     }
 
     @Override
     public String getRelativePath(@NotNull E language) {
         Preconditions.checkNotNull(language, "Language cannot be null");
-        return String.format(this.languagePathFormat, language.name().toLowerCase());
+        return String.format(this.languagePathFormat, language.name().toLowerCase(Locale.ROOT));
     }
 
     @Override
@@ -106,7 +107,7 @@ public class EnumLanguageConfiguration<E extends Enum<E>> implements LanguageCon
     public @NotNull List<LanguageEntry> getLanguagesEntries() {
         List<LanguageEntry> entries = new ArrayList<>();
         for (E language : this.availableLanguages.getEnumConstants()) {
-            String path = String.format(this.languagePathFormat, language.name().toLowerCase());
+            String path = String.format(this.languagePathFormat, language.name().toLowerCase(Locale.ROOT));
             entries.add(new LanguageEntry(language.name(), path));
         }
         return entries;

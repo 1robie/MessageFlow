@@ -90,7 +90,7 @@ public final class AdventureBossBarMessage extends MessageTypeAdapter {
 
         BossBar.Color color;
         try {
-            color = BossBar.Color.valueOf(((String) map.getOrDefault("color", "PINK")).toUpperCase());
+            color = BossBar.Color.valueOf(((String) map.getOrDefault("color", "PINK")).toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
             Logger.warn("Invalid boss bar color value: %value%. Valid values are %valid_values%. Defaulting to PINK.", Placeholder.of("value", String.valueOf(map.get("color")), "valid_values", Stream.of(BossBar.Color.values()).map(BossBar.Color::name).toList().toString()));
             color = BossBar.Color.PINK;
@@ -98,7 +98,7 @@ public final class AdventureBossBarMessage extends MessageTypeAdapter {
 
         BossBar.Overlay overlay;
         try {
-            overlay = BossBar.Overlay.valueOf(((String) map.getOrDefault("overlay", "PROGRESS")).toUpperCase());
+            overlay = BossBar.Overlay.valueOf(((String) map.getOrDefault("overlay", "PROGRESS")).toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
             Logger.warn("Invalid boss bar overlay value: %value%. Valid values are %valid_values%. Defaulting to PROGRESS.", Placeholder.of("value", String.valueOf(map.get("overlay")), "valid_values", Stream.of(BossBar.Overlay.values()).map(BossBar.Overlay::name).toList().toString()));
             overlay = BossBar.Overlay.PROGRESS;
@@ -111,7 +111,7 @@ public final class AdventureBossBarMessage extends MessageTypeAdapter {
                     .filter(f -> f instanceof String)
                     .map(f -> {
                         try {
-                            return BossBar.Flag.valueOf(((String) f).toUpperCase());
+                            return BossBar.Flag.valueOf(((String) f).toUpperCase(Locale.ROOT));
                         } catch (IllegalArgumentException e) {
                             return null;
                         }

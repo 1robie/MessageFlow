@@ -155,8 +155,8 @@ public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatte
             message = message
                     .replace("&" + key, value)
                     .replace("§" + key, value)
-                    .replace("&" + key.toUpperCase(), value)
-                    .replace("§" + key.toUpperCase(), value);
+                    .replace("&" + key.toUpperCase(Locale.ROOT), value)
+                    .replace("§" + key.toUpperCase(Locale.ROOT), value);
         }
         return message;
     }

@@ -10,6 +10,7 @@ import org.bukkit.SoundCategory;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 
@@ -83,7 +84,7 @@ public final class SoundMessage extends MessageTypeAdapter {
         if (data.containsKey("category")) {
             String categoryName = (String) data.get("category");
             try {
-                category = SoundCategory.valueOf(categoryName.toUpperCase());
+                category = SoundCategory.valueOf(categoryName.toUpperCase(Locale.ROOT));
             } catch (IllegalArgumentException e) {
                 throw new IllegalArgumentException("Invalid sound category: " + categoryName, e);
             }

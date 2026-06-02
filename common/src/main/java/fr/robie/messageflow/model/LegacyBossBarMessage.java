@@ -104,7 +104,7 @@ public final class LegacyBossBarMessage extends MessageTypeAdapter {
 
         BarColor color;
         try {
-            color = BarColor.valueOf(((String) map.getOrDefault("color", "PINK")).toUpperCase());
+            color = BarColor.valueOf(((String) map.getOrDefault("color", "PINK")).toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
             Logger.warn("Invalid boss bar color value: %value%. Valid values are %valid_values%. Defaulting to PINK.", Placeholder.of("value", String.valueOf(map.get("color")), "valid_values", Stream.of(BarColor.values()).map(BarColor::name).toList().toString()));
             color = BarColor.PINK;
@@ -112,7 +112,7 @@ public final class LegacyBossBarMessage extends MessageTypeAdapter {
 
         BarStyle style;
         try {
-            style = BarStyle.valueOf(((String) map.getOrDefault("style", "SOLID")).toUpperCase());
+            style = BarStyle.valueOf(((String) map.getOrDefault("style", "SOLID")).toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
             Logger.warn("Invalid boss bar style value: %value%. Valid values are %valid_values%. Defaulting to SOLID.", Placeholder.of("value", String.valueOf(map.get("style")), "valid_values", Stream.of(BarStyle.values()).map(BarStyle::name).toList().toString()));
             style = BarStyle.SOLID;
@@ -125,7 +125,7 @@ public final class LegacyBossBarMessage extends MessageTypeAdapter {
                     .filter(f -> f instanceof String)
                     .map(f -> {
                         try {
-                            return BarFlag.valueOf(((String) f).toUpperCase());
+                            return BarFlag.valueOf(((String) f).toUpperCase(Locale.ROOT));
                         } catch (IllegalArgumentException e) {
                             return null;
                         }
