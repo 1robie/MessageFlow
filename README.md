@@ -273,6 +273,31 @@ messageManager.setActiveLanguage("fr_fr"); // Switch to French and load french m
 ```
 
 
+3) **Per-player languages** (each player reads their client's language):
+
+```java
+NormalLanguageConfiguration langConfig = new NormalLanguageConfiguration("en_us");
+langConfig.addLanguage("en_us", "lang/en_us.yml");
+langConfig.addLanguage("fr_fr", "lang/fr_fr.yml");
+
+MessageManager<MyPlugin, String> messageManager = new MessageManager<>(this, langConfig, MyMessages.class);
+messageManager.setPerPlayerLanguages(true);
+messageManager.reload();
+messageManager.setActiveLanguage("en_us"); // the default language: console, unknown client languages
+```
+
+A `fr_ca` client reads `fr_fr`; a language without a file, or a key missing from it, falls back to the default
+language. Missing keys are only written into the default language's file.
+
+To let code that only has Adventure send your messages, register a translator: every
+`Component.translatable("myplugin.<key>", args...)` is then rendered from your files, in each player's language,
+with argument `i` in placeholder `%i%`.
+
+```java
+messageManager.registerTranslator("myplugin.");
+player.sendMessage(Component.translatable("myplugin.welcome", Component.text(player.getName())));
+```
+
 ### 2. Powerful Logging
 
 ```java

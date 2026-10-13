@@ -26,6 +26,7 @@ import org.jspecify.annotations.NonNull;
 import java.time.Duration;
 import java.util.*;
 import java.util.function.BiConsumer;
+import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -340,14 +341,16 @@ public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatte
         this.sendMessage(Bukkit.getOnlinePlayers(), message, prefix, placeholders);
     }
 
-    public void sendMessage(
-            @NotNull Message message,
+    @Override
+    protected void dispatch(
+            @NotNull List<? extends MessageTypeAdapter> adapters,
             @NotNull Collection<? extends CommandSender> audiences,
+            @Nullable Predicate<CommandSender> recipients,
             boolean prefix,
             @NotNull Placeholder placeholders
     ) {
-        for (MessageTypeAdapter messageAdapter : message.loaded()) {
-            Collection<? extends CommandSender> resolvedAudiences = this.resolveRecipients(messageAdapter, audiences);
+        for (MessageTypeAdapter messageAdapter : adapters) {
+            Collection<? extends CommandSender> resolvedAudiences = keep(this.resolveRecipients(messageAdapter, audiences), recipients);
             if (resolvedAudiences.isEmpty()) {
                 continue;
             }
@@ -421,7 +424,7 @@ public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatte
 
                 case BROADCAST -> {
                     if (messageAdapter instanceof SimpleMessage sm) {
-                        Collection<? extends CommandSender> everyone = this.resolveRecipients(true, sm.sendToConsole(), sm.excludeSenders(), audiences);
+                        Collection<? extends CommandSender> everyone = keep(this.resolveRecipients(true, sm.sendToConsole(), sm.excludeSenders(), audiences), recipients);
                         this.sendComponents(everyone, sm, prefix, this.prefix, placeholders, Audience::sendMessage);
                     }
                 }

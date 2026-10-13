@@ -57,6 +57,9 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
     private final DateTimeFormatter BACKUP_DATE_FORMAT;
     private final LanguageConfiguration<E> languageConfiguration;
     private final Logger logger;
+    private volatile boolean perPlayerLanguages;
+    private volatile Map<String, Message> messagesByKey = Map.of();
+    private @Nullable MessageFlowTranslator translator;
 
     /**
      * Creates a new MessageManager with the specified plugin, configuration options, and message iterable.
@@ -221,18 +224,76 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
         return new MessageBuilder(this);
     }
 
+    /**
+     * Turns per-player languages on or off; it takes effect on the next {@link #reload()}.
+     * <p>
+     * With per-player languages every language file is loaded, and each recipient gets a message in the language
+     * of their client: the language with that exact code ({@code fr_ca}), else the first registered language of the
+     * same language ({@code fr_*}), else the active language, which becomes the default language. The console and
+     * anything without a player get the default language. A message missing from a language's file falls back to
+     * the default language, and missing keys are only written into the default language's file; a language file
+     * is created from a bundled resource only, never from the (default language) defaults.
+     *
+     * @param perPlayerLanguages true for per-player languages
+     */
+    public void setPerPlayerLanguages(boolean perPlayerLanguages) {
+        this.perPlayerLanguages = perPlayerLanguages;
+    }
+
+    /**
+     * @return whether each recipient gets messages in their client's language
+     */
+    public boolean isPerPlayerLanguages() {
+        return this.perPlayerLanguages;
+    }
+
+    /**
+     * Returns the registered message with a key, once loaded by {@link #reload()}.
+     *
+     * @param key the message key
+     * @return the message, or null
+     */
+    public @Nullable Message message(@NotNull String key) {
+        return this.messagesByKey.get(key);
+    }
+
+    /**
+     * Renders {@code Component.translatable(key, args...)} from these messages, server-side and in each receiver's
+     * language, for every key that starts with {@code keyPrefix} and is a registered message key. Argument
+     * {@code i} fills placeholder {@code %i%}. Code that can't reach this manager (another module, an API) can
+     * then send translatable components. Replaces a translator registered before; {@link #close()} removes it.
+     *
+     * @param keyPrefix the prefix of the keys to answer, for example {@code "myplugin."}
+     * @throws IllegalStateException on a platform without Adventure
+     */
+    public synchronized void registerTranslator(@NotNull String keyPrefix) {
+        Preconditions.checkNotNull(keyPrefix, "Key prefix cannot be null");
+        AdventureMessageFormatter<T> formatter = this.adventure();
+        this.unregisterTranslator();
+        this.translator = MessageFlowTranslator.register(this.plugin.getName(), keyPrefix, this::message, formatter);
+    }
+
+    private synchronized void unregisterTranslator() {
+        if (this.translator != null) {
+            this.translator.unregister();
+            this.translator = null;
+        }
+    }
+
     @Override
     public void reload() {
         this.formatter().clearCache();
         this.configurationManager.load();
+        String defaultLanguage = normalize(this.languageConfiguration.getNormalizedLanguage(this.languageConfiguration.getActiveLanguage()));
 
         for (LanguageEntry languageEntry : this.languageConfiguration.getLanguagesEntries()) {
             String lang = languageEntry.language();
             String relFile = languageEntry.path();
             File file = new File(this.plugin.getDataFolder(), relFile);
+            boolean writesDefaults = !this.perPlayerLanguages || normalize(lang).equals(defaultLanguage);
 
             if (!file.exists() && ConfigurationManager.Setting.SYNC_AUTO_CREATE.<Boolean>getValue()) {
-                if (!this.tryCopyBundledResource(relFile)) {
+                if (!this.tryCopyBundledResource(relFile) && writesDefaults) {
                     ensureParentExists(file);
                     YamlConfiguration config = new YamlConfiguration();
                     this.writeAllDefaults(config);
@@ -241,7 +302,7 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
             }
 
             if (file.exists()) {
-                this.updateKeysIfNeeded(lang, relFile, file);
+                this.updateKeysIfNeeded(lang, relFile, file, writesDefaults);
             }
         }
 
@@ -250,6 +311,8 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
 
     @Override
     public void close() {
+        this.unregisterTranslator();
+        this.formatter().setLocalizer(null);
         this.logger.close();
         this.messageFormatter.clearCache();
     }
@@ -281,11 +344,64 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
         }
 
         if (file.exists()) {
-            this.updateKeysIfNeeded(lang, rel, file);
+            this.updateKeysIfNeeded(lang, rel, file, true);
             this.loadLanguageFileIntoMessages(file);
         }
 
         this.languageConfiguration.setActiveLanguage(language);
+        this.rebuildTranslations(normalize(lang));
+    }
+
+    /**
+     * Indexes the messages by key and, with per-player languages, loads every other language file into a new
+     * {@link Translations} for the formatter.
+     *
+     * @param defaultLanguage the active language, now loaded into the messages
+     */
+    private void rebuildTranslations(@NotNull String defaultLanguage) {
+        Map<String, Message> byKey = new HashMap<>();
+        for (Message m : this.messages.get()) {
+            byKey.put(m.key(), m);
+        }
+        this.messagesByKey = Map.copyOf(byKey);
+
+        if (!this.perPlayerLanguages) {
+            this.messageFormatter.setLocalizer(null);
+            return;
+        }
+
+        List<String> languages = new ArrayList<>();
+        Map<String, Map<String, List<MessageTypeAdapter>>> byLanguage = new HashMap<>();
+        for (LanguageEntry entry : this.languageConfiguration.getLanguagesEntries()) {
+            String language = normalize(entry.language());
+            if (language.equals(defaultLanguage)) {
+                languages.add(language);
+                continue;
+            }
+            File file = new File(this.plugin.getDataFolder(), entry.path());
+            if (!file.exists()) {
+                continue;
+            }
+            YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
+            Map<String, List<MessageTypeAdapter>> translated = new HashMap<>();
+            for (Message m : this.messages.get()) {
+                Object raw = config.get(m.key());
+                List<MessageTypeAdapter> adapters = raw == null ? null : this.parseMessage(m, raw, false);
+                if (adapters != null) {
+                    translated.put(m.key(), List.copyOf(adapters));
+                }
+            }
+            languages.add(language);
+            byLanguage.put(language, Map.copyOf(translated));
+        }
+        if (!languages.contains(defaultLanguage)) {
+            languages.add(defaultLanguage);
+        }
+        this.messageFormatter.setLocalizer(new Translations(defaultLanguage, languages, byLanguage, byKey));
+    }
+
+    private static @NotNull String normalize(@NotNull String language) {
+        return language.replace('-', '_').toLowerCase(Locale.ROOT);
     }
 
     /**
@@ -364,8 +480,9 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
      * @param lang    the language code
      * @param relPath the relative path to the language file
      * @param file    the language file to update
+     * @param addMissing whether missing keys may be added (only to the default language with per-player languages)
      */
-    private void updateKeysIfNeeded(@NotNull String lang, @NotNull String relPath, @NotNull File file) {
+    private void updateKeysIfNeeded(@NotNull String lang, @NotNull String relPath, @NotNull File file, boolean addMissing) {
         YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
         YamlConfiguration bundled = this.loadBundledYaml(relPath);
 
@@ -394,7 +511,7 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
             }
         }
 
-        if (ConfigurationManager.Setting.SYNC_AUTO_ADD_MISSING.<Boolean>getValue()) {
+        if (addMissing && ConfigurationManager.Setting.SYNC_AUTO_ADD_MISSING.<Boolean>getValue()) {
             for (Message m : this.messages.get()) {
                 if (config.contains(m.key())) {
                     continue;
@@ -421,26 +538,35 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
 
         for (Message m : this.messages.get()) {
             Object raw = config.get(m.key());
-            if (raw == null) {
-                m.setLoaded(m.defaults());
-                continue;
-            }
-
-            MessageSettings globalSettings = this.parseSettings(raw, m.settings());
-            m.setSettings(globalSettings);
-
-            List<MessageTypeAdapter> parsed = this.parseMessageList(raw, globalSettings);
-            List<MessageTypeAdapter> filtered = parsed.stream()
-                    .filter(adapter -> globalSettings.isTypeAllowed(adapter.messageType()))
-                    .toList();
-
-            if (filtered.isEmpty() && !parsed.isEmpty()) {
-                Logger.warn("All parsed message types for key '%key%' are blocked by its settings. Falling back to defaults.", Placeholder.of("key", m.key()));
-                m.setLoaded(m.defaults());
-            } else {
-                m.setLoaded(filtered);
-            }
+            List<MessageTypeAdapter> adapters = raw == null ? null : this.parseMessage(m, raw, true);
+            m.setLoaded(adapters != null ? adapters : m.defaults());
         }
+    }
+
+    /**
+     * Parses one message entry of a language file.
+     *
+     * @param m             the message definition
+     * @param raw           its YAML value
+     * @param applySettings whether the entry's settings become the message's (default language only)
+     * @return the adapters, or null when every type is blocked by the settings (the caller falls back)
+     */
+    private @Nullable List<MessageTypeAdapter> parseMessage(@NotNull Message m, @NotNull Object raw, boolean applySettings) {
+        MessageSettings globalSettings = this.parseSettings(raw, m.settings());
+        if (applySettings) {
+            m.setSettings(globalSettings);
+        }
+
+        List<MessageTypeAdapter> parsed = this.parseMessageList(raw, globalSettings);
+        List<MessageTypeAdapter> filtered = parsed.stream()
+                .filter(adapter -> globalSettings.isTypeAllowed(adapter.messageType()))
+                .toList();
+
+        if (filtered.isEmpty() && !parsed.isEmpty()) {
+            Logger.warn("All parsed message types for key '%key%' are blocked by its settings. Falling back to defaults.", Placeholder.of("key", m.key()));
+            return null;
+        }
+        return filtered;
     }
 
     /**

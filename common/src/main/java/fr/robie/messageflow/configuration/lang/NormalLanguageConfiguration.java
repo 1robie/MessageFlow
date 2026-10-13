@@ -4,7 +4,7 @@ import com.google.common.base.Preconditions;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -16,7 +16,7 @@ import java.util.Map;
  * Language codes are normalized to lowercase with underscores as separators.
  */
 public class NormalLanguageConfiguration implements LanguageConfiguration<String> {
-    private final Map<String, LanguageEntry> languagesEntries = new HashMap<>();
+    private final Map<String, LanguageEntry> languagesEntries = new LinkedHashMap<>();
 
     private final String defaultLanguage;
 
@@ -90,7 +90,7 @@ public class NormalLanguageConfiguration implements LanguageConfiguration<String
     @Nullable
     public String getRelativePath(@NotNull String language) {
         Preconditions.checkNotNull(language, "Language cannot be null");
-        LanguageEntry languageEntry = this.languagesEntries.get(language);
+        LanguageEntry languageEntry = this.languagesEntries.get(this.getNormalizedLanguage(language));
         if (languageEntry == null) {
             return null;
         }

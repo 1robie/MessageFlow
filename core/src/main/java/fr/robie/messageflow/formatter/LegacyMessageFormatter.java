@@ -20,6 +20,7 @@ import org.jspecify.annotations.NonNull;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -148,14 +149,16 @@ public class LegacyMessageFormatter<T extends Plugin> extends MessageFormatter<T
         this.sendMessage(Bukkit.getOnlinePlayers(), message, prefix, placeholders);
     }
 
-    public void sendMessage(
-            @NotNull Message message,
+    @Override
+    protected void dispatch(
+            @NotNull List<? extends MessageTypeAdapter> adapters,
             @NotNull Collection<? extends CommandSender> senders,
+            @Nullable Predicate<CommandSender> recipients,
             boolean prefix,
             @NotNull Placeholder placeholders
     ) {
-        for (MessageTypeAdapter messageAdapter : message.loaded()) {
-            Collection<? extends CommandSender> resolvedSenders = this.resolveRecipients(messageAdapter, senders);
+        for (MessageTypeAdapter messageAdapter : adapters) {
+            Collection<? extends CommandSender> resolvedSenders = keep(this.resolveRecipients(messageAdapter, senders), recipients);
             if (resolvedSenders.isEmpty()) {
                 continue;
             }
@@ -252,7 +255,7 @@ public class LegacyMessageFormatter<T extends Plugin> extends MessageFormatter<T
 
                 case BROADCAST -> {
                     if (messageAdapter instanceof SimpleMessage sm) {
-                        Collection<? extends CommandSender> everyone = this.resolveRecipients(true, sm.sendToConsole(), sm.excludeSenders(), senders);
+                        Collection<? extends CommandSender> everyone = keep(this.resolveRecipients(true, sm.sendToConsole(), sm.excludeSenders(), senders), recipients);
                         this.sendComponents(everyone, sm, prefix, this.prefix, placeholders);
                     }
                 }

@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- **Per-player languages.** `MessageManager#setPerPlayerLanguages(true)` loads every language file and sends each recipient the message in their client's language: the exact language (`fr_ca`), else the first registered language of the same language (`fr_*`), else the active language, which is the default language. The console uses the default language. A message missing from a language file falls back to the default language; missing keys are only added to the default language's file, and other language files are only created from bundled resources.
+- **Translator bridge.** `MessageManager#registerTranslator(keyPrefix)` renders `Component.translatable(key, args...)` server-side, in each receiver's language, for message keys starting with the prefix (argument `i` fills `%i%`). Works with the Adventure of Paper 1.20.6 (4.17) and of Paper 26 (5.x). `close()` removes it.
+- New: `MessageManager#message(key)`, `MessageFormatter#formatLines(List<MessageTypeAdapter>, Player, Placeholder)`, the `MessageLocalizer` interface (`MessageFormatter#setLocalizer`).
+- `MessageFormatter#sendMessage(Message, Collection, boolean, Placeholder)` is no longer abstract: subclasses implement `dispatch(...)` instead.
+- `NormalLanguageConfiguration` keeps languages in registration order, and `getRelativePath` accepts any spelling of a language code.
 - **Behaviour change (Adventure):** local placeholder values (`Placeholder.of(...)`) are inserted as plain text after the message is parsed. A value can no longer add MiniMessage tags or legacy color codes, so a player name or any typed text can't inject `<click:run_command:...>`. Pass a `Component` (`Placeholder.of(key, component)`) for a styled value. Inside a tag argument (`<click:run_command:'/tp %player%'>`) the value is still text, minus `< > ' " \`. Global placeholders and PlaceholderAPI are unchanged.
 - Local player placeholders (`Placeholder.of(key, Function<Player, String>)`) get the player the message is for. Before, they always resolved to `""`.
 - New: `MessageFormatter#formatLines(Message, Player, Placeholder)` and `#formatMessage(...)` format a message's text lines without sending them (item lore, menus, any API that takes a component). `MessageManager#adventure()` returns the formatter typed for `Component`.

@@ -5,6 +5,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import fr.robie.messageflow.api.ITextResolverRegistry;
+import fr.robie.messageflow.api.MessageLocalizer;
 import fr.robie.messageflow.api.MessageTypeAdapter;
 import fr.robie.messageflow.configuration.ConfigurationManager;
 import fr.robie.messageflow.logger.Logger;
@@ -23,6 +24,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
+import java.util.function.Predicate;
 
 /**
  * Abstract base class for message formatters that handle text formatting and message delivery.
@@ -48,6 +50,11 @@ public abstract class MessageFormatter<T extends Plugin, V> {
      * The text resolver registry used to resolve placeholders and hooks.
      */
     protected ITextResolverRegistry textResolverRegistry;
+
+    /**
+     * Picks each recipient's language; null when the manager has a single language.
+     */
+    protected volatile @Nullable MessageLocalizer localizer;
 
     /**
      * The getPrefix prepended to messages when enabled.
@@ -146,6 +153,39 @@ public abstract class MessageFormatter<T extends Plugin, V> {
     public void setTextResolverRegistry(@NotNull ITextResolverRegistry textResolverRegistry) {
         Preconditions.checkNotNull(textResolverRegistry, "TextResolverRegistry cannot be null");
         this.textResolverRegistry = textResolverRegistry;
+    }
+
+    /**
+     * Sets the localizer that picks each recipient's language, or null for a single language.
+     *
+     * @param localizer the localizer, or null
+     */
+    public void setLocalizer(@Nullable MessageLocalizer localizer) {
+        this.localizer = localizer;
+    }
+
+    /**
+     * Returns the localizer that picks each recipient's language.
+     *
+     * @return the localizer, or null for a single language
+     */
+    public @Nullable MessageLocalizer getLocalizer() {
+        return this.localizer;
+    }
+
+    /**
+     * Returns a message's adapters in the viewer's language.
+     *
+     * @param message the message definition
+     * @param viewer  the recipient, or null for the default language
+     * @return the adapters to send
+     */
+    protected @NotNull List<? extends MessageTypeAdapter> adapters(@NotNull Message message, @Nullable CommandSender viewer) {
+        MessageLocalizer localizer = this.localizer;
+        if (localizer != null) {
+            return localizer.adapters(message, localizer.language(viewer));
+        }
+        return message.loaded().isEmpty() ? message.defaults() : message.loaded();
     }
 
     /**
@@ -254,13 +294,24 @@ public abstract class MessageFormatter<T extends Plugin, V> {
      * skipped, and the prefix is not added.
      *
      * @param message      the message definition (its loaded lines, or its defaults if none are loaded)
-     * @param viewer       the player the text is for (player placeholders, PlaceholderAPI), or null
+     * @param viewer       the player the text is for (language, player placeholders, PlaceholderAPI), or null
      * @param placeholders the placeholders to apply
      * @return the formatted lines, possibly empty
      */
     public @NotNull List<V> formatLines(@NotNull Message message, @Nullable Player viewer, @NotNull Placeholder placeholders) {
         Preconditions.checkNotNull(message, "Message cannot be null");
-        List<? extends MessageTypeAdapter> adapters = message.loaded().isEmpty() ? message.defaults() : message.loaded();
+        return this.formatLines(this.adapters(message, viewer), viewer, placeholders);
+    }
+
+    /**
+     * Formats the text lines of message adapters (chat, action bar, broadcast and no-prefix lines, in order).
+     *
+     * @param adapters     the adapters, for example a message in one language
+     * @param viewer       the player the text is for, or null
+     * @param placeholders the placeholders to apply
+     * @return the formatted lines, possibly empty
+     */
+    public @NotNull List<V> formatLines(@NotNull List<? extends MessageTypeAdapter> adapters, @Nullable Player viewer, @NotNull Placeholder placeholders) {
         List<V> lines = new ArrayList<>();
         for (MessageTypeAdapter adapter : adapters) {
             if (adapter instanceof SimpleMessage simple && simple.messageType() != MessageType.NONE) {
@@ -830,7 +881,60 @@ public abstract class MessageFormatter<T extends Plugin, V> {
      * @param prefix       whether to prepend the configured getPrefix
      * @param placeholders placeholders for text replacement
      */
-    public abstract void sendMessage(@NotNull Message message, @NotNull Collection<? extends CommandSender> senders, boolean prefix, @NotNull Placeholder placeholders);
+    public void sendMessage(@NotNull Message message, @NotNull Collection<? extends CommandSender> senders, boolean prefix, @NotNull Placeholder placeholders) {
+        MessageLocalizer localizer = this.localizer;
+        if (localizer == null) {
+            this.dispatch(message.loaded(), senders, null, prefix, placeholders);
+            return;
+        }
+
+        Set<String> languages = new LinkedHashSet<>();
+        languages.add(localizer.defaultLanguage());
+        senders.forEach(sender -> languages.add(localizer.language(sender)));
+        if (message.loaded().stream().anyMatch(a -> a.broadcast() || a.messageType() == MessageType.BROADCAST)) {
+            Bukkit.getOnlinePlayers().forEach(player -> languages.add(localizer.language(player)));
+        }
+        for (String language : languages) {
+            this.dispatch(localizer.adapters(message, language), senders,
+                    recipient -> language.equals(localizer.language(recipient)), prefix, placeholders);
+        }
+    }
+
+    /**
+     * Sends message adapters to their recipients.
+     *
+     * @param adapters     the adapters to send, in one language
+     * @param senders      the initial recipients (each adapter may add online players or the console)
+     * @param recipients   keeps only the recipients of that language, or null for all of them
+     * @param prefix       whether to prepend the configured prefix
+     * @param placeholders placeholders for text replacement
+     */
+    protected abstract void dispatch(@NotNull List<? extends MessageTypeAdapter> adapters,
+                                     @NotNull Collection<? extends CommandSender> senders,
+                                     @Nullable Predicate<CommandSender> recipients,
+                                     boolean prefix,
+                                     @NotNull Placeholder placeholders);
+
+    /**
+     * Keeps the recipients a language pass is for.
+     *
+     * @param resolved   the recipients of one adapter
+     * @param recipients the language filter, or null
+     * @return the recipients to send to
+     */
+    protected static @NotNull Collection<? extends CommandSender> keep(@NotNull Collection<? extends CommandSender> resolved,
+                                                                       @Nullable Predicate<CommandSender> recipients) {
+        if (recipients == null || resolved.isEmpty()) {
+            return resolved;
+        }
+        List<CommandSender> kept = new ArrayList<>(resolved.size());
+        for (CommandSender sender : resolved) {
+            if (recipients.test(sender)) {
+                kept.add(sender);
+            }
+        }
+        return kept;
+    }
 
     /**
      * Sends a resolved message to the console with a getPrefix.
