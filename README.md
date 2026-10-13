@@ -15,7 +15,9 @@ message formatting using both modern **Adventure** (MiniMessage) and **Legacy** 
 - **Rich Message Types**: Built-in support for Chat messages, Titles, Action Bars, broadcast, sound, boss bars, and without prefix messages.
 - **Fluent Message Builder**: Create complex messages (combining chat, title, sounds) on-the-fly.
 - **Dynamic Configuration**: Automatically manages YAML language files—adding missing keys, removing obsolete ones, and creating backups.
-- **Flexible Placeholders**: A powerful placeholder system that supports static values, dynamic suppliers, player-specific placeholders, and **Global Placeholders**.
+- **Flexible Placeholders**: A powerful placeholder system that supports static values, dynamic suppliers, player-specific placeholders, **Global Placeholders**, and **modifiers** (`%coins.comma%`, `%count.plural:item:items%`).
+- **Fast**: messages are parsed once and reused, even with placeholders; a broadcast is formatted once for everyone unless a placeholder depends on the player.
+- **Folia and async**: runs on Folia, and `sendMessageAsync` sends from any thread.
 - **Granular Delivery Settings**: Control broadcast, console logging, and sender exclusion per-message or per-component.
 - **Advanced Logging**: A flexible logging system with:
   - Global and instance-based access.
@@ -359,6 +361,35 @@ Component text = messageManager.adventure().formatMessage(MyMessages.WELCOME, pl
 List<Component> lore = messageManager.adventure().formatLines(MyMessages.WELCOME, player, placeholders);
 ```
 
+### Placeholder modifiers
+
+Add modifiers after a dot to change a value, in local and global placeholders. Arguments follow colons, and
+modifiers chain:
+
+```yaml
+balance: "<gold>%coins.comma% coins"              # 1234567 -> 1,234,567
+items: "%count% %count.plural:item:items%"          # 1 item, 3 items
+objets: "%count% %count.plural:objet:objet:objets%" # zero form: 0 objet, 1 objet, 2 objets
+name: "%name.default:Nobody.upper%"                 # NOBODY when the name is blank
+```
+
+Built in: `upper`, `lower`, `capitalize`, `trim`, `length`, `empty`, `isnumber`, `safe`, `default:text`, `max:n`,
+`pad:n`, `int`, `round`, `floor`, `ceil`, `abs`, `0f`-`3f`, `comma`, `add:n`, `sub:n`, `add_one`, `remove_one`,
+`negative`, `even`, `plural`. An unknown or failing modifier leaves the token as typed, so mistakes are visible.
+Register your own with `PlaceholderModifiers.register("name", (value, args) -> ...)`.
+
+### Sending off the main thread
+
+```java
+// Formats and sends from an async thread; sounds and boss bars are handed to each player's thread.
+formatter.sendMessageAsync(MyMessages.EVENT_START, Bukkit.getOnlinePlayers(), placeholders)
+        .exceptionally(error -> { getLogger().warning("Send failed: " + error); return null; });
+```
+
+Placeholder values (and PlaceholderAPI expansions) are evaluated on the async thread: they must not change the world.
+
+MessageFlow runs on **Folia**: sounds and boss bars use each player's region scheduler.
+
 ### 4. Global Placeholders
 
 Register placeholders that can be used in **any** message across the plugin.
@@ -407,6 +438,7 @@ And more choices for sending message, broadcasting, sending titles, action bars,
 - **Build All**: `mvn clean package`
 - **Install to Local Repo**: `mvn install`
 - **Dev Build**: `mvn clean package -Pdev-build`
+- **Benchmarks**: `mvn -P benchmarks package -DskipTests` then `java -jar benchmarks/target/benchmarks.jar`
 
 Outputs:
 

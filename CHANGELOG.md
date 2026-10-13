@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- **Faster sending.** A message sent to many players is formatted once, unless it uses a player-specific placeholder (local or global) or PlaceholderAPI: the global placeholder resolver is always registered, so every send used to be formatted once per recipient. Messages with placeholders are parsed once and reused (about 5x faster), and so are messages with only global placeholders (about 9x). Placeholders and colors are replaced in a single pass instead of regular expressions (color conversion about 30x faster), and `Placeholder.parse` only evaluates the values the text uses.
+- **Fix:** cached global placeholders (`registerCached`, `registerPlayerCached`) never returned a value and logged a warning on every use. Player caches are keyed by UUID.
+- **Placeholder modifiers:** `%key.modifier:arg%` on local and global placeholders: `upper`, `lower`, `capitalize`, `default:text`, `comma`, `2f`, `round`, `add:n`, `pad:n`... and plurals (`%count.plural:item:items%`, `%count.plural:zero:one:other%`). `PlaceholderModifiers.register` adds custom ones.
+- **Folia support:** sounds and boss bars run on the player's thread (region scheduler on Folia, main thread elsewhere), right away when the caller already owns the player. `PlatformType#isFolia`.
+- New: `MessageFormatter#sendMessageAsync(...)` formats and sends off the main thread and returns a `CompletableFuture`.
+- New: `TextResolver#isPlayerDependent` and `ITextResolverRegistry#isPlayerDependent` (defaults keep custom resolvers formatted per player).
+- The PlaceholderAPI hook only applies to registered expansions: a plain `%` (`50% off`) no longer sends each message through PlaceholderAPI for every player.
+- `&#rrggbb` is a hex color in both formatters (it used to leave a stray `&`). In `100% sure %player%`, `%player%` is found.
+- A reload reads each language file once (it read the active one three times), a language file that fails to save is logged, and per-player language lookups no longer build the locale string.
+- JMH benchmarks: `mvn -P benchmarks package`, then `java -jar benchmarks/target/benchmarks.jar`.
 - **Logger without a manager.** Static `Logger` calls made before a `MessageManager` exists (or after `close()`) go to a plain `java.util.logging` logger named `MessageFlow` instead of being dropped. `Logger.jul(java.util.logging.Logger)` makes such a logger for code that runs without a manager, such as unit tests: placeholders are replaced and tags removed.
 - **Exceptions** are logged through the plugin's `java.util.logging` logger with the exception attached to the record (log files and panels show a real stack trace), instead of a red stack trace in console text.
 - New: `Logger#toJul()`, a `java.util.logging.Logger` view that forwards to a MessageFlow logger, for APIs that require one. Record text is a value, never parsed as tags.
