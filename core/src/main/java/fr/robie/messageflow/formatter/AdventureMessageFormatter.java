@@ -33,6 +33,7 @@ import org.jspecify.annotations.NonNull;
 
 import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 
@@ -54,14 +55,26 @@ public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatte
 
 
     /**
-     * Messages with placeholders, parsed once with a marker where each placeholder goes.
+     * Messages with placeholders, parsed once with a marker where each placeholder goes. Keyed by the message as
+     * written, so the keys are the plugin's messages.
      */
     private final Cache<String, Template> templates;
+
+    /**
+     * Templates whose text global placeholders or PlaceholderAPI changed, or that got a value inside a tag. Such
+     * texts repeat when the values do ({@code %server%}), or never do ({@code %player_x%} every tick): kept apart,
+     * small and short-lived, so changing texts can't push the plugin's messages out of {@link #templates}.
+     */
+    private final Cache<String, Template> resolvedTemplates;
 
     public AdventureMessageFormatter(@NotNull T plugin) {
         super(plugin);
         this.templates = CacheBuilder.newBuilder()
                 .maximumSize(ConfigurationManager.Setting.MESSAGE_CACHE_MAX_SIZE.<Long>getValue())
+                .build();
+        this.resolvedTemplates = CacheBuilder.newBuilder()
+                .maximumSize(256)
+                .expireAfterAccess(1, TimeUnit.MINUTES)
                 .build();
     }
 
@@ -136,7 +149,7 @@ public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatte
      * {@code <click>}, colors or legacy codes. Player placeholders get {@code player}.
      * <p>
      * Inside a tag ({@code <click:run_command:'/tp %player%'>}) a placeholder is replaced by its text, without the
-     * characters that could end the tag or its quotes ({@code < > ' " \}). Global placeholders and PlaceholderAPI
+     * characters that could end the tag or its quotes, or be read again as a placeholder or a color ({@code < > ' " \ % & §}). Global placeholders and PlaceholderAPI
      * still return text that is parsed with the message.
      */
     @Override
@@ -150,14 +163,15 @@ public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatte
 
         // Global placeholders and PlaceholderAPI values usually repeat: the resolved text is cached like the rest.
         PlaceholderTags tags = new PlaceholderTags(message, player, placeholders);
-        String text = PlaceholderScanner.replace(message, tags);
-        text = this.applyResolvers(text, player, placeholders);
+        String tagged = PlaceholderScanner.replace(message, tags);
+        String text = stripMarkers(this.applyResolvers(tagged, player, placeholders));
         List<Component> values = tags.values();
 
-        Template template = this.templates.getIfPresent(text);
+        Cache<String, Template> cache = !tags.inlined() && text.equals(tagged) ? this.templates : this.resolvedTemplates;
+        Template template = cache.getIfPresent(text);
         if (template == null) {
             template = parseTemplate(text);
-            this.templates.put(text, template);
+            cache.put(text, template);
         }
         if (template.component() == null) {
             TagResolver.Builder resolvers = TagResolver.builder();
@@ -176,6 +190,25 @@ public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatte
     public void clearCache() {
         super.clearCache();
         this.templates.invalidateAll();
+        this.resolvedTemplates.invalidateAll();
+    }
+
+    /**
+     * Removes the marker noncharacters from resolver output (trusted, but a nickname could hold them), so a value
+     * can only be swapped where the message put its placeholder.
+     */
+    private static @NotNull String stripMarkers(@NotNull String text) {
+        if (text.indexOf(MARKER_START) < 0 && text.indexOf(MARKER_END) < 0) {
+            return text;
+        }
+        StringBuilder out = new StringBuilder(text.length());
+        for (int i = 0; i < text.length(); i++) {
+            char c = text.charAt(i);
+            if (c != MARKER_START && c != MARKER_END) {
+                out.append(c);
+            }
+        }
+        return out.toString();
     }
 
     private static @NotNull Template parseTemplate(@NotNull String text) {
@@ -316,6 +349,7 @@ public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatte
         private List<Component> values;
         private int tagDepth;
         private int scanned;
+        private boolean inlined;
 
         PlaceholderTags(@NotNull String message, @Nullable Player player, @NotNull Placeholder placeholders) {
             this.message = message;
@@ -332,6 +366,7 @@ public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatte
                 return null;
             }
             if (this.tagDepth > 0) {
+                this.inlined = true;
                 return stripTagBreaking(PLAIN_SERIALIZER.serialize(component));
             }
             if (this.indexes == null) {
@@ -366,6 +401,13 @@ public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatte
         }
 
         /**
+         * Whether a value was written into the text, inside a tag: the text then changes with the values.
+         */
+        boolean inlined() {
+            return this.inlined;
+        }
+
+        /**
          * The values of the {@code <mfph_N>} tags, by number.
          */
         @NotNull List<Component> values() {
@@ -380,7 +422,8 @@ public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatte
         StringBuilder out = null;
         for (int i = 0, length = text.length(); i < length; i++) {
             char c = text.charAt(i);
-            boolean breaking = c == '<' || c == '>' || c == '\'' || c == '"' || c == '\\';
+            // Also %, & and §: global placeholders, PlaceholderAPI and legacy colors run on the text afterwards.
+            boolean breaking = c == '<' || c == '>' || c == '\'' || c == '"' || c == '\\' || c == '%' || c == '&' || c == '§';
             if (breaking && out == null) {
                 out = new StringBuilder(length).append(text, 0, i);
             } else if (!breaking && out != null) {

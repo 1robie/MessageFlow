@@ -1,6 +1,7 @@
 package fr.robie.messageflow.formatter;
 
 import fr.robie.messageflow.TextResolverRegistry;
+import fr.robie.messageflow.api.GlobalPlaceholderRegistry;
 import fr.robie.messageflow.api.MessageTypeAdapter;
 import fr.robie.messageflow.model.Message;
 import fr.robie.messageflow.model.MessageType;
@@ -15,13 +16,17 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginManager;
 import org.jetbrains.annotations.NotNull;
+import com.google.common.cache.Cache;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -41,6 +46,44 @@ class AdventureFormattingTest {
             registry.initialize();
         }
         this.formatter.setTextResolverRegistry(registry);
+    }
+
+    @AfterEach
+    void tearDown() {
+        GlobalPlaceholderRegistry.getInstance().clear();
+    }
+
+    @Test
+    @DisplayName("Inside a tag, a value can't be read again as a global placeholder or a color")
+    void insideTagNotResolvedAgain() {
+        GlobalPlaceholderRegistry.getInstance().register("server", "Lobby");
+        Component result = this.formatter.format("<click:run_command:'/msg %target%'>go</click>", null,
+                Placeholder.of("target", "%server%&a§b"));
+        ClickEvent click = flatten(result).stream().map(Component::clickEvent).filter(e -> e != null).findFirst().orElseThrow();
+        assertEquals("/msg serverab", click.value());
+    }
+
+    @Test
+    @DisplayName("Marker characters in resolver output are removed")
+    void markersFromResolversRemoved() {
+        GlobalPlaceholderRegistry.getInstance().register("nick", "﷐0﷑");
+        Component result = this.formatter.format("%nick% %v%", null, Placeholder.of("v", "X"));
+        assertEquals("0 X", PLAIN.serialize(result));
+    }
+
+    @Test
+    @DisplayName("Texts changed by resolvers don't fill the cache of the plugin's messages")
+    void changingTextsKeptApart() throws ReflectiveOperationException {
+        AtomicInteger tick = new AtomicInteger();
+        GlobalPlaceholderRegistry.getInstance().register("tick", () -> String.valueOf(tick.incrementAndGet()));
+        for (int i = 0; i < 1000; i++) {
+            this.formatter.format("At %tick%: %name%", null, Placeholder.of("name", "Steve"));
+        }
+        assertEquals("Hello Steve", PLAIN.serialize(this.formatter.format("Hello %name%", null, Placeholder.of("name", "Steve"))));
+
+        Field field = AdventureMessageFormatter.class.getDeclaredField("templates");
+        field.setAccessible(true);
+        assertEquals(1, ((Cache<?, ?>) field.get(this.formatter)).size(), "only the plugin's own message");
     }
 
     private static boolean hasClickEvent(Component component) {
