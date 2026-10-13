@@ -2,7 +2,6 @@ package fr.robie.messageflow.impl;
 
 import com.google.common.base.Preconditions;
 import fr.robie.messageflow.TextResolverRegistry;
-import fr.robie.messageflow.api.GlobalPlaceholderRegistry;
 import fr.robie.messageflow.api.IMessageBuilder;
 import fr.robie.messageflow.api.IMessageManager;
 import fr.robie.messageflow.api.MessageTypeAdapter;
@@ -57,6 +56,7 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
     private final MessageFormatter<T, ?> messageFormatter;
     private final DateTimeFormatter BACKUP_DATE_FORMAT;
     private final LanguageConfiguration<E> languageConfiguration;
+    private final Logger logger;
 
     /**
      * Creates a new MessageManager with the specified plugin, configuration options, and message iterable.
@@ -130,7 +130,7 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
                 : new LegacyMessageFormatter<>(plugin);
 
         String loggerPrefix = this.buildLoggerPrefix();
-        this.initLogger(loggerPrefix);
+        this.logger = this.initLogger(loggerPrefix);
 
         TextResolverRegistry registry = new TextResolverRegistry();
         this.messageFormatter.setTextResolverRegistry(registry);
@@ -209,7 +209,6 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
 
     @Override
     public void reload() {
-        GlobalPlaceholderRegistry.getInstance().clear();
         this.formatter().clearCache();
         this.configurationManager.load();
 
@@ -233,6 +232,12 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
         }
 
         this.loadLanguage(this.languageConfiguration.getActiveLanguage());
+    }
+
+    @Override
+    public void close() {
+        this.logger.close();
+        this.messageFormatter.clearCache();
     }
 
     @Override
@@ -282,10 +287,12 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
             placeholders.register("plugin-name", pluginMeta.getName());
             placeholders.register("plugin-version", pluginMeta.getVersion());
             placeholders.register("plugin-full", pluginMeta.getName() + " " + pluginMeta.getVersion());
+            placeholders.register("plugin-full-name", pluginMeta.getName() + " v" + pluginMeta.getVersion());
         } catch (Exception | LinkageError e) {
             placeholders.register("plugin-name", this.plugin.getDescription().getName());
             placeholders.register("plugin-version", this.plugin.getDescription().getVersion());
             placeholders.register("plugin-full", this.plugin.getDescription().getFullName());
+            placeholders.register("plugin-full-name", this.plugin.getDescription().getFullName());
         }
 
         return placeholders.build().parse(switch (PlatformType.get()) {
@@ -298,13 +305,13 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
      * Initializes the platform-appropriate logger using the given prefix.
      *
      * @param loggerPrefix the resolved prefix string for the logger
+     * @return the logger, now the global one
      */
-    private void initLogger(@NotNull String loggerPrefix) {
+    private @NotNull Logger initLogger(@NotNull String loggerPrefix) {
         if (this.messageFormatter instanceof AdventureMessageFormatter<?> adventureFormatter) {
-            new AdventureLogger(loggerPrefix, adventureFormatter);
-        } else {
-            new LegacyLogger(loggerPrefix, (LegacyMessageFormatter<?>) this.messageFormatter);
+            return new AdventureLogger(loggerPrefix, adventureFormatter);
         }
+        return new LegacyLogger(loggerPrefix, (LegacyMessageFormatter<?>) this.messageFormatter);
     }
 
     /**

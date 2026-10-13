@@ -6,6 +6,15 @@
 - On servers without `getPluginMeta()` (Spigot) the logger prefix falls back to the plugin description instead of failing.
 - The published `message-flow` pom no longer declares `common` and `BOM`: their classes are already in the jar.
 - JitPack builds with JDK 21 (`jitpack.yml`). The README shows the real coordinates, `com.github.1robie.MessageFlow:message-flow`.
+- A plugin can build a new `MessageManager` (on reload, for example) without an `IllegalStateException`: the new logger replaces the old one. A logger of *another* plugin still throws (the library is not relocated).
+- New `IMessageManager#close()` and `Logger#close()`: release the global logger (call it in `onDisable`).
+- `reload()` no longer clears the global placeholders (`GlobalPlaceholderRegistry`): every reload, the first one included, used to wipe what the plugin registered.
+- Text resolvers run in the documented order (global placeholders, then PlaceholderAPI, then later ones) and can be registered from any thread.
+- The parsed-message cache is used again: it was skipped whenever any resolver was registered, which was always. `clearCache()` now really clears it.
+- The legacy logger prefix placeholder `%plugin-full-name%` is resolved.
+- `BROADCAST` messages honour `send-to-console` and `exclude-senders`.
+- Legacy (Spigot) formatter: sounds play, boss bar durations are in ticks like the Adventure one, and `getLegacyColoredMessage` no longer converts twice.
+- README samples match the API.
 - Change all `toLowerCase()` and `toUpperCase()` calls to use `Locale.ROOT` to avoid locale-specific issues.
 
 ## Releases:

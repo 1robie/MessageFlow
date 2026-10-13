@@ -23,7 +23,7 @@ public abstract class Logger {
     /**
      * The global logger instance.
      */
-    private static Logger logger;
+    private static volatile Logger logger;
 
     /**
      * The getPrefix used in log messages.
@@ -55,19 +55,38 @@ public abstract class Logger {
      *
      * @param prefix           the log getPrefix
      * @param messageFormatter the formatter to use
-     * @throws IllegalStateException if a logger instance already exists (to prevent conflicts when not relocated)
+     * <p>
+     * The new logger becomes the global one. It replaces a logger of the same plugin (a plugin that rebuilds
+     * its {@code MessageManager} on reload), but not one of another plugin.
+     *
+     * @throws IllegalStateException if the global logger belongs to another plugin (the library is not relocated)
      */
     protected Logger(@NotNull String prefix, @NotNull MessageFormatter<?, ?> messageFormatter) {
         Preconditions.checkNotNull(prefix, "Prefix cannot be null");
         Preconditions.checkNotNull(messageFormatter, "MessageFormatter cannot be null");
-        if (logger != null) {
-            throw new IllegalStateException("Logger instance already exists for package '" + this.getClass().getPackage().getName() +
-                    "'. If you are using MessageFlow in multiple plugins, you MUST relocate (shade/rename) the library " +
-                    "to avoid conflicts between different plugins sharing the same static state.");
-        }
         this.prefix = prefix;
         this.messageFormatter = messageFormatter;
-        logger = this;
+        synchronized (Logger.class) {
+            Logger current = logger;
+            if (current != null && current.messageFormatter.getPlugin() != messageFormatter.getPlugin()) {
+                throw new IllegalStateException("Logger instance already exists for package '" + this.getClass().getPackage().getName() +
+                        "'. If you are using MessageFlow in multiple plugins, you MUST relocate (shade/rename) the library " +
+                        "to avoid conflicts between different plugins sharing the same static state.");
+            }
+            logger = this;
+        }
+    }
+
+    /**
+     * Stops this logger from being the global one. Static logging calls are dropped until another logger is
+     * created. Does nothing if another logger already replaced this one.
+     */
+    public void close() {
+        synchronized (Logger.class) {
+            if (logger == this) {
+                logger = null;
+            }
+        }
     }
 
     /**

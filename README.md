@@ -40,7 +40,7 @@ Version 1.0.0 introduced major changes to the API, including:
 
 - **New Placeholder System**: The old `Object[]` or `Placeholders` system has been replaced by a dedicated `Placeholder` class.
   `formatter.sendMessage(player, MyMessages.WELCOME, "player", player.getName())` becomes
-  `formatter.sendMessage(player, MyMessages.WELCOME, Placeholder.of("player", player.getName()))`.
+  `formatter.sendMessage(MyMessages.WELCOME, player, Placeholder.of("player", player.getName()))`.
 - **Simplified Initialization**: `ConfigurationOptions.singleFile(...)` is deprecated in favor of `MessageManager.withSingleFile(...)`.
 - **Global Placeholders**: Register placeholders once via `GlobalPlaceholderRegistry` to use them across all messages.
 
@@ -189,13 +189,14 @@ public enum MyMessages implements Message {
 
   private final String key;
   private final List<? extends MessageTypeAdapter> defaults;
-  private final MessageSettings settings;
+  private final MessageSettings defaultSettings;
   private List<? extends MessageTypeAdapter> loaded;
+  private MessageSettings loadedSettings;
 
   MyMessages(String key, String defaultValue) {
       this.key = key;
       this.defaults = Message.chat(defaultValue);
-      this.settings = MessageSettings.DEFAULT;
+      this.defaultSettings = MessageSettings.DEFAULT;
   }
 
   @Override
@@ -225,7 +226,7 @@ public enum MyMessages implements Message {
 
   @Override
   public @NotNull MessageSettings settings() {
-    return this.loadedSettings != null ? this.loadedSettings : this.staticSettings;
+    return this.loadedSettings != null ? this.loadedSettings : this.defaultSettings;
   }
 }
 ```
@@ -240,6 +241,8 @@ MessageManager<MyPlugin, String> messageManager = MessageManager.withSingleFile(
 messageManager.reload(); // Creates file and fills missing keys
 ```
 
+Call `messageManager.close()` in `onDisable` (or before building a new manager on reload): it releases the global logger.
+
 2) **Multi-language setup**:
 
 With an enum for languages:
@@ -249,7 +252,7 @@ With an enum for languages:
 EnumLanguageConfiguration<Langs> langConfig = new EnumLanguageConfiguration<>(Langs.class, Langs.EN_US);
 
 // Initialize Manager
-MessageManager<MyPlugin, Langs> messageManager = new MessageManager<>(this, this.langConfig, MyMessages.class);
+MessageManager<MyPlugin, Langs> messageManager = new MessageManager<>(this, langConfig, MyMessages.class);
 messageManager.reload(); 
 
 messageManager.setActiveLanguage(Langs.FR_FR); // Switch to French and load french messages
@@ -263,7 +266,7 @@ NormalLanguageConfiguration langConfig = new NormalLanguageConfiguration("en_us"
 langConfig.addLanguage("en_us","messages_en.yml");
 langConfig.addLanguage("fr_fr","messages_fr.yml");
 
-MessageManager<MyPlugin, String> messageManager = new MessageManager<>(this, this.langConfig, MyMessages.class);
+MessageManager<MyPlugin, String> messageManager = new MessageManager<>(this, langConfig, MyMessages.class);
 messageManager.reload();
 
 messageManager.setActiveLanguage("fr_fr"); // Switch to French and load french messages
@@ -298,10 +301,9 @@ MessageManager<MyPlugin, String> messageManager = ...; // Initialized as shown a
 @SuppressWarnings("DataFlowIssue")
 MessageFormatter<MyPlugin, ?> formatter = this.messageManager.formatter();
 
-Placeholders.Builder placeholders = Placeholders.builder();
-placeholders.register("player", player.getName());
+Placeholder placeholders = Placeholder.of("player", player.getName());
 
-formatter.sendMessage(player, MyMessages.WELCOME, placeholders.build()); // Sends "Welcome to the server, PlayerName!" to the player
+formatter.sendMessage(MyMessages.WELCOME, player, placeholders); // Sends "Welcome to the server, PlayerName!" to the player
 ```
 
 ### 4. Global Placeholders

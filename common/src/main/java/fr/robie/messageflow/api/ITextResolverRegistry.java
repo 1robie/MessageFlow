@@ -36,6 +36,18 @@ public interface ITextResolverRegistry {
     @NotNull String resolve(@NotNull String text, @Nullable Player player, @NotNull Placeholder placeholders);
 
     /**
+     * Checks if any registered resolver would change the given text.
+     *
+     * @param text         the text to check
+     * @param player       the player context, or null
+     * @param placeholders current placeholders
+     * @return true if resolving may change the text
+     */
+    default boolean canResolve(@NotNull String text, @Nullable Player player, @NotNull Placeholder placeholders) {
+        return this.hasResolvers();
+    }
+
+    /**
      * Checks if the registry has any registered resolvers.
      *
      * @return true if resolvers are present, false otherwise

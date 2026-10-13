@@ -238,7 +238,7 @@ public abstract class MessageFormatter<T extends Plugin, V> {
         if (message == null) {
             return this.empty();
         }
-        if (placeholders.isEmpty() && !this.textResolverRegistry.hasResolvers()) {
+        if (placeholders.isEmpty() && !this.textResolverRegistry.canResolve(message, player, placeholders)) {
             return this.cache.getUnchecked(message);
         }
         String parsedText = placeholders.parse(message);
@@ -783,7 +783,7 @@ public abstract class MessageFormatter<T extends Plugin, V> {
      * Clears the message cache, forcing reparsing of all messages on next access.
      */
     public void clearCache() {
-        this.cache.cleanUp();
+        this.cache.invalidateAll();
     }
 
     /**

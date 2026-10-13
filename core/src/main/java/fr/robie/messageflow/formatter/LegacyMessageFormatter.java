@@ -57,8 +57,7 @@ public class LegacyMessageFormatter<T extends Plugin> extends MessageFormatter<T
 
     @Override
     public @NotNull String getLegacyColoredMessage(@NotNull String message, @Nullable Player player, @NotNull Placeholder placeholders) {
-        String resolved = this.format(message, player, placeholders);
-        return this.load(resolved);
+        return this.format(message, player, placeholders);
     }
 
     @Override
@@ -248,7 +247,8 @@ public class LegacyMessageFormatter<T extends Plugin> extends MessageFormatter<T
 
                 case BROADCAST -> {
                     if (messageAdapter instanceof SimpleMessage sm) {
-                        this.sendComponents(Bukkit.getOnlinePlayers(), sm, prefix, this.prefix, placeholders);
+                        Collection<? extends CommandSender> everyone = this.resolveRecipients(true, sm.sendToConsole(), sm.excludeSenders(), senders);
+                        this.sendComponents(everyone, sm, prefix, this.prefix, placeholders);
                     }
                 }
 
@@ -262,11 +262,6 @@ public class LegacyMessageFormatter<T extends Plugin> extends MessageFormatter<T
                 }
             }
         }
-    }
-
-    @Override
-    public void playSound(@NotNull Collection<? extends Player> players, @NotNull SoundMessage soundMessage) {
-
     }
 
 
@@ -291,7 +286,7 @@ public class LegacyMessageFormatter<T extends Plugin> extends MessageFormatter<T
                     bar.removePlayer(player);
                     bar.setVisible(false);
                 },
-                duration / 50L);
+                duration);
     }
 
     private @NotNull BossBar createBossBar(

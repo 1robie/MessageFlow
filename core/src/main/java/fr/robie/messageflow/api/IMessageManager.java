@@ -57,4 +57,10 @@ public interface IMessageManager<T extends Plugin, E> {
      * @param language the language code to load (e.g., "en_us")
      */
     void loadLanguage(@NotNull E language);
+
+    /**
+     * Releases what this manager registered globally: its logger stops being the global one and the message
+     * cache is cleared. Call it from {@code onDisable}, or before building a new manager.
+     */
+    void close();
 }

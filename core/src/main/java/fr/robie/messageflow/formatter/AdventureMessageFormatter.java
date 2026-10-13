@@ -325,7 +325,8 @@ public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatte
 
                 case BROADCAST -> {
                     if (messageAdapter instanceof SimpleMessage sm) {
-                        this.sendComponents(Bukkit.getOnlinePlayers(), sm, prefix, this.prefix, placeholders, Audience::sendMessage);
+                        Collection<? extends CommandSender> everyone = this.resolveRecipients(true, sm.sendToConsole(), sm.excludeSenders(), audiences);
+                        this.sendComponents(everyone, sm, prefix, this.prefix, placeholders, Audience::sendMessage);
                     }
                 }
 

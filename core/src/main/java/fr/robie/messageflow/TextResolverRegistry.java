@@ -13,27 +13,26 @@ import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class TextResolverRegistry implements ITextResolverRegistry {
-    private final Set<TextResolver> resolvers = new HashSet<>();
+    private final CopyOnWriteArrayList<TextResolver> resolvers = new CopyOnWriteArrayList<>();
 
     @Override
     public void initialize() {
+        this.register(new FunctionalPlaceholderResolver());
         if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null) {
             this.register(new PlaceholderAPIResolver());
             if (ConfigurationManager.Setting.HOOK_PLACEHOLDER_API_LOG_ON_LOAD.getValue()) {
                 Logger.info(ConfigurationManager.Setting.HOOK_LOAD_MESSAGE.<String>getValue(), Placeholder.of("hook", "PlaceholderAPI"));
             }
         }
-        this.register(new FunctionalPlaceholderResolver());
     }
 
     @Override
     public void register(@NotNull TextResolver resolver) {
         Preconditions.checkNotNull(resolver, "resolver cannot be null");
-        this.resolvers.add(resolver);
+        this.resolvers.addIfAbsent(resolver);
     }
 
     @Override
@@ -44,6 +43,16 @@ public class TextResolverRegistry implements ITextResolverRegistry {
             }
         }
         return text;
+    }
+
+    @Override
+    public boolean canResolve(@NotNull String text, @Nullable Player player, @NotNull Placeholder placeholders) {
+        for (TextResolver resolver : this.resolvers) {
+            if (resolver.canResolve(text, player, placeholders)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override
