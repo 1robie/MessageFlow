@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## Releases:
+
+### 1.1.0
 - `TextResolver#isPlayerDependent` is true by default: a resolver with its own syntax (`{player}`) or one that only applies with a player is formatted for each player. The PlaceholderAPI resolver overrides it.
 - **Faster sending.** A message sent to many players is formatted once, unless it uses a player-specific placeholder (local or global) or PlaceholderAPI: the global placeholder resolver is always registered, so every send used to be formatted once per recipient. Messages with placeholders are parsed once and reused (about 5x faster), and so are messages with only global placeholders (about 9x). Placeholders and colors are replaced in a single pass instead of regular expressions (color conversion about 30x faster), and `Placeholder.parse` only evaluates the values the text uses.
 - **Fix:** cached global placeholders (`registerCached`, `registerPlayerCached`) never returned a value and logged a warning on every use. Player caches are keyed by UUID.
@@ -41,8 +44,6 @@
 - Legacy (Spigot) formatter: sounds play, boss bar durations are in ticks like the Adventure one, and `getLegacyColoredMessage` no longer converts twice.
 - README samples match the API.
 - Change all `toLowerCase()` and `toUpperCase()` calls to use `Locale.ROOT` to avoid locale-specific issues.
-
-## Releases:
 
 ### 1.0.0
 - Refactored `Logger` system to centralize logging logic and eliminate code duplication between `AdventureLogger` and `LegacyLogger`.
