@@ -329,8 +329,9 @@ Logger testLogger = Logger.jul(java.util.logging.Logger.getLogger("Test"));
 someApi.load(path, myLogger.toJul());
 ```
 
-Exceptions go to the plugin's `java.util.logging` logger with the exception attached, so log files show a
-normal stack trace. Calls made before the `MessageManager` exists go to a `java.util.logging` logger named
+On Paper, lines go through the plugin's `ComponentLogger`: warnings and errors keep their level, in color in the
+console, and the server names the plugin. Exceptions are attached to their line, so log files show a normal stack
+trace. Calls made before the `MessageManager` exists go to a `java.util.logging` logger named
 `MessageFlow`.
 
 ### 3. Sending Messages

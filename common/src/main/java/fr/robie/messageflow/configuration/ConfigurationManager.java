@@ -87,6 +87,13 @@ public class ConfigurationManager<P extends Plugin> {
         ADVENTURE_LOGGER_PREFIX("logger.adventure-prefix", String.class, "<dark_gray>[</dark_gray>%plugin-name% %plugin-version%<dark_gray>]</dark_gray>", true),
 
         /**
+         * Whether the logger writes through the plugin's {@code ComponentLogger} on Paper (levels kept, no prefix:
+         * the server names the plugin). When false, or where there is none, lines go to the console sender with
+         * the logger prefix.
+         */
+        LOGGER_COMPONENT_LOGGER("logger.component-logger", Boolean.class, true),
+
+        /**
          * The maximum number of entries in the message cache.
          */
         MESSAGE_CACHE_MAX_SIZE("cache.messages.maximum-size", Long.class, 512L),

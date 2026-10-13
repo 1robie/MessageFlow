@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **Log levels kept on Paper.** A manager's logger writes through the plugin's `ComponentLogger`: warnings and errors are logged as WARN and ERROR (log files, panels and alerts see them), in color in the console, and the server names the plugin (no `logger.adventure-prefix`, no `[INFO]`/`[WARNING]` names; `[DEBUG]` lines are info lines marked `[DEBUG]`). Before, every line went through the console sender, at INFO level. `logger.component-logger: false` (or `ConfigurationManager.Setting.LOGGER_COMPONENT_LOGGER`) brings back the console-sender lines; Spigot always uses them.
+
 ## Releases:
 
 ### 1.1.1
