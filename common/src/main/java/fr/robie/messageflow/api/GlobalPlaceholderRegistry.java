@@ -1,21 +1,20 @@
 package fr.robie.messageflow.api;
 
+import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
 import fr.robie.messageflow.configuration.ConfigurationManager;
 import fr.robie.messageflow.formatter.Placeholder;
 import fr.robie.messageflow.logger.Logger;
+import fr.robie.messageflow.util.PlaceholderScanner;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jspecify.annotations.NonNull;
 
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -46,14 +45,13 @@ public final class GlobalPlaceholderRegistry {
     private final Map<String, PlaceholderValue> registry = new ConcurrentHashMap<>();
     private final Map<String, CacheConfig> cacheConfig = new ConcurrentHashMap<>();
 
-    private volatile LoadingCache<String, CacheEntry> globalCache;
+    private volatile Cache<String, CacheEntry> globalCache;
 
-    private final ConcurrentHashMap<String, LoadingCache<String, CacheEntry>> playerCaches = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, Cache<UUID, CacheEntry>> playerCaches = new ConcurrentHashMap<>();
 
     private record CacheEntry(String value, long expiresAt) {
-        private CacheEntry(@NotNull String value, long expiresAt) {
-            this.value = value;
-            this.expiresAt = System.currentTimeMillis() + expiresAt;
+        static @NotNull CacheEntry of(@NotNull String value, long ttlMillis) {
+            return new CacheEntry(value, System.currentTimeMillis() + ttlMillis);
         }
 
         boolean isExpired() {
@@ -71,31 +69,19 @@ public final class GlobalPlaceholderRegistry {
     /**
      * Creates a new global cache using the provided configuration.
      *
-     * @return configured LoadingCache instance
+     * @return configured cache instance
      */
-    private LoadingCache<String, CacheEntry> createGlobalCache() {
-        return this.applyCacheSettings(CacheBuilder.newBuilder(), true)
-                .build(new CacheLoader<>() {
-                    @Override
-                    public @NonNull CacheEntry load(@NotNull String key) {
-                        throw new UnsupportedOperationException("Use registry methods instead");
-                    }
-                });
+    private Cache<String, CacheEntry> createGlobalCache() {
+        return this.applyCacheSettings(CacheBuilder.newBuilder(), true).build();
     }
 
     /**
      * Creates a new player cache using the provided configuration.
      *
-     * @return configured LoadingCache instance
+     * @return configured cache instance
      */
-    private @NotNull LoadingCache<String, CacheEntry> createPlayerCache() {
-        return this.applyCacheSettings(CacheBuilder.newBuilder(), false)
-                .build(new CacheLoader<>() {
-                    @Override
-                    public @NonNull CacheEntry load(@NotNull String cacheKey) {
-                        throw new UnsupportedOperationException("Use registry methods instead");
-                    }
-                });
+    private @NotNull Cache<UUID, CacheEntry> createPlayerCache() {
+        return this.applyCacheSettings(CacheBuilder.newBuilder(), false).build();
     }
 
     private @NotNull CacheBuilder<Object, Object> applyCacheSettings(@NotNull CacheBuilder<Object, Object> builder, boolean isGlobal) {
@@ -295,15 +281,20 @@ public final class GlobalPlaceholderRegistry {
         if (this.registry.isEmpty()) {
             return false;
         }
-        var matcher = Placeholder.PLACEHOLDER_PATTERN.matcher(text);
-        while (matcher.find()) {
-            String placeholder = matcher.group();
-            String key = placeholder.substring(1, placeholder.length() - 1);
-            if (this.registry.containsKey(key)) {
-                return true;
-            }
+        return PlaceholderScanner.anyKey(text, this.registry::containsKey);
+    }
+
+    /**
+     * Checks if a text uses a player-specific global placeholder.
+     *
+     * @param text the text to check
+     * @return true if the text needs a player to be resolved
+     */
+    public boolean hasPlayerSpecificInText(@NotNull String text) {
+        if (this.registry.isEmpty()) {
+            return false;
         }
-        return false;
+        return PlaceholderScanner.anyKey(text, key -> this.registry.get(key) instanceof PlaceholderValue.PlayerValue);
     }
 
     private @NotNull String evaluateValue(@NotNull String key, @NotNull PlaceholderValue value, @Nullable Player player) throws Exception {
@@ -324,38 +315,25 @@ public final class GlobalPlaceholderRegistry {
     }
 
     private @NotNull String evaluateGlobalCached(@NotNull String key, @NotNull PlaceholderValue value, long ttlMillis) throws Exception {
-        LoadingCache<String, CacheEntry> cache = this.globalCache;
-        try {
-            CacheEntry cached = cache.get(key);
-            if (!cached.isExpired()) {
-                return cached.value;
-            }
-            String evaluated = value.evaluate(null);
-            cache.put(key, new CacheEntry(evaluated, ttlMillis));
-            return evaluated;
-        } catch (ExecutionException e) {
-            String evaluated = value.evaluate(null);
-            cache.put(key, new CacheEntry(evaluated, ttlMillis));
-            return evaluated;
+        Cache<String, CacheEntry> cache = this.globalCache;
+        CacheEntry cached = cache.getIfPresent(key);
+        if (cached != null && !cached.isExpired()) {
+            return cached.value;
         }
+        String evaluated = value.evaluate(null);
+        cache.put(key, CacheEntry.of(evaluated, ttlMillis));
+        return evaluated;
     }
 
     private @NotNull String evaluatePlayerCached(@NotNull String key, @NotNull PlaceholderValue value, @NotNull Player player, long ttlMillis) throws Exception {
-        LoadingCache<String, CacheEntry> playerCache = this.playerCaches.computeIfAbsent(key, k -> this.createPlayerCache());
-
-        String cacheKey = player.getName() + ":" + key;
-        try {
-            CacheEntry cached = playerCache.get(cacheKey);
-            if (!cached.isExpired()) {
-                return cached.value;
-            }
-            String evaluated = value.evaluate(player);
-            playerCache.put(cacheKey, new CacheEntry(evaluated, ttlMillis));
-            return evaluated;
-        } catch (ExecutionException e) {
-            String evaluated = value.evaluate(player);
-            playerCache.put(cacheKey, new CacheEntry(evaluated, ttlMillis));
-            return evaluated;
+        Cache<UUID, CacheEntry> playerCache = this.playerCaches.computeIfAbsent(key, k -> this.createPlayerCache());
+        UUID id = player.getUniqueId();
+        CacheEntry cached = playerCache.getIfPresent(id);
+        if (cached != null && !cached.isExpired()) {
+            return cached.value;
         }
+        String evaluated = value.evaluate(player);
+        playerCache.put(id, CacheEntry.of(evaluated, ttlMillis));
+        return evaluated;
     }
 }

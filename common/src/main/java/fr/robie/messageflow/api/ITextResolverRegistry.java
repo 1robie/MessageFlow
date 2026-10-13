@@ -48,6 +48,18 @@ public interface ITextResolverRegistry {
     }
 
     /**
+     * Checks if resolving the text gives a different result for each player.
+     *
+     * @param text         the text to check
+     * @param placeholders current placeholders
+     * @return true if the text must be formatted for each player
+     * @see TextResolver#isPlayerDependent(String, Placeholder)
+     */
+    default boolean isPlayerDependent(@NotNull String text, @NotNull Placeholder placeholders) {
+        return this.hasResolvers();
+    }
+
+    /**
      * Checks if the registry has any registered resolvers.
      *
      * @return true if resolvers are present, false otherwise

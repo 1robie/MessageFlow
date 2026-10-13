@@ -183,8 +183,21 @@ class GlobalPlaceholderRegistryImplTest {
         String result1 = this.registry.get("cached").orElse("");
         String result2 = this.registry.get("cached").orElse("");
 
-        // Both should return same value due to caching
-        assertEquals(result1, result2);
+        // The supplier runs once, the second call is served from the cache
+        assertEquals("1", result1);
+        assertEquals("1", result2);
+        assertEquals(1, callCount[0]);
+    }
+
+    @Test
+    @DisplayName("A cached value is evaluated again once expired")
+    void testRegisterCachedExpires() throws InterruptedException {
+        final int[] callCount = {0};
+        this.registry.registerCached("expiring", () -> String.valueOf(++callCount[0]), 1);
+
+        assertEquals("1", this.registry.get("expiring").orElse(""));
+        Thread.sleep(5);
+        assertEquals("2", this.registry.get("expiring").orElse(""));
     }
 
     // ========== Multiple Placeholders Tests ==========

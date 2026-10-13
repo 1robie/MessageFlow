@@ -204,8 +204,28 @@ public abstract class MessageFormatter<T extends Plugin, V> {
     }
 
     /**
-     * Sends a message to a collection of audiences, optionally using player context
-     * if the registry has resolvers.
+     * Tells whether a text gives a different result for each player: it uses a player-specific placeholder, a
+     * player-specific global placeholder, or a resolver such as PlaceholderAPI. Other texts are formatted once and
+     * shared by every recipient.
+     *
+     * @param text         the raw text, or null
+     * @param placeholders the placeholders to apply
+     * @return true if the text must be formatted for each player
+     */
+    protected boolean isPlayerDependent(@Nullable String text, @NotNull Placeholder placeholders) {
+        if (text == null || text.indexOf('%') < 0) {
+            return false;
+        }
+        if (placeholders.isPlayerDependent(text)) {
+            return true;
+        }
+        ITextResolverRegistry registry = this.textResolverRegistry;
+        return registry != null && registry.isPlayerDependent(text, placeholders);
+    }
+
+    /**
+     * Sends a message to a collection of audiences, formatted once for all of them,
+     * or once per player when the text depends on the player.
      *
      * @param <A>          the audience type
      * @param audiences    the collection of audiences
@@ -219,7 +239,7 @@ public abstract class MessageFormatter<T extends Plugin, V> {
             @NotNull Placeholder placeholders,
             @NotNull BiConsumer<A, V> action
     ) {
-        if (this.textResolverRegistry.hasResolvers()) {
+        if (this.isPlayerDependent(text, placeholders)) {
             audiences.forEach(audience -> {
                 V formatted = this.format(text, audience instanceof Player p ? p : null, placeholders);
                 action.accept(audience, formatted);
@@ -231,7 +251,8 @@ public abstract class MessageFormatter<T extends Plugin, V> {
     }
 
     /**
-     * Sends multiple messages to a collection of audiences, optionally using player context.
+     * Sends multiple messages to a collection of audiences, in order. Each line is formatted once and shared,
+     * or once per player when it depends on the player.
      *
      * @param <A>          the audience type
      * @param audiences    the collection of audiences
@@ -247,22 +268,21 @@ public abstract class MessageFormatter<T extends Plugin, V> {
             @Nullable String prefix,
             @NotNull BiConsumer<A, V> action
     ) {
-        if (this.textResolverRegistry.hasResolvers()) {
-            audiences.forEach(audience -> {
-                for (String text : texts) {
-                    String withPrefix = prefix != null ? prefix + text : text;
-                    V formatted = this.format(withPrefix, audience instanceof Player p ? p : null, placeholders);
-                    action.accept(audience, formatted);
-                }
-            });
-        } else {
-            List<V> formattedList = texts.stream()
-                    .map(text -> {
-                        String withPrefix = prefix != null ? prefix + text : text;
-                        return this.format(withPrefix, null, placeholders);
-                    })
-                    .toList();
-            audiences.forEach(audience -> formattedList.forEach(formatted -> action.accept(audience, formatted)));
+        int size = texts.size();
+        String[] lines = new String[size];
+        List<V> shared = new ArrayList<>(size);
+        int i = 0;
+        for (String text : texts) {
+            String line = prefix != null ? prefix + text : text;
+            lines[i++] = line;
+            shared.add(this.isPlayerDependent(line, placeholders) ? null : this.format(line, null, placeholders));
+        }
+        for (A audience : audiences) {
+            Player player = audience instanceof Player p ? p : null;
+            for (int j = 0; j < size; j++) {
+                V formatted = shared.get(j);
+                action.accept(audience, formatted != null ? formatted : this.format(lines[j], player, placeholders));
+            }
         }
     }
 

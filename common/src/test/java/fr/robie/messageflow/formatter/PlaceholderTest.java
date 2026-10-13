@@ -155,4 +155,47 @@ class PlaceholderTest {
         // Exception is caught, placeholder left unchanged
         assertEquals("Value: %broken%", result);
     }
+
+    @Test
+    @DisplayName("Only the values used by the message are evaluated, each once")
+    void testLazyEvaluation() {
+        int[] used = {0};
+        int[] unused = {0};
+        Placeholder p = Placeholder.builder()
+                .register("used", () -> String.valueOf(++used[0]))
+                .register("unused", () -> String.valueOf(++unused[0]))
+                .build();
+        assertEquals("1 and 1", p.parse("%used% and %used%"));
+        assertEquals(1, used[0]);
+        assertEquals(0, unused[0]);
+    }
+
+    @Test
+    @DisplayName("A percent sign before a placeholder does not hide it")
+    void testPercentBeforePlaceholder() {
+        Placeholder p = Placeholder.of("player", "Steve");
+        assertEquals("100% sure Steve", p.parse("100% sure %player%"));
+        assertEquals("50%off%Steve", p.parse("50%off%%player%"));
+        assertEquals("%%Steve", p.parse("%%%player%"));
+    }
+
+    @Test
+    @DisplayName("A text without a known placeholder is returned as is")
+    void testUnchangedTextIsSameInstance() {
+        Placeholder p = Placeholder.of("player", "Steve");
+        String text = "50% off %unknown%";
+        assertSame(text, p.parse(text));
+    }
+
+    @Test
+    @DisplayName("Player-specific placeholders make a text player dependent")
+    void testPlayerDependent() {
+        Placeholder p = Placeholder.builder()
+                .register("name", "John")
+                .register("health", player -> "20")
+                .build();
+        assertTrue(p.isPlayerDependent("hp: %health%"));
+        assertFalse(p.isPlayerDependent("name: %name%"));
+        assertFalse(Placeholder.of("name", "John").isPlayerDependent("%name%"));
+    }
 }

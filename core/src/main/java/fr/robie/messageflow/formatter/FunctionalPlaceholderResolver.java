@@ -3,11 +3,10 @@ package fr.robie.messageflow.formatter;
 import fr.robie.messageflow.api.GlobalPlaceholderRegistry;
 import fr.robie.messageflow.api.TextResolver;
 import fr.robie.messageflow.logger.Logger;
+import fr.robie.messageflow.util.PlaceholderScanner;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.regex.Matcher;
 
 /**
  * TextResolver implementation that resolves global placeholders with support for
@@ -38,34 +37,19 @@ public final class FunctionalPlaceholderResolver implements TextResolver {
     }
 
     @Override
+    public boolean isPlayerDependent(@NotNull String text, @NotNull Placeholder placeholders) {
+        return this.globalPlaceholderRegistry.hasPlayerSpecificInText(text);
+    }
+
+    @Override
     public @NotNull String resolve(@NotNull String text, @Nullable Player player, @NotNull Placeholder placeholders) {
         if (this.globalPlaceholderRegistry.isEmpty()) {
             return text;
         }
-
-        Matcher matcher = Placeholder.PLACEHOLDER_PATTERN.matcher(text);
-        StringBuilder sb = new StringBuilder();
-
-        while (matcher.find()) {
-            String placeholder = matcher.group();
-            String key = placeholder.substring(1, placeholder.length() - 1);
-
-            if (this.globalPlaceholderRegistry.exists(key)) {
-                String replacement = this.evaluateGlobalPlaceholder(key, player);
-                matcher.appendReplacement(sb, Matcher.quoteReplacement(replacement));
-            }
-        }
-        matcher.appendTail(sb);
-        return sb.toString();
+        return PlaceholderScanner.replace(text, (key, start) ->
+                this.globalPlaceholderRegistry.exists(key) ? this.evaluateGlobalPlaceholder(key, player) : null);
     }
 
-    /**
-     * Evaluates a global placeholder by key, handling player context and errors.
-     *
-     * @param key    the placeholder key
-     * @param player the player context (may be null)
-     * @return the evaluated value, or error-formatted key if evaluation fails
-     */
     private @NotNull String evaluateGlobalPlaceholder(@NotNull String key, @Nullable Player player) {
         try {
             if (player != null) {

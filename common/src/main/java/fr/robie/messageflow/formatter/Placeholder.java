@@ -1,6 +1,7 @@
 package fr.robie.messageflow.formatter;
 
 import fr.robie.messageflow.api.PlaceholderValue;
+import fr.robie.messageflow.util.PlaceholderScanner;
 import net.kyori.adventure.text.Component;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.Contract;
@@ -12,7 +13,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -58,6 +58,7 @@ public final class Placeholder {
     private static final Placeholder EMPTY = new Placeholder(Collections.emptyMap());
 
     private final Map<String, PlaceholderValue> placeholders;
+    private final boolean hasPlayerValues;
 
     /**
      * Creates a new Placeholder with the given key-value pairs.
@@ -66,6 +67,7 @@ public final class Placeholder {
      */
     private Placeholder(@NotNull Map<String, PlaceholderValue> placeholders) {
         this.placeholders = placeholders;
+        this.hasPlayerValues = placeholders.values().stream().anyMatch(PlaceholderValue.PlayerValue.class::isInstance);
     }
 
     /**
@@ -114,30 +116,36 @@ public final class Placeholder {
         if (message == null) {
             return null;
         }
-        if (this.isEmpty()) {
+        if (this.isEmpty() || message.indexOf('%') < 0) {
             return message;
         }
 
-        Map<String, String> replacements = new HashMap<>();
-        for (var entry : this.placeholders.entrySet()) {
-            String key = entry.getKey();
-            PlaceholderValue value = entry.getValue();
-            try {
-                String evaluated = value.evaluate(player);
-                replacements.put("%" + key + "%", evaluated);
-            } catch (Exception e) {
-                replacements.put("%" + key + "%", "%" + key + "%");
+        // Only the keys found in the message are evaluated, each once.
+        Map<String, String> evaluated = new HashMap<>(4);
+        return PlaceholderScanner.replace(message, (key, start) -> {
+            PlaceholderValue value = this.placeholders.get(key);
+            if (value == null) {
+                return null;
             }
-        }
+            return evaluated.computeIfAbsent(key, k -> {
+                try {
+                    return value.evaluate(player);
+                } catch (Exception e) {
+                    return "%" + k + "%";
+                }
+            });
+        });
+    }
 
-        Matcher matcher = PLACEHOLDER_PATTERN.matcher(message);
-        StringBuilder sb = new StringBuilder();
-        while (matcher.find()) {
-            String replacement = replacements.getOrDefault(matcher.group(), matcher.group());
-            matcher.appendReplacement(sb, Matcher.quoteReplacement(replacement));
-        }
-        matcher.appendTail(sb);
-        return sb.toString();
+    /**
+     * Tells whether a text uses a player-specific placeholder of this set.
+     *
+     * @param text the text
+     * @return true when the text needs a player to be formatted
+     */
+    public boolean isPlayerDependent(@Nullable String text) {
+        return this.hasPlayerValues && text != null
+                && PlaceholderScanner.anyKey(text, key -> this.placeholders.get(key) instanceof PlaceholderValue.PlayerValue);
     }
 
 

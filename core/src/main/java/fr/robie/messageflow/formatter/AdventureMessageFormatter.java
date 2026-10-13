@@ -4,6 +4,7 @@ import fr.robie.messageflow.api.MessageTypeAdapter;
 import fr.robie.messageflow.api.PlaceholderValue;
 import fr.robie.messageflow.logger.Logger;
 import fr.robie.messageflow.model.*;
+import fr.robie.messageflow.util.PlaceholderScanner;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.text.Component;
@@ -27,8 +28,6 @@ import java.time.Duration;
 import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Predicate;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * Message formatter implementation that uses Adventure's MiniMessage for modern text formatting.
@@ -39,35 +38,6 @@ import java.util.regex.Pattern;
  * @param <T> the type of the plugin using this formatter
  */
 public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatter<T, Component> {
-
-    private static final Pattern LEGACY_HEX_PATTERN = Pattern.compile("§x(§[0-9a-fA-F]){6}");
-    private static final Pattern HEX_SHORT_PATTERN = Pattern.compile("(?<!<)(?<!:)(?<!</)#([a-fA-F0-9]{6})");
-    private static final Pattern BARE_HEX_PATTERN = Pattern.compile("(?<![<&])(?<!:)(?<!</)#([A-Fa-f0-9]{6})");
-
-    private static final Map<String, String> COLORS_MAPPINGS = Map.ofEntries(
-            Map.entry("0", "black"),
-            Map.entry("1", "dark_blue"),
-            Map.entry("2", "dark_green"),
-            Map.entry("3", "dark_aqua"),
-            Map.entry("4", "dark_red"),
-            Map.entry("5", "dark_purple"),
-            Map.entry("6", "gold"),
-            Map.entry("7", "gray"),
-            Map.entry("8", "dark_gray"),
-            Map.entry("9", "blue"),
-            Map.entry("a", "green"),
-            Map.entry("b", "aqua"),
-            Map.entry("c", "red"),
-            Map.entry("d", "light_purple"),
-            Map.entry("e", "yellow"),
-            Map.entry("f", "white"),
-            Map.entry("k", "obfuscated"),
-            Map.entry("l", "bold"),
-            Map.entry("m", "strikethrough"),
-            Map.entry("n", "underlined"),
-            Map.entry("o", "italic"),
-            Map.entry("r", "reset")
-    );
 
     private static final MiniMessage MINI_MESSAGE = MiniMessage.builder()
             .tags(TagResolver.builder().resolver(StandardTags.defaults()).build())
@@ -84,7 +54,6 @@ public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatte
      * Placeholders become these tags before parsing, so their values are never read as MiniMessage.
      */
     private static final String PLACEHOLDER_TAG_PREFIX = "mfph_";
-    private static final Pattern TAG_BREAKING = Pattern.compile("[<>'\"\\\\]");
     private static final PlainTextComponentSerializer PLAIN_SERIALIZER = PlainTextComponentSerializer.plainText();
 
     @Override
@@ -110,39 +79,73 @@ public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatte
             return super.format(message, player, placeholders);
         }
 
-        TagResolver.Builder tags = TagResolver.builder();
-        Map<String, String> tagNames = new HashMap<>();
-        Matcher matcher = Placeholder.PLACEHOLDER_PATTERN.matcher(message);
-        StringBuilder sb = new StringBuilder();
-        int tagDepth = 0;
-        int scanned = 0;
-        while (matcher.find()) {
-            tagDepth = tagDepth(message, scanned, matcher.start(), tagDepth);
-            scanned = matcher.start();
-            String token = matcher.group();
-            String key = token.substring(1, token.length() - 1);
-            PlaceholderValue value = placeholders.get(key);
-            if (value == null) {
-                matcher.appendReplacement(sb, Matcher.quoteReplacement(token));
-                continue;
-            }
-            if (tagDepth > 0) {
-                String text = PLAIN_SERIALIZER.serialize(toComponent(token, value, player));
-                matcher.appendReplacement(sb, Matcher.quoteReplacement(TAG_BREAKING.matcher(text).replaceAll("")));
-                continue;
-            }
-            String tagName = tagNames.get(key);
-            if (tagName == null) {
-                tagName = PLACEHOLDER_TAG_PREFIX + tagNames.size();
-                tagNames.put(key, tagName);
-                tags.resolver(net.kyori.adventure.text.minimessage.tag.resolver.Placeholder.component(tagName, toComponent(token, value, player)));
-            }
-            matcher.appendReplacement(sb, Matcher.quoteReplacement("<" + tagName + ">"));
-        }
-        matcher.appendTail(sb);
-
-        String text = this.applyResolvers(sb.toString(), player, placeholders);
+        PlaceholderTags tags = new PlaceholderTags(message, player, placeholders);
+        String text = PlaceholderScanner.replace(message, tags);
+        text = this.applyResolvers(text, player, placeholders);
         return MINI_MESSAGE.deserialize(colorMiniMessage(text), tags.build());
+    }
+
+    /**
+     * Turns each local placeholder into a {@code <mfph_N>} tag (or into its tag-safe text inside a tag).
+     */
+    private static final class PlaceholderTags implements PlaceholderScanner.Resolver {
+        private final String message;
+        private final Player player;
+        private final Placeholder placeholders;
+        private final TagResolver.Builder tags = TagResolver.builder();
+        private Map<String, String> tagNames;
+        private int tagDepth;
+        private int scanned;
+
+        PlaceholderTags(@NotNull String message, @Nullable Player player, @NotNull Placeholder placeholders) {
+            this.message = message;
+            this.player = player;
+            this.placeholders = placeholders;
+        }
+
+        @Override
+        public @Nullable String resolve(@NotNull String key, int start) {
+            this.tagDepth = tagDepth(this.message, this.scanned, start, this.tagDepth);
+            this.scanned = start;
+            PlaceholderValue value = this.placeholders.get(key);
+            if (value == null) {
+                return null;
+            }
+            if (this.tagDepth > 0) {
+                return stripTagBreaking(PLAIN_SERIALIZER.serialize(toComponent(key, value, this.player)));
+            }
+            if (this.tagNames == null) {
+                this.tagNames = new HashMap<>(4);
+            }
+            String tagName = this.tagNames.get(key);
+            if (tagName == null) {
+                tagName = PLACEHOLDER_TAG_PREFIX + this.tagNames.size();
+                this.tagNames.put(key, tagName);
+                this.tags.resolver(net.kyori.adventure.text.minimessage.tag.resolver.Placeholder.component(tagName, toComponent(key, value, this.player)));
+            }
+            return "<" + tagName + ">";
+        }
+
+        @NotNull TagResolver build() {
+            return this.tags.build();
+        }
+    }
+
+    /**
+     * Removes the characters that could end a tag or its quotes ({@code < > ' " \}).
+     */
+    private static @NotNull String stripTagBreaking(@NotNull String text) {
+        StringBuilder out = null;
+        for (int i = 0, length = text.length(); i < length; i++) {
+            char c = text.charAt(i);
+            boolean breaking = c == '<' || c == '>' || c == '\'' || c == '"' || c == '\\';
+            if (breaking && out == null) {
+                out = new StringBuilder(length).append(text, 0, i);
+            } else if (!breaking && out != null) {
+                out.append(c);
+            }
+        }
+        return out != null ? out.toString() : text;
     }
 
     /**
@@ -162,14 +165,14 @@ public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatte
         return depth;
     }
 
-    private static @NotNull Component toComponent(@NotNull String token, @NotNull PlaceholderValue value, @Nullable Player player) {
+    private static @NotNull Component toComponent(@NotNull String key, @NotNull PlaceholderValue value, @Nullable Player player) {
         if (value instanceof PlaceholderValue.ComponentValue(Component component)) {
             return component;
         }
         try {
             return Component.text(value.evaluate(player));
         } catch (Exception e) {
-            return Component.text(token);
+            return Component.text("%" + key + "%");
         }
     }
 
@@ -221,48 +224,127 @@ public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatte
         return Component.empty();
     }
 
-    private static String colorMiniMessage(@NotNull String message) {
-        String result = convertLegacyHex(message);
-        result = convertShortLegacyHex(result);
-        result = BARE_HEX_PATTERN.matcher(result).replaceAll("<#$1>");
-        result = replaceLegacyColors(result);
-        return result;
-    }
-
-    private static @NotNull String convertLegacyHex(@NotNull String message) {
-        Matcher matcher = LEGACY_HEX_PATTERN.matcher(message);
-        StringBuilder sb = new StringBuilder();
-        while (matcher.find()) {
-            String hex = matcher.group().replaceAll("§x|§", "");
-            matcher.appendReplacement(sb, "<#" + hex + ">");
+    /**
+     * Converts legacy colors to MiniMessage tags in one pass: {@code §x§r§r§g§g§b§b}, {@code &#rrggbb} and a bare
+     * {@code #rrggbb} become {@code <#rrggbb>}, and {@code &c} / {@code §c} become {@code <red>}. A {@code #rrggbb}
+     * right after {@code <}, {@code :} or {@code </} is already part of a tag and is kept.
+     */
+    static @NotNull String colorMiniMessage(@NotNull String message) {
+        int length = message.length();
+        int i = 0;
+        while (i < length) {
+            char c = message.charAt(i);
+            if (c == '&' || c == '§' || c == '#') {
+                break;
+            }
+            i++;
         }
-        matcher.appendTail(sb);
-        return sb.toString();
-    }
-
-    private static @NotNull String convertShortLegacyHex(@NotNull String message) {
-        Matcher matcher = HEX_SHORT_PATTERN.matcher(message);
-        StringBuilder sb = new StringBuilder();
-        while (matcher.find()) {
-            matcher.appendReplacement(sb, "<#" + matcher.group(1) + ">");
+        if (i == length) {
+            return message;
         }
-        matcher.appendTail(sb);
-        return sb.toString();
-    }
 
-    private static String replaceLegacyColors(@NotNull String message) {
-        for (var entry : COLORS_MAPPINGS.entrySet()) {
-            String key = entry.getKey();
-            String value = "<" + entry.getValue() + ">";
-            message = message
-                    .replace("&" + key, value)
-                    .replace("§" + key, value)
-                    .replace("&" + key.toUpperCase(Locale.ROOT), value)
-                    .replace("§" + key.toUpperCase(Locale.ROOT), value);
+        StringBuilder out = new StringBuilder(length + 16).append(message, 0, i);
+        while (i < length) {
+            char c = message.charAt(i);
+            if ((c == '&' || c == '§') && i + 1 < length) {
+                char code = message.charAt(i + 1);
+                if (c == '§' && code == 'x' && isSectionHex(message, i + 2)) {
+                    out.append("<#");
+                    for (int d = i + 3; d < i + 14; d += 2) {
+                        out.append(message.charAt(d));
+                    }
+                    out.append('>');
+                    i += 14;
+                    continue;
+                }
+                if (c == '&' && code == '#' && isHex(message, i + 2)) {
+                    out.append('<').append(message, i + 1, i + 8).append('>');
+                    i += 8;
+                    continue;
+                }
+                String name = colorName(code);
+                if (name != null) {
+                    out.append('<').append(name).append('>');
+                    i += 2;
+                    continue;
+                }
+            } else if (c == '#' && isHex(message, i + 1) && !afterTagStart(out)) {
+                out.append('<').append(message, i, i + 7).append('>');
+                i += 7;
+                continue;
+            }
+            out.append(c);
+            i++;
         }
-        return message;
+        return out.toString();
     }
 
+    private static boolean afterTagStart(@NotNull StringBuilder out) {
+        int n = out.length();
+        if (n == 0) {
+            return false;
+        }
+        char previous = out.charAt(n - 1);
+        return previous == '<' || previous == ':' || (previous == '/' && n > 1 && out.charAt(n - 2) == '<');
+    }
+
+    /**
+     * Six hex digits from {@code from}.
+     */
+    private static boolean isHex(@NotNull String s, int from) {
+        if (from + 6 > s.length()) {
+            return false;
+        }
+        for (int i = from; i < from + 6; i++) {
+            if (Character.digit(s.charAt(i), 16) < 0) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Six {@code §} + hex digit pairs from {@code from}.
+     */
+    private static boolean isSectionHex(@NotNull String s, int from) {
+        if (from + 12 > s.length()) {
+            return false;
+        }
+        for (int i = from; i < from + 12; i += 2) {
+            if (s.charAt(i) != '§' || Character.digit(s.charAt(i + 1), 16) < 0) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static @Nullable String colorName(char code) {
+        return switch (Character.toLowerCase(code)) {
+            case '0' -> "black";
+            case '1' -> "dark_blue";
+            case '2' -> "dark_green";
+            case '3' -> "dark_aqua";
+            case '4' -> "dark_red";
+            case '5' -> "dark_purple";
+            case '6' -> "gold";
+            case '7' -> "gray";
+            case '8' -> "dark_gray";
+            case '9' -> "blue";
+            case 'a' -> "green";
+            case 'b' -> "aqua";
+            case 'c' -> "red";
+            case 'd' -> "light_purple";
+            case 'e' -> "yellow";
+            case 'f' -> "white";
+            case 'k' -> "obfuscated";
+            case 'l' -> "bold";
+            case 'm' -> "strikethrough";
+            case 'n' -> "underlined";
+            case 'o' -> "italic";
+            case 'r' -> "reset";
+            default -> null;
+        };
+    }
 
     private void sendComponents(
             @NotNull Collection<? extends Audience> audiences,
@@ -290,7 +372,7 @@ public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatte
             return;
         }
 
-        if (this.textResolverRegistry.hasResolvers()) {
+        if (this.isPlayerDependent(title, placeholders) || this.isPlayerDependent(subtitle, placeholders)) {
             players.forEach(player ->
                     player.showTitle(this.buildTitle(title, subtitle, fadeIn, stay, fadeOut, player, placeholders)));
         } else {
@@ -369,7 +451,7 @@ public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatte
                         int fadeIn = tm.fadeIn();
                         int stay = tm.stay();
                         int fadeOut = tm.fadeOut();
-                        if (this.textResolverRegistry.hasResolvers()) {
+                        if (this.isPlayerDependent(title, placeholders) || this.isPlayerDependent(subtitle, placeholders)) {
                             resolvedAudiences.forEach(a -> {
                                 Player player = a instanceof Player p ? p : null;
                                 a.showTitle(this.buildTitle(title, subtitle, fadeIn, stay, fadeOut, player, placeholders));
@@ -402,7 +484,7 @@ public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatte
                         long duration = abm.duration();
                         float progress = abm.progress();
 
-                        if (this.textResolverRegistry.hasResolvers()) {
+                        if (this.isPlayerDependent(title, placeholders)) {
                             resolvedAudiences.forEach(a -> {
                                 Player player = a instanceof Player p ? p : null;
                                 BossBar bar = BossBar.bossBar(

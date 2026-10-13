@@ -24,6 +24,18 @@ public interface TextResolver {
     boolean canResolve(@NotNull String text, @Nullable Player player, @NotNull Placeholder placeholders);
 
     /**
+     * Checks if resolving the text gives a different result for each player. When it does not, a message sent to
+     * many players is formatted once and shared.
+     *
+     * @param text         the text to check
+     * @param placeholders current placeholders
+     * @return true if the result depends on the player (by default, whenever this resolver applies)
+     */
+    default boolean isPlayerDependent(@NotNull String text, @NotNull Placeholder placeholders) {
+        return this.canResolve(text, null, placeholders);
+    }
+
+    /**
      * Resolves placeholders or hooks within the given text.
      *
      * @param text         the text to resolve

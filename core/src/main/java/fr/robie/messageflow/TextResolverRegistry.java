@@ -56,6 +56,16 @@ public class TextResolverRegistry implements ITextResolverRegistry {
     }
 
     @Override
+    public boolean isPlayerDependent(@NotNull String text, @NotNull Placeholder placeholders) {
+        for (TextResolver resolver : this.resolvers) {
+            if (resolver.isPlayerDependent(text, placeholders)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
     public boolean hasResolvers() {
         return !this.resolvers.isEmpty();
     }

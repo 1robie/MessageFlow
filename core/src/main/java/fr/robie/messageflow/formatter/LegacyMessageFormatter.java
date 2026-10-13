@@ -21,8 +21,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Predicate;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * Message formatter implementation that uses legacy Bukkit color codes for text formatting.
@@ -35,25 +33,103 @@ import java.util.regex.Pattern;
 @SuppressWarnings("deprecation")
 public class LegacyMessageFormatter<T extends Plugin> extends MessageFormatter<T, String> {
 
-    private static final Pattern HEX_PATTERN = Pattern.compile("#([a-fA-F0-9]{6})");
-    private static final Pattern MINI_MESSAGE_TAG_PATTERN = Pattern.compile("<[^>]+>");
+    private static final String LEGACY_CODES = "0123456789AaBbCcDdEeFfKkLlMmNnOoRrXx";
 
     public LegacyMessageFormatter(@NotNull T plugin) {
         super(plugin);
     }
 
+    /**
+     * Removes MiniMessage tags, then turns {@code #rrggbb} (or {@code &#rrggbb}) into {@code §x§r§r§g§g§b§b}
+     * and {@code &c} into {@code §c}.
+     */
     @Override
     protected String load(@NotNull String msg) {
-        String result = MINI_MESSAGE_TAG_PATTERN.matcher(msg).replaceAll("");
-        Matcher matcher = HEX_PATTERN.matcher(result);
-        StringBuilder sb = new StringBuilder();
-        while (matcher.find()) {
-            matcher.appendReplacement(sb, Matcher.quoteReplacement(
-                    String.valueOf(ChatColor.of("#" + matcher.group(1)))
-            ));
+        String text = stripTags(msg);
+        int length = text.length();
+        int i = 0;
+        while (i < length && text.charAt(i) != '&' && text.charAt(i) != '#') {
+            i++;
         }
-        matcher.appendTail(sb);
-        return ChatColor.translateAlternateColorCodes('&', sb.toString());
+        if (i == length) {
+            return text;
+        }
+
+        StringBuilder out = new StringBuilder(length + 32).append(text, 0, i);
+        while (i < length) {
+            char c = text.charAt(i);
+            if (c == '&' && i + 1 < length) {
+                char code = text.charAt(i + 1);
+                if (code == '#' && isHex(text, i + 2)) {
+                    appendHex(out, text, i + 2);
+                    i += 8;
+                    continue;
+                }
+                if (LEGACY_CODES.indexOf(code) >= 0) {
+                    out.append(ChatColor.COLOR_CHAR).append(Character.toLowerCase(code));
+                    i += 2;
+                    continue;
+                }
+            } else if (c == '#' && isHex(text, i + 1)) {
+                appendHex(out, text, i + 1);
+                i += 7;
+                continue;
+            }
+            out.append(c);
+            i++;
+        }
+        return out.toString();
+    }
+
+    /**
+     * Removes every {@code <...>} with at least one character inside.
+     */
+    private static @NotNull String stripTags(@NotNull String text) {
+        int open = text.indexOf('<');
+        if (open < 0) {
+            return text;
+        }
+        StringBuilder out = new StringBuilder(text.length());
+        int copied = 0;
+        while (open >= 0) {
+            int close = text.indexOf('>', open + 1);
+            if (close < 0) {
+                break;
+            }
+            if (close == open + 1) {
+                open = text.indexOf('<', close);
+                continue;
+            }
+            out.append(text, copied, open);
+            copied = close + 1;
+            open = text.indexOf('<', copied);
+        }
+        return out.append(text, copied, text.length()).toString();
+    }
+
+    /**
+     * Six hex digits from {@code from}.
+     */
+    private static boolean isHex(@NotNull String s, int from) {
+        if (from + 6 > s.length()) {
+            return false;
+        }
+        for (int i = from; i < from + 6; i++) {
+            if (Character.digit(s.charAt(i), 16) < 0) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Appends the six hex digits from {@code from} as {@code §x§r§r§g§g§b§b}, like {@code ChatColor.of("#rrggbb")}.
+     */
+    private static void appendHex(@NotNull StringBuilder out, @NotNull String s, int from) {
+        out.append(ChatColor.COLOR_CHAR).append('x');
+        for (int i = from; i < from + 6; i++) {
+            out.append(ChatColor.COLOR_CHAR).append(s.charAt(i));
+        }
     }
 
     @Override
@@ -99,7 +175,7 @@ public class LegacyMessageFormatter<T extends Plugin> extends MessageFormatter<T
             int fadeIn, int stay, int fadeOut,
             @NotNull Placeholder placeholders
     ) {
-        if (this.textResolverRegistry.hasResolvers()) {
+        if (this.isPlayerDependent(title, placeholders) || this.isPlayerDependent(subtitle, placeholders)) {
             players.forEach(player -> player.sendTitle(
                     this.format(title, player, placeholders),
                     this.format(subtitle, player, placeholders),
@@ -178,7 +254,7 @@ public class LegacyMessageFormatter<T extends Plugin> extends MessageFormatter<T
                         int fadeIn = tm.fadeIn();
                         int stay = tm.stay();
                         int fadeOut = tm.fadeOut();
-                        if (this.textResolverRegistry.hasResolvers()) {
+                        if (this.isPlayerDependent(title, placeholders) || this.isPlayerDependent(subtitle, placeholders)) {
                             resolvedSenders.forEach(sender -> {
                                 Player player = sender instanceof Player p ? p : null;
                                 String coloredTitle = this.format(title, player, placeholders);
@@ -236,7 +312,7 @@ public class LegacyMessageFormatter<T extends Plugin> extends MessageFormatter<T
                                 .map(s -> (Player) s)
                                 .toList();
 
-                        if (this.textResolverRegistry.hasResolvers()) {
+                        if (this.isPlayerDependent(title, placeholders)) {
                             players.forEach(p -> {
                                 BossBar bar = this.createBossBar(
                                         this.format(title, p, placeholders),
