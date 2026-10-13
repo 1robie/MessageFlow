@@ -216,12 +216,13 @@ public abstract class MessageFormatter<T extends Plugin, V> {
      * @return true if the text must be formatted for each player
      */
     protected boolean isPlayerDependent(@Nullable String text, @NotNull Placeholder placeholders) {
-        if (text == null || text.indexOf('%') < 0) {
+        if (text == null) {
             return false;
         }
-        if (placeholders.isPlayerDependent(text)) {
+        if (text.indexOf('%') >= 0 && placeholders.isPlayerDependent(text)) {
             return true;
         }
+        // Not only for '%': a custom resolver may use another syntax.
         ITextResolverRegistry registry = this.textResolverRegistry;
         return registry != null && registry.isPlayerDependent(text, placeholders);
     }

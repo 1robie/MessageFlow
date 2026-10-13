@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- `TextResolver#isPlayerDependent` is true by default: a resolver with its own syntax (`{player}`) or one that only applies with a player is formatted for each player. The PlaceholderAPI resolver overrides it.
 - **Faster sending.** A message sent to many players is formatted once, unless it uses a player-specific placeholder (local or global) or PlaceholderAPI: the global placeholder resolver is always registered, so every send used to be formatted once per recipient. Messages with placeholders are parsed once and reused (about 5x faster), and so are messages with only global placeholders (about 9x). Placeholders and colors are replaced in a single pass instead of regular expressions (color conversion about 30x faster), and `Placeholder.parse` only evaluates the values the text uses.
 - **Fix:** cached global placeholders (`registerCached`, `registerPlayerCached`) never returned a value and logged a warning on every use. Player caches are keyed by UUID.
 - **Placeholder modifiers:** `%key.modifier:arg%` on local and global placeholders: `upper`, `lower`, `capitalize`, `default:text`, `comma`, `2f`, `round`, `add:n`, `pad:n`... and plurals (`%count.plural:item:items%`, `%count.plural:zero:one:other%`). `PlaceholderModifiers.register` adds custom ones.

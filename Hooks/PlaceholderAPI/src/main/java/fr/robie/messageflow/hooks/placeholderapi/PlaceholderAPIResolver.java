@@ -19,6 +19,14 @@ public class PlaceholderAPIResolver implements TextResolver {
         return PlaceholderScanner.anyKey(text, PlaceholderAPIResolver::isExpansion);
     }
 
+    /**
+     * Every PlaceholderAPI expansion may depend on the player: per player whenever one applies.
+     */
+    @Override
+    public boolean isPlayerDependent(@NotNull String text, @NotNull Placeholder placeholders) {
+        return this.canResolve(text, null, placeholders);
+    }
+
     @Override
     public @NotNull String resolve(@NotNull String text, @Nullable Player player, @NotNull Placeholder placeholders) {
         return PlaceholderAPI.setPlaceholders(player, text);

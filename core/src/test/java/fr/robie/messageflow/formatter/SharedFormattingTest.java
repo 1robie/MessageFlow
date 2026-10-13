@@ -2,6 +2,7 @@ package fr.robie.messageflow.formatter;
 
 import fr.robie.messageflow.TextResolverRegistry;
 import fr.robie.messageflow.api.GlobalPlaceholderRegistry;
+import fr.robie.messageflow.api.TextResolver;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Bukkit;
@@ -99,6 +100,25 @@ class SharedFormattingTest {
 
         assertEquals(this.players.size(), this.formats.get());
         this.players.forEach(player -> assertEquals("I am " + player.getName(), this.received(player)));
+    }
+
+    @Test
+    @DisplayName("A custom resolver with its own syntax: formatted for each player, even without '%'")
+    void perPlayerWithCustomResolver() {
+        this.formatter.getTextResolverRegistry().register(new TextResolver() {
+            @Override
+            public boolean canResolve(@NotNull String text, @Nullable Player player, @NotNull Placeholder placeholders) {
+                return player != null && text.contains("{name}");
+            }
+
+            @Override
+            public @NotNull String resolve(@NotNull String text, @Nullable Player player, @NotNull Placeholder placeholders) {
+                return player == null ? text : text.replace("{name}", player.getName());
+            }
+        });
+        this.formatter.sendMessage(this.players, "Hi {name}", false, Placeholder.empty());
+
+        this.players.forEach(player -> assertEquals("Hi " + player.getName(), this.received(player)));
     }
 
     @Test

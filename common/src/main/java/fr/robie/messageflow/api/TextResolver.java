@@ -29,10 +29,12 @@ public interface TextResolver {
      *
      * @param text         the text to check
      * @param placeholders current placeholders
-     * @return true if the result depends on the player (by default, whenever this resolver applies)
+     * @return true if the result depends on the player. By default always true: a resolver may use any syntax
+     * ({@code {player}}, {@code <papi:...>}) or only apply with a player, so it is formatted for each player
+     * unless it overrides this.
      */
     default boolean isPlayerDependent(@NotNull String text, @NotNull Placeholder placeholders) {
-        return this.canResolve(text, null, placeholders);
+        return true;
     }
 
     /**
