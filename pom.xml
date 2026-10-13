@@ -24,6 +24,13 @@
                 <dev.suffix>-Dev</dev.suffix>
             </properties>
         </profile>
+        <!-- JMH benchmarks, not part of the normal build: mvn -P benchmarks package -->
+        <profile>
+            <id>benchmarks</id>
+            <modules>
+                <module>benchmarks</module>
+            </modules>
+        </profile>
     </profiles>
 
     <properties>
