@@ -3,6 +3,7 @@ package fr.robie.messageflow.formatter;
 import fr.robie.messageflow.api.MessageTypeAdapter;
 import fr.robie.messageflow.logger.Logger;
 import fr.robie.messageflow.model.*;
+import fr.robie.messageflow.util.Tasks;
 import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Bukkit;
 import org.bukkit.boss.BarColor;
@@ -370,13 +371,11 @@ public class LegacyMessageFormatter<T extends Plugin> extends MessageFormatter<T
     // ---
 
     private void showBossBar(@NotNull BossBar bar, @NotNull Player player, long duration) {
-        bar.addPlayer(player);
-        this.plugin.getServer().getScheduler().runTaskLater(this.plugin,
-                () -> {
-                    bar.removePlayer(player);
-                    bar.setVisible(false);
-                },
-                duration);
+        this.runFor(player, () -> bar.addPlayer(player));
+        Tasks.runLater(this.plugin, player, duration, () -> {
+            bar.removePlayer(player);
+            bar.setVisible(false);
+        });
     }
 
     private @NotNull BossBar createBossBar(

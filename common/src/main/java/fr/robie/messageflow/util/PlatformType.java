@@ -25,6 +25,17 @@ public enum PlatformType {
         DETECTED = type;
     }
 
+    private static final boolean FOLIA = classExists("io.papermc.paper.threadedregions.RegionizedServer");
+
+    private static boolean classExists(String name) {
+        try {
+            Class.forName(name);
+            return true;
+        } catch (ClassNotFoundException e) {
+            return false;
+        }
+    }
+
     /**
      * Gets the detected platform type.
      *
@@ -41,6 +52,15 @@ public enum PlatformType {
      */
     public static boolean hasComponent() {
         return DETECTED == COMPONENTS;
+    }
+
+    /**
+     * Checks if the server is Folia, where each player is ticked by its own region thread.
+     *
+     * @return true on Folia
+     */
+    public static boolean isFolia() {
+        return FOLIA;
     }
 
 }

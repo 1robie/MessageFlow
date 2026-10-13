@@ -700,14 +700,14 @@ public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatte
                                 BossBar bar = BossBar.bossBar(
                                         this.format(title, player, placeholders),
                                         progress, color, overlay, flags);
-                                a.showBossBar(bar);
+                                this.runFor(a, () -> a.showBossBar(bar));
                                 this.scheduleHideBossBar(duration, a, Audience::hideBossBar, bar);
                             });
                         } else {
                             BossBar bar = BossBar.bossBar(
                                     this.format(title, null, placeholders),
                                     progress, color, overlay, flags);
-                            resolvedAudiences.forEach(a -> a.showBossBar(bar));
+                            resolvedAudiences.forEach(a -> this.runFor(a, () -> a.showBossBar(bar)));
                             this.scheduleHideBossBar(duration, resolvedAudiences, Audience::hideBossBar, bar);
                         }
                     }

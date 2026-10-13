@@ -13,6 +13,8 @@ import fr.robie.messageflow.model.Message;
 import fr.robie.messageflow.model.MessageType;
 import fr.robie.messageflow.model.SimpleMessage;
 import fr.robie.messageflow.model.SoundMessage;
+import fr.robie.messageflow.util.PlatformType;
+import fr.robie.messageflow.util.Tasks;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
@@ -22,6 +24,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Predicate;
@@ -502,11 +505,25 @@ public abstract class MessageFormatter<T extends Plugin, V> {
             BiConsumer<A, B> hideAction,
             B bossbar
     ) {
-        // On the main thread, like every other boss bar update.
-        this.plugin.getServer().getScheduler().runTaskLater(this.plugin,
-                () -> players.forEach(player -> hideAction.accept(player, bossbar)),
-                durationTicks
-        );
+        if (PlatformType.isFolia()) {
+            // Each player on the thread of its region.
+            for (A player : players) {
+                Tasks.runLater(this.plugin, player, durationTicks, () -> hideAction.accept(player, bossbar));
+            }
+        } else {
+            Tasks.runGlobalLater(this.plugin, durationTicks, () -> players.forEach(player -> hideAction.accept(player, bossbar)));
+        }
+    }
+
+    /**
+     * Runs a task for a recipient now, or on its thread when called from another one (an async send, or another
+     * region on Folia).
+     *
+     * @param target the recipient
+     * @param task   the task
+     */
+    protected void runFor(@NotNull Object target, @NotNull Runnable task) {
+        Tasks.run(this.plugin, target, task);
     }
 
     /**
@@ -825,7 +842,7 @@ public abstract class MessageFormatter<T extends Plugin, V> {
             return;
         }
         for (Player player : players) {
-            player.playSound(player, soundMessage.sound(), soundMessage.category(), soundMessage.volume(), soundMessage.pitch());
+            this.runFor(player, () -> player.playSound(player, soundMessage.sound(), soundMessage.category(), soundMessage.volume(), soundMessage.pitch()));
         }
     }
 
@@ -957,6 +974,57 @@ public abstract class MessageFormatter<T extends Plugin, V> {
             this.dispatch(localizer.adapters(message, language), senders,
                     recipient -> language.equals(languageOf.computeIfAbsent(recipient, localizer::language)), prefix, placeholders);
         }
+    }
+
+    /**
+     * Formats and sends a message off the main thread, for large broadcasts or slow placeholders. Chat, action
+     * bars and titles are sent from that thread; sounds and boss bars are handed to each player's thread.
+     * <p>
+     * Placeholder values (and PlaceholderAPI expansions) are evaluated on the async thread: they must not change
+     * the world or rely on main-thread-only state.
+     *
+     * @param message      the message definition to resolve and send
+     * @param senders      the recipients (copied before going async)
+     * @param prefix       whether to prepend the configured prefix
+     * @param placeholders placeholders for text replacement
+     * @return completes once the message is sent, exceptionally if sending failed
+     */
+    public @NotNull CompletableFuture<Void> sendMessageAsync(@NotNull Message message, @NotNull Collection<? extends CommandSender> senders,
+                                                            boolean prefix, @NotNull Placeholder placeholders) {
+        Preconditions.checkNotNull(message, "Message cannot be null");
+        Preconditions.checkNotNull(senders, "Senders collection cannot be null");
+        List<CommandSender> recipients = new ArrayList<>(senders);
+        return Tasks.runAsync(this.plugin, () -> this.sendMessage(message, recipients, prefix, placeholders));
+    }
+
+    /**
+     * Formats and sends a message off the main thread, with the prefix.
+     *
+     * @see #sendMessageAsync(Message, Collection, boolean, Placeholder)
+     */
+    public @NotNull CompletableFuture<Void> sendMessageAsync(@NotNull Message message, @NotNull Collection<? extends CommandSender> senders,
+                                                            @NotNull Placeholder placeholders) {
+        return this.sendMessageAsync(message, senders, true, placeholders);
+    }
+
+    /**
+     * Formats and sends a message to one recipient off the main thread, with the prefix.
+     *
+     * @see #sendMessageAsync(Message, Collection, boolean, Placeholder)
+     */
+    public @NotNull CompletableFuture<Void> sendMessageAsync(@NotNull Message message, @NotNull CommandSender sender,
+                                                            @NotNull Placeholder placeholders) {
+        Preconditions.checkNotNull(sender, "Sender cannot be null");
+        return this.sendMessageAsync(message, Collections.singleton(sender), true, placeholders);
+    }
+
+    /**
+     * Formats and sends a message to one recipient off the main thread, with the prefix and no placeholders.
+     *
+     * @see #sendMessageAsync(Message, Collection, boolean, Placeholder)
+     */
+    public @NotNull CompletableFuture<Void> sendMessageAsync(@NotNull Message message, @NotNull CommandSender sender) {
+        return this.sendMessageAsync(message, sender, Placeholder.empty());
     }
 
     /**

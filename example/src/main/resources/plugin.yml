@@ -4,3 +4,4 @@ main: fr.robie.exempleplugin.ExamplePlugin
 api-version: "1.21"
 authors: [ "robie" ]
 description: Example plugin showing how to use MessageFlow
+folia-supported: true
