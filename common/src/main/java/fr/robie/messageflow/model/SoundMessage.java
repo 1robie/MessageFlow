@@ -3,6 +3,7 @@ package fr.robie.messageflow.model;
 import fr.robie.messageflow.api.MessageTypeAdapter;
 import fr.robie.messageflow.formatter.Placeholder;
 import fr.robie.messageflow.logger.Logger;
+import org.bukkit.Keyed;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Registry;
 import org.bukkit.Sound;
@@ -61,7 +62,7 @@ public final class SoundMessage extends MessageTypeAdapter {
     @Override
     public @NotNull Map<String, Object> serialize() {
         Map<String, Object> map = new HashMap<>();
-        map.put("sound", this.sound.key().toString());
+        map.put("sound", ((Keyed) this.sound).getKey().toString());
         map.put("category", this.category.name());
         map.put("volume", this.volume);
         map.put("pitch", this.pitch);

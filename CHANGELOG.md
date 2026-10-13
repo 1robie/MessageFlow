@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Runs on Paper 1.20.6: `SoundMessage` no longer calls `Sound#key()` (an interface method only since 1.21.3).
+- On servers without `getPluginMeta()` (Spigot) the logger prefix falls back to the plugin description instead of failing.
+- The published `message-flow` pom no longer declares `common` and `BOM`: their classes are already in the jar.
+- JitPack builds with JDK 21 (`jitpack.yml`). The README shows the real coordinates, `com.github.1robie.MessageFlow:message-flow`.
 - Change all `toLowerCase()` and `toUpperCase()` calls to use `Locale.ROOT` to avoid locale-specific issues.
 
 ## Releases:

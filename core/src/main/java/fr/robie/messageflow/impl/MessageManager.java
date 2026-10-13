@@ -282,7 +282,7 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
             placeholders.register("plugin-name", pluginMeta.getName());
             placeholders.register("plugin-version", pluginMeta.getVersion());
             placeholders.register("plugin-full", pluginMeta.getName() + " " + pluginMeta.getVersion());
-        } catch (Exception e) {
+        } catch (Exception | LinkageError e) {
             placeholders.register("plugin-name", this.plugin.getDescription().getName());
             placeholders.register("plugin-version", this.plugin.getDescription().getVersion());
             placeholders.register("plugin-full", this.plugin.getDescription().getFullName());
