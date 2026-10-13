@@ -1057,6 +1057,11 @@ public abstract class MessageFormatter<T extends Plugin, V> {
      * @return a resolved collection of command senders
      */
     protected @NotNull Collection<? extends CommandSender> resolveRecipients(boolean broadcast, boolean sendToConsole, boolean excludeSenders, @NotNull Collection<? extends CommandSender> initialSenders) {
+        // A plain send goes to the given recipients: no copy unless duplicates have to be removed.
+        if (!broadcast && !sendToConsole && !excludeSenders
+                && (initialSenders.size() <= 1 || initialSenders instanceof Set)) {
+            return initialSenders;
+        }
         Set<CommandSender> resolved = new HashSet<>();
 
         if (broadcast) {

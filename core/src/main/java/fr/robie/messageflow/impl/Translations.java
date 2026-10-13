@@ -33,6 +33,7 @@ final class Translations implements MessageLocalizer {
     private final Map<String, Map<String, List<MessageTypeAdapter>>> byLanguage;
     private final Map<String, Message> messages;
     private final Map<String, String> resolved = new ConcurrentHashMap<>();
+    private final Map<Locale, String> resolvedLocales = new ConcurrentHashMap<>();
 
     /**
      * @param defaultLanguage the default language, whose text is in each message's {@link Message#loaded()}
@@ -58,12 +59,23 @@ final class Translations implements MessageLocalizer {
         if (!(viewer instanceof Player player)) {
             return this.defaultLanguage;
         }
-        return this.resolve(PlatformType.hasComponent() ? player.locale().toString() : player.getLocale());
+        return PlatformType.hasComponent() ? this.language(player.locale()) : this.resolve(player.getLocale());
     }
 
+    /**
+     * Resolves a locale, cached by the {@link Locale} itself so a lookup doesn't build its string.
+     */
     @Override
     public @NotNull String language(@NotNull Locale locale) {
-        return this.resolve(locale.toString());
+        String cached = this.resolvedLocales.get(locale);
+        if (cached != null) {
+            return cached;
+        }
+        String language = this.resolve(locale.toString());
+        if (this.resolvedLocales.size() < MAX_CACHED_LOCALES) {
+            this.resolvedLocales.put(locale, language);
+        }
+        return language;
     }
 
     @Override
