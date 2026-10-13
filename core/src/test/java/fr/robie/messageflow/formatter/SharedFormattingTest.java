@@ -100,4 +100,15 @@ class SharedFormattingTest {
         assertEquals(this.players.size(), this.formats.get());
         this.players.forEach(player -> assertEquals("I am " + player.getName(), this.received(player)));
     }
+
+    @Test
+    @DisplayName("Modifiers work on local and global placeholders")
+    void modifiers() {
+        GlobalPlaceholderRegistry.getInstance().register("online", "3");
+        GlobalPlaceholderRegistry.getInstance().registerPlayer("me", Player::getName);
+        this.formatter.sendMessage(this.players, "<gold>%coins.comma% %online.plural:player:players% %name.upper% %me.upper%",
+                false, Placeholder.of("coins", "1500", "name", "steve"));
+
+        this.players.forEach(player -> assertEquals("1,500 players STEVE " + player.getName().toUpperCase(), this.received(player)));
+    }
 }

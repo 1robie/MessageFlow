@@ -122,7 +122,7 @@ public final class Placeholder {
 
         // Only the keys found in the message are evaluated, each once.
         Map<String, String> evaluated = new HashMap<>(4);
-        return PlaceholderScanner.replace(message, (key, start) -> {
+        Function<String, String> lookup = key -> {
             PlaceholderValue value = this.placeholders.get(key);
             if (value == null) {
                 return null;
@@ -131,10 +131,11 @@ public final class Placeholder {
                 try {
                     return value.evaluate(player);
                 } catch (Exception e) {
-                    return "%" + k + "%";
+                    return null;
                 }
             });
-        });
+        };
+        return PlaceholderScanner.replace(message, (key, start) -> PlaceholderModifiers.resolve(key, lookup));
     }
 
     /**
@@ -145,7 +146,10 @@ public final class Placeholder {
      */
     public boolean isPlayerDependent(@Nullable String text) {
         return this.hasPlayerValues && text != null
-                && PlaceholderScanner.anyKey(text, key -> this.placeholders.get(key) instanceof PlaceholderValue.PlayerValue);
+                && PlaceholderScanner.anyKey(text, key -> {
+            String base = PlaceholderModifiers.baseKey(key, this.placeholders::containsKey);
+            return base != null && this.placeholders.get(base) instanceof PlaceholderValue.PlayerValue;
+        });
     }
 
 

@@ -313,12 +313,12 @@ public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatte
         public @Nullable String resolve(@NotNull String key, int start) {
             this.tagDepth = tagDepth(this.message, this.scanned, start, this.tagDepth);
             this.scanned = start;
-            PlaceholderValue value = this.placeholders.get(key);
-            if (value == null) {
+            Component component = this.component(key);
+            if (component == null) {
                 return null;
             }
             if (this.tagDepth > 0) {
-                return stripTagBreaking(PLAIN_SERIALIZER.serialize(toComponent(key, value, this.player)));
+                return stripTagBreaking(PLAIN_SERIALIZER.serialize(component));
             }
             if (this.indexes == null) {
                 this.indexes = new HashMap<>(4);
@@ -328,9 +328,27 @@ public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatte
             if (index == null) {
                 index = this.values.size();
                 this.indexes.put(key, index);
-                this.values.add(toComponent(key, value, this.player));
+                this.values.add(component);
             }
             return "<" + PLACEHOLDER_TAG_PREFIX + index + ">";
+        }
+
+        /**
+         * The value of a token: its placeholder, or a placeholder with modifiers ({@code %price.comma%}).
+         */
+        private @Nullable Component component(@NotNull String key) {
+            PlaceholderValue value = this.placeholders.get(key);
+            if (value != null) {
+                return toComponent(key, value, this.player);
+            }
+            if (key.indexOf('.') < 0) {
+                return null;
+            }
+            String text = PlaceholderModifiers.resolve(key, k -> {
+                PlaceholderValue base = this.placeholders.get(k);
+                return base == null ? null : PLAIN_SERIALIZER.serialize(toComponent(k, base, this.player));
+            });
+            return text != null ? Component.text(text) : null;
         }
 
         /**

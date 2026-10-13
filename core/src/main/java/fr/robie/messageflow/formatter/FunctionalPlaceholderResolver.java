@@ -46,8 +46,8 @@ public final class FunctionalPlaceholderResolver implements TextResolver {
         if (this.globalPlaceholderRegistry.isEmpty()) {
             return text;
         }
-        return PlaceholderScanner.replace(text, (key, start) ->
-                this.globalPlaceholderRegistry.exists(key) ? this.evaluateGlobalPlaceholder(key, player) : null);
+        return PlaceholderScanner.replace(text, (key, start) -> PlaceholderModifiers.resolve(key,
+                k -> this.globalPlaceholderRegistry.exists(k) ? this.evaluateGlobalPlaceholder(k, player) : null));
     }
 
     private @NotNull String evaluateGlobalPlaceholder(@NotNull String key, @Nullable Player player) {

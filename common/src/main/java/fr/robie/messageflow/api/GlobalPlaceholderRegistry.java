@@ -4,6 +4,7 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import fr.robie.messageflow.configuration.ConfigurationManager;
 import fr.robie.messageflow.formatter.Placeholder;
+import fr.robie.messageflow.formatter.PlaceholderModifiers;
 import fr.robie.messageflow.logger.Logger;
 import fr.robie.messageflow.util.PlaceholderScanner;
 import org.bukkit.entity.Player;
@@ -281,7 +282,7 @@ public final class GlobalPlaceholderRegistry {
         if (this.registry.isEmpty()) {
             return false;
         }
-        return PlaceholderScanner.anyKey(text, this.registry::containsKey);
+        return PlaceholderScanner.anyKey(text, key -> PlaceholderModifiers.baseKey(key, this.registry::containsKey) != null);
     }
 
     /**
@@ -294,7 +295,10 @@ public final class GlobalPlaceholderRegistry {
         if (this.registry.isEmpty()) {
             return false;
         }
-        return PlaceholderScanner.anyKey(text, key -> this.registry.get(key) instanceof PlaceholderValue.PlayerValue);
+        return PlaceholderScanner.anyKey(text, key -> {
+            String base = PlaceholderModifiers.baseKey(key, this.registry::containsKey);
+            return base != null && this.registry.get(base) instanceof PlaceholderValue.PlayerValue;
+        });
     }
 
     private @NotNull String evaluateValue(@NotNull String key, @NotNull PlaceholderValue value, @Nullable Player player) throws Exception {
