@@ -54,6 +54,15 @@ class PlaceholderModifiersTest {
         assertEquals("%name.nope%", parse("%name.nope%", p));
         assertEquals("%name.int%", parse("%name.int%", p));
         assertEquals("%other.upper%", parse("%other.upper%", p));
+        assertEquals("%name.pad:100000%", parse("%name.pad:100000%", p), "a pad wider than 256 fails");
+    }
+
+    @Test
+    @DisplayName("A capitalized word after a dot belongs to the argument, not a modifier")
+    void argumentWithModifierName() {
+        Placeholder p = Placeholder.of("title", "");
+        assertEquals("Mr.Length", parse("%title.default:Mr.Length%", p));
+        assertEquals("MR.X", parse("%title.default:Mr.X.upper%", p));
     }
 
     @Test

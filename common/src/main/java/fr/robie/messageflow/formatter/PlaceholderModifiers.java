@@ -53,6 +53,10 @@ public final class PlaceholderModifiers {
     }
 
     private static final String[] NO_ARGS = new String[0];
+    /**
+     * The widest {@code pad:n}: a wider one fails (the token is kept), so a value can't build a huge string.
+     */
+    private static final int MAX_PAD = 256;
     private static final Map<String, Modifier> MODIFIERS = new ConcurrentHashMap<>();
 
     static {
@@ -81,6 +85,9 @@ public final class PlaceholderModifiers {
         });
         register("pad", (v, a) -> {
             int width = Integer.parseInt(a[0]);
+            if (width > MAX_PAD) {
+                throw new IllegalArgumentException("pad width over " + MAX_PAD + ": " + width);
+            }
             return "0".repeat(Math.max(0, width - v.length())) + v;
         });
 
@@ -223,9 +230,14 @@ public final class PlaceholderModifiers {
         return current;
     }
 
+    /**
+     * Whether a segment after a dot starts a new modifier, or continues the previous one's argument. Only an exact,
+     * lower-case modifier name starts one, so {@code default:Mr.Length} keeps {@code Mr.Length} as its argument.
+     */
     private static boolean isModifier(@NotNull String segment) {
         int colon = segment.indexOf(':');
-        return get(colon < 0 ? segment : segment.substring(0, colon)) != null;
+        String name = colon < 0 ? segment : segment.substring(0, colon);
+        return name.equals(name.toLowerCase(Locale.ROOT)) && get(name) != null;
     }
 
     private static @NotNull List<String> split(@NotNull String text, char separator) {
