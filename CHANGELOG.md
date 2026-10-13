@@ -4,6 +4,15 @@
 
 ## Releases:
 
+### 1.1.1
+- **Runs on Paper and Folia 1.20.6** (1.1.0 did not): the template cache no longer names `VirtualComponent` (not in Adventure 4.17, `NoClassDefFoundError` on the first message with placeholders), and `Bukkit.isGlobalTickThread()` (not in Folia 1.20.6) is looked up at runtime.
+- Custom `TextResolver`s are formatted for each player by default (`isPlayerDependent` is true unless overridden): a resolver with its own syntax was formatted once with no player and shared.
+- An unknown `%key%` keeps its closing `%`, as in 1.0.0: `%vault_eco_balance%coins%` no longer loses its PlaceholderAPI token to a local `coins`.
+- Texts changed by global placeholders or PlaceholderAPI (or with a value inside a tag) are cached apart (256 entries, one minute), so texts that change every time can't push the plugin's messages out of the template cache.
+- A value inside a tag argument also loses `%`, `&` and `§`: it isn't resolved again by global placeholders or PlaceholderAPI, nor read as a color.
+- Modifier arguments keep capitalized words (`default:Mr.Length`); `pad:n` over 256 fails and keeps the token.
+- Marker characters (U+FDD0, U+FDD1) are removed from resolver output.
+
 ### 1.1.0
 - `TextResolver#isPlayerDependent` is true by default: a resolver with its own syntax (`{player}`) or one that only applies with a player is formatted for each player. The PlaceholderAPI resolver overrides it.
 - **Faster sending.** A message sent to many players is formatted once, unless it uses a player-specific placeholder (local or global) or PlaceholderAPI: the global placeholder resolver is always registered, so every send used to be formatted once per recipient. Messages with placeholders are parsed once and reused (about 5x faster), and so are messages with only global placeholders (about 9x). Placeholders and colors are replaced in a single pass instead of regular expressions (color conversion about 30x faster), and `Placeholder.parse` only evaluates the values the text uses.
