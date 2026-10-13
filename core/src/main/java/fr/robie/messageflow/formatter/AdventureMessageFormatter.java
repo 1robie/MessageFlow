@@ -7,7 +7,15 @@ import fr.robie.messageflow.model.*;
 import fr.robie.messageflow.util.PlaceholderScanner;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.bossbar.BossBar;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+import fr.robie.messageflow.configuration.ConfigurationManager;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.TextComponent;
+import net.kyori.adventure.text.VirtualComponent;
+import net.kyori.adventure.text.minimessage.Context;
+import net.kyori.adventure.text.minimessage.tag.Tag;
+import net.kyori.adventure.text.minimessage.tag.resolver.ArgumentQueue;
 import net.kyori.adventure.text.JoinConfiguration;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
@@ -46,14 +54,62 @@ public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatte
             LegacyComponentSerializer.legacyAmpersand();
 
 
+    /**
+     * Messages with placeholders, parsed once with a marker where each placeholder goes.
+     */
+    private final Cache<String, Template> templates;
+
     public AdventureMessageFormatter(@NotNull T plugin) {
         super(plugin);
+        this.templates = CacheBuilder.newBuilder()
+                .maximumSize(ConfigurationManager.Setting.MESSAGE_CACHE_MAX_SIZE.<Long>getValue())
+                .build();
     }
 
     /**
      * Placeholders become these tags before parsing, so their values are never read as MiniMessage.
      */
     private static final String PLACEHOLDER_TAG_PREFIX = "mfph_";
+
+    /**
+     * A placeholder tag parses to a text made of these noncharacters around its number, swapped for the value
+     * after parsing. Noncharacters never appear in real text.
+     */
+    private static final char MARKER_START = '\uFDD0';
+    private static final char MARKER_END = '\uFDD1';
+
+    private static final TagResolver MARKERS = new TagResolver() {
+        @Override
+        public @Nullable Tag resolve(@NotNull String name, @NotNull ArgumentQueue arguments, @NotNull Context ctx) {
+            int index = tagIndex(name);
+            return index < 0 ? null : Tag.selfClosingInserting(Component.text(MARKER_START + String.valueOf(index) + MARKER_END));
+        }
+
+        @Override
+        public boolean has(@NotNull String name) {
+            return tagIndex(name) >= 0;
+        }
+    };
+
+    /**
+     * Parses templates: placeholder tags become markers. Like {@link #MINI_MESSAGE}, each parse (the message, and
+     * the text of a hover or a tag argument) is compacted, except one with markers: compacting could merge a
+     * marker with its neighbors, so it is compacted once the values are in.
+     */
+    private static final MiniMessage TEMPLATE_MINI_MESSAGE = MiniMessage.builder()
+            .tags(TagResolver.builder().resolver(StandardTags.defaults()).resolver(MARKERS).build())
+            .postProcessor(component -> hasMarker(component) ? component : component.compact())
+            .build();
+
+    /**
+     * A parsed message with placeholder markers.
+     *
+     * @param component the parsed message, or null when its markers did not survive parsing (a tag such as
+     *                  {@code <gradient>} restyles what it wraps): such a message is parsed with its values
+     * @param markers   whether the message has markers to swap
+     */
+    private record Template(@Nullable Component component, boolean markers) {
+    }
     private static final PlainTextComponentSerializer PLAIN_SERIALIZER = PlainTextComponentSerializer.plainText();
 
     @Override
@@ -82,7 +138,157 @@ public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatte
         PlaceholderTags tags = new PlaceholderTags(message, player, placeholders);
         String text = PlaceholderScanner.replace(message, tags);
         text = this.applyResolvers(text, player, placeholders);
-        return MINI_MESSAGE.deserialize(colorMiniMessage(text), tags.build());
+        List<Component> values = tags.values();
+
+        Template template = this.templates.getIfPresent(text);
+        if (template == null) {
+            template = parseTemplate(text);
+            this.templates.put(text, template);
+        }
+        if (template.component() == null) {
+            TagResolver.Builder resolvers = TagResolver.builder();
+            for (int i = 0; i < values.size(); i++) {
+                resolvers.resolver(net.kyori.adventure.text.minimessage.tag.resolver.Placeholder.component(PLACEHOLDER_TAG_PREFIX + i, values.get(i)));
+            }
+            return MINI_MESSAGE.deserialize(colorMiniMessage(text), resolvers.build());
+        }
+        if (!template.markers()) {
+            return template.component();
+        }
+        return insert(template.component(), values).compact();
+    }
+
+    @Override
+    public void clearCache() {
+        super.clearCache();
+        this.templates.invalidateAll();
+    }
+
+    private static @NotNull Template parseTemplate(@NotNull String text) {
+        Component parsed = TEMPLATE_MINI_MESSAGE.deserialize(colorMiniMessage(text));
+        int expected = countTags(text);
+        int found = countMarkers(parsed);
+        if (expected == 0 && found <= 0) {
+            return new Template(parsed, false);
+        }
+        return found == expected ? new Template(parsed, true) : new Template(null, true);
+    }
+
+    /**
+     * Counts the {@code <mfph_N>} tags of a text.
+     */
+    private static int countTags(@NotNull String text) {
+        int count = 0;
+        int from = 0;
+        while ((from = text.indexOf("<" + PLACEHOLDER_TAG_PREFIX, from)) >= 0) {
+            int close = text.indexOf('>', from);
+            if (close < 0) {
+                break;
+            }
+            if (tagIndex(text.substring(from + 1, close)) >= 0) {
+                count++;
+            }
+            from = close;
+        }
+        return count;
+    }
+
+    private static boolean hasMarker(@NotNull Component component) {
+        if (markerIndex(component) >= 0) {
+            return true;
+        }
+        for (Component child : component.children()) {
+            if (hasMarker(child)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Counts the intact markers in the children of a parsed message, or -1 when it has a virtual component
+     * ({@code <gradient>}, {@code <rainbow>}...): it keeps its own copy of what it wraps, where a marker could not
+     * be swapped. A marker in a hover or a tag argument isn't counted, so that message isn't cached.
+     */
+    private static int countMarkers(@NotNull Component component) {
+        if (component instanceof VirtualComponent) {
+            return -1;
+        }
+        if (markerIndex(component) >= 0) {
+            return 1;
+        }
+        int count = 0;
+        for (Component child : component.children()) {
+            int markers = countMarkers(child);
+            if (markers < 0) {
+                return -1;
+            }
+            count += markers;
+        }
+        return count;
+    }
+
+    /**
+     * Swaps each marker for its value.
+     */
+    private static @NotNull Component insert(@NotNull Component component, @NotNull List<Component> values) {
+        int index = markerIndex(component);
+        if (index >= 0) {
+            return index < values.size() ? values.get(index) : Component.text("<" + PLACEHOLDER_TAG_PREFIX + index + ">");
+        }
+        List<Component> children = component.children();
+        List<Component> replaced = null;
+        for (int i = 0; i < children.size(); i++) {
+            Component child = children.get(i);
+            Component inserted = insert(child, values);
+            if (inserted != child) {
+                if (replaced == null) {
+                    replaced = new ArrayList<>(children);
+                }
+                replaced.set(i, inserted);
+            }
+        }
+        return replaced != null ? component.children(replaced) : component;
+    }
+
+    /**
+     * The number of a marker component, or -1.
+     */
+    private static int markerIndex(@NotNull Component component) {
+        if (!(component instanceof TextComponent text) || !component.children().isEmpty() || !component.style().isEmpty()) {
+            return -1;
+        }
+        String content = text.content();
+        int length = content.length();
+        if (length < 3 || content.charAt(0) != MARKER_START || content.charAt(length - 1) != MARKER_END) {
+            return -1;
+        }
+        return parseIndex(content, 1, length - 1);
+    }
+
+    /**
+     * The number of a {@code mfph_N} tag name, or -1.
+     */
+    private static int tagIndex(@NotNull String name) {
+        if (!name.startsWith(PLACEHOLDER_TAG_PREFIX)) {
+            return -1;
+        }
+        return parseIndex(name, PLACEHOLDER_TAG_PREFIX.length(), name.length());
+    }
+
+    private static int parseIndex(@NotNull String s, int from, int to) {
+        if (from >= to || to - from > 6) {
+            return -1;
+        }
+        int value = 0;
+        for (int i = from; i < to; i++) {
+            char c = s.charAt(i);
+            if (c < '0' || c > '9') {
+                return -1;
+            }
+            value = value * 10 + (c - '0');
+        }
+        return value;
     }
 
     /**
@@ -92,8 +298,8 @@ public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatte
         private final String message;
         private final Player player;
         private final Placeholder placeholders;
-        private final TagResolver.Builder tags = TagResolver.builder();
-        private Map<String, String> tagNames;
+        private Map<String, Integer> indexes;
+        private List<Component> values;
         private int tagDepth;
         private int scanned;
 
@@ -114,20 +320,24 @@ public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatte
             if (this.tagDepth > 0) {
                 return stripTagBreaking(PLAIN_SERIALIZER.serialize(toComponent(key, value, this.player)));
             }
-            if (this.tagNames == null) {
-                this.tagNames = new HashMap<>(4);
+            if (this.indexes == null) {
+                this.indexes = new HashMap<>(4);
+                this.values = new ArrayList<>(4);
             }
-            String tagName = this.tagNames.get(key);
-            if (tagName == null) {
-                tagName = PLACEHOLDER_TAG_PREFIX + this.tagNames.size();
-                this.tagNames.put(key, tagName);
-                this.tags.resolver(net.kyori.adventure.text.minimessage.tag.resolver.Placeholder.component(tagName, toComponent(key, value, this.player)));
+            Integer index = this.indexes.get(key);
+            if (index == null) {
+                index = this.values.size();
+                this.indexes.put(key, index);
+                this.values.add(toComponent(key, value, this.player));
             }
-            return "<" + tagName + ">";
+            return "<" + PLACEHOLDER_TAG_PREFIX + index + ">";
         }
 
-        @NotNull TagResolver build() {
-            return this.tags.build();
+        /**
+         * The values of the {@code <mfph_N>} tags, by number.
+         */
+        @NotNull List<Component> values() {
+            return this.values != null ? this.values : List.of();
         }
     }
 
