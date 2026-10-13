@@ -131,10 +131,11 @@ public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatte
         if (message == null) {
             return this.empty();
         }
-        if (placeholders.isEmpty()) {
-            return super.format(message, player, placeholders);
+        if (placeholders.isEmpty() && (this.textResolverRegistry == null || !this.textResolverRegistry.canResolve(message, player, placeholders))) {
+            return this.cache.getUnchecked(message);
         }
 
+        // Global placeholders and PlaceholderAPI values usually repeat: the resolved text is cached like the rest.
         PlaceholderTags tags = new PlaceholderTags(message, player, placeholders);
         String text = PlaceholderScanner.replace(message, tags);
         text = this.applyResolvers(text, player, placeholders);
