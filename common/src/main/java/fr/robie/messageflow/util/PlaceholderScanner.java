@@ -50,7 +50,10 @@ public final class PlaceholderScanner {
             }
             String replacement = end > i + 1 ? resolver.resolve(input.substring(i + 1, end), i) : null;
             if (replacement == null) {
-                i = end;
+                i = next(input, i, end);
+                if (i < 0) {
+                    break;
+                }
                 continue;
             }
             if (out == null) {
@@ -86,8 +89,25 @@ public final class PlaceholderScanner {
             if (end > i + 1 && test.test(input.substring(i + 1, end))) {
                 return true;
             }
-            i = end;
+            i = next(input, i, end);
         }
         return false;
+    }
+
+    /**
+     * Where to look for the next token after an unresolved one. A token that looks like a key ({@code %a_b%}, no
+     * space) keeps its closing {@code %}, so {@code %vault_eco_balance%coins%} leaves that token whole for
+     * PlaceholderAPI. Otherwise ({@code 100% sure %player%}) its closing {@code %} may open the next token.
+     *
+     * @param input the text
+     * @param start the opening {@code %} of the unresolved token
+     * @param end   its closing {@code %}
+     * @return the next opening {@code %}, or -1
+     */
+    private static int next(@NotNull String input, int start, int end) {
+        if (end > start + 1 && input.lastIndexOf(' ', end) < start) {
+            return input.indexOf('%', end + 1);
+        }
+        return end;
     }
 }

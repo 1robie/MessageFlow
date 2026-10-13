@@ -25,6 +25,8 @@ class PlaceholderScannerTest {
         assertEquals("1%", replace("%a%%"));
         assertEquals("100% sure Steve", replace("100% sure %player%"));
         assertEquals("%% %", replace("%% %"));
+        assertEquals("%vault_eco_balance%a%", replace("%vault_eco_balance%a%"), "an unknown key keeps its closing %");
+        assertEquals("50% of 1", replace("50% of %a%"));
         assertEquals("", replace(""));
     }
 
@@ -43,7 +45,7 @@ class PlaceholderScannerTest {
             starts.add(start);
             return null;
         });
-        assertEquals(List.of(1, 3, 5), starts);
+        assertEquals(List.of(1, 5), starts, "the % closing an unknown key does not open a token");
     }
 
     @Test
@@ -52,5 +54,6 @@ class PlaceholderScannerTest {
         assertTrue(PlaceholderScanner.anyKey("50% off %player%", VALUES::containsKey));
         assertFalse(PlaceholderScanner.anyKey("50% off %nobody%", VALUES::containsKey));
         assertFalse(PlaceholderScanner.anyKey("no tokens", VALUES::containsKey));
+        assertFalse(PlaceholderScanner.anyKey("%unknown%a%", VALUES::containsKey), "a closing % is not reused");
     }
 }
