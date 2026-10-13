@@ -12,7 +12,6 @@ import com.google.common.cache.CacheBuilder;
 import fr.robie.messageflow.configuration.ConfigurationManager;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
-import net.kyori.adventure.text.VirtualComponent;
 import net.kyori.adventure.text.minimessage.Context;
 import net.kyori.adventure.text.minimessage.tag.Tag;
 import net.kyori.adventure.text.minimessage.tag.resolver.ArgumentQueue;
@@ -111,6 +110,20 @@ public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatte
     private record Template(@Nullable Component component, boolean markers) {
     }
     private static final PlainTextComponentSerializer PLAIN_SERIALIZER = PlainTextComponentSerializer.plainText();
+
+    /**
+     * {@code VirtualComponent}, or null in an Adventure without it (4.17, Paper 1.20.6): naming the class directly
+     * would throw {@code NoClassDefFoundError} there. Without the class there are no virtual components.
+     */
+    private static final @Nullable Class<?> VIRTUAL_COMPONENT = findClass("net.kyori.adventure.text.VirtualComponent");
+
+    private static @Nullable Class<?> findClass(@NotNull String name) {
+        try {
+            return Class.forName(name, false, Component.class.getClassLoader());
+        } catch (ClassNotFoundException | LinkageError e) {
+            return null;
+        }
+    }
 
     @Override
     protected Component load(@NotNull String message) {
@@ -212,7 +225,7 @@ public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatte
      * be swapped. A marker in a hover or a tag argument isn't counted, so that message isn't cached.
      */
     private static int countMarkers(@NotNull Component component) {
-        if (component instanceof VirtualComponent) {
+        if (VIRTUAL_COMPONENT != null && VIRTUAL_COMPONENT.isInstance(component)) {
             return -1;
         }
         if (markerIndex(component) >= 0) {

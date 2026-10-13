@@ -4,21 +4,51 @@ import org.bukkit.Bukkit;
 import org.bukkit.entity.Entity;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 
 /**
  * Folia's schedulers. Only loaded on Folia, so its API is never touched on other servers.
  */
 final class FoliaTasks {
 
+    /**
+     * {@code Bukkit.isGlobalTickThread()}, or null on Folia builds older than it (1.20.6): calling it directly
+     * would throw {@code NoSuchMethodError} there.
+     */
+    private static final @Nullable MethodHandle IS_GLOBAL_TICK_THREAD = findIsGlobalTickThread();
+
     private FoliaTasks() {
+    }
+
+    private static @Nullable MethodHandle findIsGlobalTickThread() {
+        try {
+            return MethodHandles.publicLookup().findStatic(Bukkit.class, "isGlobalTickThread", MethodType.methodType(boolean.class));
+        } catch (NoSuchMethodException | IllegalAccessException e) {
+            return null;
+        }
     }
 
     static boolean isOwner(@NotNull Entity entity) {
         return Bukkit.isOwnedByCurrentRegion(entity);
     }
 
+    /**
+     * Checks if the current thread is the global region's. Where Folia can't tell, says no: the task is then
+     * scheduled on the global region, which is always safe, one tick later.
+     */
     static boolean isGlobalThread() {
-        return Bukkit.isGlobalTickThread();
+        if (IS_GLOBAL_TICK_THREAD == null) {
+            return false;
+        }
+        try {
+            return (boolean) IS_GLOBAL_TICK_THREAD.invokeExact();
+        } catch (Throwable throwable) {
+            return false;
+        }
     }
 
     static void run(@NotNull Plugin plugin, @NotNull Object target, @NotNull Runnable task) {
