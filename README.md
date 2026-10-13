@@ -306,6 +306,21 @@ Placeholder placeholders = Placeholder.of("player", player.getName());
 formatter.sendMessage(MyMessages.WELCOME, player, placeholders); // Sends "Welcome to the server, PlayerName!" to the player
 ```
 
+Placeholder values are inserted as plain text: tags or color codes inside a value are shown as typed, so a
+player name can't inject `<click:...>`. To insert a styled value, pass a component:
+
+```java
+formatter.sendMessage(MyMessages.WELCOME, player, Placeholder.of("player", player.displayName()));
+```
+
+### Formatting without sending
+
+```java
+// One Component (text lines joined by line breaks), or one per line (for item lore)
+Component text = messageManager.adventure().formatMessage(MyMessages.WELCOME, player, placeholders);
+List<Component> lore = messageManager.adventure().formatLines(MyMessages.WELCOME, player, placeholders);
+```
+
 ### 4. Global Placeholders
 
 Register placeholders that can be used in **any** message across the plugin.

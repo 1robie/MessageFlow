@@ -9,6 +9,8 @@ import fr.robie.messageflow.api.MessageTypeAdapter;
 import fr.robie.messageflow.configuration.ConfigurationManager;
 import fr.robie.messageflow.logger.Logger;
 import fr.robie.messageflow.model.Message;
+import fr.robie.messageflow.model.MessageType;
+import fr.robie.messageflow.model.SimpleMessage;
 import fr.robie.messageflow.model.SoundMessage;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
@@ -238,13 +240,85 @@ public abstract class MessageFormatter<T extends Plugin, V> {
         if (message == null) {
             return this.empty();
         }
-        if (placeholders.isEmpty() && !this.textResolverRegistry.canResolve(message, player, placeholders)) {
+        if (placeholders.isEmpty() && (this.textResolverRegistry == null || !this.textResolverRegistry.canResolve(message, player, placeholders))) {
             return this.cache.getUnchecked(message);
         }
-        String parsedText = placeholders.parse(message);
+        String parsedText = placeholders.parse(message, player);
         parsedText = this.applyResolvers(parsedText, player, placeholders);
         return this.load(parsedText);
     }
+
+    /**
+     * Formats every text line of a message (chat, action bar, broadcast and no-prefix lines, in order) without
+     * sending it, for item lore, menus or any API that takes a formatted value. Titles, boss bars and sounds are
+     * skipped, and the prefix is not added.
+     *
+     * @param message      the message definition (its loaded lines, or its defaults if none are loaded)
+     * @param viewer       the player the text is for (player placeholders, PlaceholderAPI), or null
+     * @param placeholders the placeholders to apply
+     * @return the formatted lines, possibly empty
+     */
+    public @NotNull List<V> formatLines(@NotNull Message message, @Nullable Player viewer, @NotNull Placeholder placeholders) {
+        Preconditions.checkNotNull(message, "Message cannot be null");
+        List<? extends MessageTypeAdapter> adapters = message.loaded().isEmpty() ? message.defaults() : message.loaded();
+        List<V> lines = new ArrayList<>();
+        for (MessageTypeAdapter adapter : adapters) {
+            if (adapter instanceof SimpleMessage simple && simple.messageType() != MessageType.NONE) {
+                for (String line : simple.messages()) {
+                    lines.add(this.format(line, viewer, placeholders));
+                }
+            }
+        }
+        return lines;
+    }
+
+    /**
+     * Formats the text lines of a message, without player context.
+     *
+     * @see #formatLines(Message, Player, Placeholder)
+     */
+    public @NotNull List<V> formatLines(@NotNull Message message, @NotNull Placeholder placeholders) {
+        return this.formatLines(message, null, placeholders);
+    }
+
+    /**
+     * Formats a message as one value, its text lines joined by line breaks.
+     *
+     * @param message      the message definition
+     * @param viewer       the player the text is for, or null
+     * @param placeholders the placeholders to apply
+     * @return the formatted message, empty if it has no text line
+     * @see #formatLines(Message, Player, Placeholder)
+     */
+    public @NotNull V formatMessage(@NotNull Message message, @Nullable Player viewer, @NotNull Placeholder placeholders) {
+        return this.join(this.formatLines(message, viewer, placeholders));
+    }
+
+    /**
+     * Formats a message as one value, without player context.
+     *
+     * @see #formatMessage(Message, Player, Placeholder)
+     */
+    public @NotNull V formatMessage(@NotNull Message message, @NotNull Placeholder placeholders) {
+        return this.formatMessage(message, null, placeholders);
+    }
+
+    /**
+     * Formats a message as one value, without player context or placeholders.
+     *
+     * @see #formatMessage(Message, Player, Placeholder)
+     */
+    public @NotNull V formatMessage(@NotNull Message message) {
+        return this.formatMessage(message, null, Placeholder.empty());
+    }
+
+    /**
+     * Joins formatted lines with line breaks.
+     *
+     * @param lines the formatted lines
+     * @return one formatted value
+     */
+    protected abstract @NotNull V join(@NotNull List<V> lines);
 
     /**
      * Converts a raw message string into a legacy colored string using the section symbol (§).

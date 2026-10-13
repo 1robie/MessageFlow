@@ -3,7 +3,6 @@ package fr.robie.messageflow.impl;
 import fr.robie.messageflow.api.IMessageBuilder;
 import fr.robie.messageflow.api.IMessageManager;
 import fr.robie.messageflow.api.MessageTypeAdapter;
-import fr.robie.messageflow.api.PlaceholderValue;
 import fr.robie.messageflow.formatter.MessageFormatter;
 import fr.robie.messageflow.formatter.Placeholder;
 import fr.robie.messageflow.model.*;
@@ -100,15 +99,7 @@ public final class MessageBuilder implements IMessageBuilder {
 
     @Override
     public @NotNull IMessageBuilder placeholders(@NotNull Placeholder placeholders) {
-        placeholders.getMap().forEach((key, value) -> {
-            if (value instanceof PlaceholderValue.StaticValue(String value1)) {
-                this.placeholders.register(key, value1);
-            } else if (value instanceof PlaceholderValue.DynamicValue(Supplier<String> supplier)) {
-                this.placeholders.register(key, supplier);
-            } else if (value instanceof PlaceholderValue.PlayerValue(Function<Player, String> function)) {
-                this.placeholders.register(key, function);
-            }
-        });
+        this.placeholders.registerAll(placeholders);
         return this;
     }
 

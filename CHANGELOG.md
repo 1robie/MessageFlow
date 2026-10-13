@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- **Behaviour change (Adventure):** local placeholder values (`Placeholder.of(...)`) are inserted as plain text after the message is parsed. A value can no longer add MiniMessage tags or legacy color codes, so a player name or any typed text can't inject `<click:run_command:...>`. Pass a `Component` (`Placeholder.of(key, component)`) for a styled value. Inside a tag argument (`<click:run_command:'/tp %player%'>`) the value is still text, minus `< > ' " \`. Global placeholders and PlaceholderAPI are unchanged.
+- Local player placeholders (`Placeholder.of(key, Function<Player, String>)`) get the player the message is for. Before, they always resolved to `""`.
+- New: `MessageFormatter#formatLines(Message, Player, Placeholder)` and `#formatMessage(...)` format a message's text lines without sending them (item lore, menus, any API that takes a component). `MessageManager#adventure()` returns the formatter typed for `Component`.
+- New: `Placeholder.of(key, Component)`, `Placeholder.Builder#register(key, Component)`, `#registerAll(Placeholder)` and `Placeholder#get(key)`.
 - Runs on Paper 1.20.6: `SoundMessage` no longer calls `Sound#key()` (an interface method only since 1.21.3).
 - On servers without `getPluginMeta()` (Spigot) the logger prefix falls back to the plugin description instead of failing.
 - The published `message-flow` pom no longer declares `common` and `BOM`: their classes are already in the jar.

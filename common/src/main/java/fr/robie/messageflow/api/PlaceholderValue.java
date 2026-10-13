@@ -1,5 +1,7 @@
 package fr.robie.messageflow.api;
 
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -20,7 +22,7 @@ import java.util.function.Supplier;
  * <p>Usage is typically internal; use {@link fr.robie.messageflow.formatter.Placeholder}
  * or {@link GlobalPlaceholderRegistry} to create and manage placeholder values.
  */
-public sealed interface PlaceholderValue permits PlaceholderValue.StaticValue, PlaceholderValue.DynamicValue, PlaceholderValue.PlayerValue {
+public sealed interface PlaceholderValue permits PlaceholderValue.StaticValue, PlaceholderValue.DynamicValue, PlaceholderValue.PlayerValue, PlaceholderValue.ComponentValue {
 
     /**
      * Evaluates this placeholder value.
@@ -79,6 +81,22 @@ public sealed interface PlaceholderValue permits PlaceholderValue.StaticValue, P
             String result = this.function.apply(player);
             return result != null ? result : "";
         }
+    }
+
+    /**
+     * A ready-made component, inserted as is (Adventure only). On the legacy platform, and in
+     * {@code Placeholder#parse}, it is its legacy ({@code §}) text.
+     */
+    record ComponentValue(@NotNull Component component) implements PlaceholderValue {
+
+        @Override
+        public @NotNull String evaluate(@Nullable Player player) {
+            return LegacyComponentSerializer.legacySection().serialize(this.component);
+        }
+    }
+
+    static @NotNull PlaceholderValue ofComponent(@NotNull Component component) {
+        return new ComponentValue(component);
     }
 
     /**

@@ -192,6 +192,20 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
         return this.messageFormatter;
     }
 
+    /**
+     * Returns the formatter typed for Adventure, whose values are {@code Component}s.
+     *
+     * @return the Adventure formatter
+     * @throws IllegalStateException on a platform without Adventure (Spigot)
+     */
+    @SuppressWarnings("unchecked")
+    public @NotNull AdventureMessageFormatter<T> adventure() {
+        if (this.messageFormatter instanceof AdventureMessageFormatter<?> adventure) {
+            return (AdventureMessageFormatter<T>) adventure;
+        }
+        throw new IllegalStateException("Adventure is not available on this platform");
+    }
+
     @Override
     public @NotNull LanguageConfiguration<E> languageConfiguration() {
         return this.languageConfiguration;

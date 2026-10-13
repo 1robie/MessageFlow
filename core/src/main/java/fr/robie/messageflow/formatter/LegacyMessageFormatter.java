@@ -61,6 +61,11 @@ public class LegacyMessageFormatter<T extends Plugin> extends MessageFormatter<T
     }
 
     @Override
+    protected @NotNull String join(@NotNull List<String> lines) {
+        return String.join("\n", lines);
+    }
+
+    @Override
     protected @NonNull String empty() {
         return "";
     }

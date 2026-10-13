@@ -1,15 +1,18 @@
 package fr.robie.messageflow.formatter;
 
 import fr.robie.messageflow.api.MessageTypeAdapter;
+import fr.robie.messageflow.api.PlaceholderValue;
 import fr.robie.messageflow.logger.Logger;
 import fr.robie.messageflow.model.*;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.JoinConfiguration;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import net.kyori.adventure.text.minimessage.tag.standard.StandardTags;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import net.kyori.adventure.title.Title;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
@@ -76,9 +79,102 @@ public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatte
         super(plugin);
     }
 
+    /**
+     * Placeholders become these tags before parsing, so their values are never read as MiniMessage.
+     */
+    private static final String PLACEHOLDER_TAG_PREFIX = "mfph_";
+    private static final Pattern TAG_BREAKING = Pattern.compile("[<>'\"\\\\]");
+    private static final PlainTextComponentSerializer PLAIN_SERIALIZER = PlainTextComponentSerializer.plainText();
+
     @Override
     protected Component load(@NotNull String message) {
         return MINI_MESSAGE.deserialize(colorMiniMessage(message));
+    }
+
+    /**
+     * Formats a message. Each local placeholder ({@code %key%} with a value in {@code placeholders}) is inserted
+     * as a component after parsing: a value is plain text (or the given component) and can't add tags such as
+     * {@code <click>}, colors or legacy codes. Player placeholders get {@code player}.
+     * <p>
+     * Inside a tag ({@code <click:run_command:'/tp %player%'>}) a placeholder is replaced by its text, without the
+     * characters that could end the tag or its quotes ({@code < > ' " \}). Global placeholders and PlaceholderAPI
+     * still return text that is parsed with the message.
+     */
+    @Override
+    public @NotNull Component format(@Nullable String message, @Nullable Player player, @NotNull Placeholder placeholders) {
+        if (message == null) {
+            return this.empty();
+        }
+        if (placeholders.isEmpty()) {
+            return super.format(message, player, placeholders);
+        }
+
+        TagResolver.Builder tags = TagResolver.builder();
+        Map<String, String> tagNames = new HashMap<>();
+        Matcher matcher = Placeholder.PLACEHOLDER_PATTERN.matcher(message);
+        StringBuilder sb = new StringBuilder();
+        int tagDepth = 0;
+        int scanned = 0;
+        while (matcher.find()) {
+            tagDepth = tagDepth(message, scanned, matcher.start(), tagDepth);
+            scanned = matcher.start();
+            String token = matcher.group();
+            String key = token.substring(1, token.length() - 1);
+            PlaceholderValue value = placeholders.get(key);
+            if (value == null) {
+                matcher.appendReplacement(sb, Matcher.quoteReplacement(token));
+                continue;
+            }
+            if (tagDepth > 0) {
+                String text = PLAIN_SERIALIZER.serialize(toComponent(token, value, player));
+                matcher.appendReplacement(sb, Matcher.quoteReplacement(TAG_BREAKING.matcher(text).replaceAll("")));
+                continue;
+            }
+            String tagName = tagNames.get(key);
+            if (tagName == null) {
+                tagName = PLACEHOLDER_TAG_PREFIX + tagNames.size();
+                tagNames.put(key, tagName);
+                tags.resolver(net.kyori.adventure.text.minimessage.tag.resolver.Placeholder.component(tagName, toComponent(token, value, player)));
+            }
+            matcher.appendReplacement(sb, Matcher.quoteReplacement("<" + tagName + ">"));
+        }
+        matcher.appendTail(sb);
+
+        String text = this.applyResolvers(sb.toString(), player, placeholders);
+        return MINI_MESSAGE.deserialize(colorMiniMessage(text), tags.build());
+    }
+
+    /**
+     * Follows {@code <} and {@code >} (not escaped by a backslash) from {@code from} to {@code to}.
+     */
+    private static int tagDepth(@NotNull String message, int from, int to, int depth) {
+        for (int i = from; i < to; i++) {
+            char c = message.charAt(i);
+            if (c == '\\') {
+                i++;
+            } else if (c == '<') {
+                depth++;
+            } else if (c == '>' && depth > 0) {
+                depth--;
+            }
+        }
+        return depth;
+    }
+
+    private static @NotNull Component toComponent(@NotNull String token, @NotNull PlaceholderValue value, @Nullable Player player) {
+        if (value instanceof PlaceholderValue.ComponentValue(Component component)) {
+            return component;
+        }
+        try {
+            return Component.text(value.evaluate(player));
+        } catch (Exception e) {
+            return Component.text(token);
+        }
+    }
+
+    @Override
+    protected @NotNull Component join(@NotNull List<Component> lines) {
+        return lines.size() == 1 ? lines.getFirst() : Component.join(JoinConfiguration.newlines(), lines);
     }
 
     @NotNull

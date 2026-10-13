@@ -1,6 +1,7 @@
 package fr.robie.messageflow.formatter;
 
 import fr.robie.messageflow.api.PlaceholderValue;
+import net.kyori.adventure.text.Component;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
@@ -83,6 +84,16 @@ public final class Placeholder {
      */
     public boolean isEmpty() {
         return this.placeholders.isEmpty();
+    }
+
+    /**
+     * Returns the value registered for a key.
+     *
+     * @param key the placeholder key, without the surrounding {@code %}
+     * @return the value, or null if none is registered
+     */
+    public @Nullable PlaceholderValue get(@NotNull String key) {
+        return this.placeholders.get(key);
     }
 
 
@@ -174,6 +185,17 @@ public final class Placeholder {
     }
 
     /**
+     * Creates a placeholder whose value is a component, inserted with its own style (Adventure only).
+     *
+     * @param key       the placeholder key
+     * @param component the component to insert
+     * @return a new Placeholder instance
+     */
+    public static @NotNull Placeholder of(@NotNull String key, @NotNull Component component) {
+        return new Placeholder(Map.of(key, PlaceholderValue.ofComponent(component)));
+    }
+
+    /**
      * Creates a Placeholder with multiple static key-value pairs.
      * Arguments must be provided in key-value order.
      *
@@ -242,6 +264,29 @@ public final class Placeholder {
          */
         public @NotNull Builder register(@NotNull String key, @NotNull Function<Player, String> function) {
             this.map.put(key, PlaceholderValue.ofPlayer(function));
+            return this;
+        }
+
+        /**
+         * Registers a component placeholder, inserted with its own style (Adventure only).
+         *
+         * @param key       the placeholder key
+         * @param component the component to insert
+         * @return this builder
+         */
+        public @NotNull Builder register(@NotNull String key, @NotNull Component component) {
+            this.map.put(key, PlaceholderValue.ofComponent(component));
+            return this;
+        }
+
+        /**
+         * Registers every placeholder of another set, replacing values with the same key.
+         *
+         * @param placeholders the placeholders to copy
+         * @return this builder
+         */
+        public @NotNull Builder registerAll(@NotNull Placeholder placeholders) {
+            this.map.putAll(placeholders.placeholders);
             return this;
         }
 
