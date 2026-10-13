@@ -364,6 +364,43 @@ public abstract class MessageFormatter<T extends Plugin, V> {
     }
 
     /**
+     * Formats a message string to plain text: placeholders and resolvers applied, colors and tags removed.
+     *
+     * @param message      the raw message string
+     * @param player       the player context, or null
+     * @param placeholders the placeholders to apply
+     * @return the plain text
+     */
+    public @NotNull String formatPlain(@Nullable String message, @Nullable Player player, @NotNull Placeholder placeholders) {
+        return this.plain(this.format(message, player, placeholders));
+    }
+
+    /**
+     * Formats the text lines of a message to plain text.
+     *
+     * @param message      the message definition
+     * @param viewer       the player the text is for, or null
+     * @param placeholders the placeholders to apply
+     * @return the plain lines
+     * @see #formatLines(Message, Player, Placeholder)
+     */
+    public @NotNull List<String> formatPlainLines(@NotNull Message message, @Nullable Player viewer, @NotNull Placeholder placeholders) {
+        List<String> lines = new ArrayList<>();
+        for (V line : this.formatLines(message, viewer, placeholders)) {
+            lines.add(this.plain(line));
+        }
+        return lines;
+    }
+
+    /**
+     * Converts a formatted value to plain text.
+     *
+     * @param formatted the formatted value
+     * @return its text without colors
+     */
+    protected abstract @NotNull String plain(@NotNull V formatted);
+
+    /**
      * Joins formatted lines with line breaks.
      *
      * @param lines the formatted lines

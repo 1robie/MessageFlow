@@ -12,11 +12,24 @@ import org.bukkit.Bukkit;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.List;
+import java.util.function.Supplier;
+import java.util.logging.Handler;
+import java.util.logging.Level;
+import java.util.logging.LogRecord;
+import java.util.logging.SimpleFormatter;
+
 /**
  * Abstract base class for logging within the MessageFlow framework.
  * <p>
  * Provides both static access for global logging and instance-based logging.
  * Implementation classes handle the actual message formatting and delivery.
+ * <p>
+ * A {@code MessageManager} creates the global logger: lines are formatted (prefix, colors, placeholders) and sent
+ * to the console, and lines with an exception go to the plugin's {@code java.util.logging} logger with the
+ * exception attached. Before a manager exists, or after it is closed, static calls go to a plain
+ * {@code java.util.logging} logger named {@code MessageFlow}; {@link #jul(java.util.logging.Logger)} makes such a
+ * logger for code that runs without a manager (unit tests).
  */
 @SuppressWarnings("unused")
 public abstract class Logger {
@@ -31,9 +44,14 @@ public abstract class Logger {
     protected final @NotNull String prefix;
 
     /**
-     * The formatter used to process log messages.
+     * The formatter used to process log messages; null for a {@link JulLogger}.
      */
-    protected final @NotNull MessageFormatter<?, ?> messageFormatter;
+    protected final @Nullable MessageFormatter<?, ?> messageFormatter;
+
+    /**
+     * Receives lines with an exception (all lines for a {@link JulLogger}).
+     */
+    protected final @NotNull java.util.logging.Logger jul;
 
     /**
      * Whether debug logging is enabled.
@@ -66,6 +84,8 @@ public abstract class Logger {
         Preconditions.checkNotNull(messageFormatter, "MessageFormatter cannot be null");
         this.prefix = prefix;
         this.messageFormatter = messageFormatter;
+        java.util.logging.Logger pluginLogger = messageFormatter.getPlugin().getLogger();
+        this.jul = pluginLogger != null ? pluginLogger : java.util.logging.Logger.getLogger("MessageFlow");
         synchronized (Logger.class) {
             Logger current = logger;
             if (current != null && current.messageFormatter.getPlugin() != messageFormatter.getPlugin()) {
@@ -78,8 +98,43 @@ public abstract class Logger {
     }
 
     /**
-     * Stops this logger from being the global one. Static logging calls are dropped until another logger is
-     * created. Does nothing if another logger already replaced this one.
+     * Constructs a logger that writes to {@code java.util.logging} only. It does not become the global logger.
+     *
+     * @param jul the logger to write to
+     */
+    protected Logger(@NotNull java.util.logging.Logger jul) {
+        Preconditions.checkNotNull(jul, "Logger cannot be null");
+        this.prefix = "";
+        this.messageFormatter = null;
+        this.jul = jul;
+    }
+
+    /**
+     * Creates a logger that writes plain lines (no colors or tags) to a {@code java.util.logging} logger, for code
+     * that runs without a {@code MessageManager}. It does not become the global logger.
+     *
+     * @param jul the logger to write to
+     * @return a new logger
+     */
+    public static @NotNull Logger jul(@NotNull java.util.logging.Logger jul) {
+        return new JulLogger(jul);
+    }
+
+    /**
+     * The global logger, or the {@code MessageFlow} JUL logger when no manager made one.
+     */
+    private static @NotNull Logger current() {
+        Logger current = logger;
+        return current != null ? current : Fallback.LOGGER;
+    }
+
+    private static final class Fallback {
+        private static final Logger LOGGER = new JulLogger(java.util.logging.Logger.getLogger("MessageFlow"));
+    }
+
+    /**
+     * Stops this logger from being the global one. Static logging calls go to the {@code MessageFlow} JUL logger
+     * until another logger is created. Does nothing if another logger already replaced this one.
      */
     public void close() {
         synchronized (Logger.class) {
@@ -107,9 +162,7 @@ public abstract class Logger {
      * @param placeholders formatting placeholders
      */
     public static void info(@Nullable String context, @NotNull String message, @NotNull Placeholder placeholders) {
-        if (logger != null) {
-            logger.log(context, LogType.INFO, message, placeholders);
-        }
+        current().log(context, LogType.INFO, message, placeholders);
     }
 
     /**
@@ -149,9 +202,7 @@ public abstract class Logger {
      * @param placeholders formatting placeholders
      */
     public static void info(@Nullable String context, @NotNull Message message, @NotNull Placeholder placeholders) {
-        if (logger != null) {
-            logger.log(context, LogType.INFO, message, placeholders);
-        }
+        current().log(context, LogType.INFO, message, placeholders);
     }
 
     /**
@@ -191,9 +242,7 @@ public abstract class Logger {
      * @param placeholders formatting placeholders
      */
     public static void warn(@Nullable String context, @NotNull String message, @NotNull Placeholder placeholders) {
-        if (logger != null) {
-            logger.log(context, LogType.WARNING, message, placeholders);
-        }
+        current().log(context, LogType.WARNING, message, placeholders);
     }
 
     /**
@@ -233,9 +282,7 @@ public abstract class Logger {
      * @param placeholders formatting placeholders
      */
     public static void warn(@Nullable String context, @NotNull Message message, @NotNull Placeholder placeholders) {
-        if (logger != null) {
-            logger.log(context, LogType.WARNING, message, placeholders);
-        }
+        current().log(context, LogType.WARNING, message, placeholders);
     }
 
     /**
@@ -275,9 +322,7 @@ public abstract class Logger {
      * @param placeholders formatting placeholders
      */
     public static void error(@Nullable String context, @NotNull String message, @NotNull Placeholder placeholders) {
-        if (logger != null) {
-            logger.log(context, LogType.ERROR, message, placeholders);
-        }
+        current().log(context, LogType.ERROR, message, placeholders);
     }
 
     /**
@@ -317,9 +362,7 @@ public abstract class Logger {
      * @param placeholders formatting placeholders
      */
     public static void error(@Nullable String context, @NotNull Message message, @NotNull Placeholder placeholders) {
-        if (logger != null) {
-            logger.log(context, LogType.ERROR, message, placeholders);
-        }
+        current().log(context, LogType.ERROR, message, placeholders);
     }
 
     /**
@@ -359,8 +402,9 @@ public abstract class Logger {
      * @param placeholders formatting placeholders
      */
     public static void debug(@Nullable String context, @NotNull String message, @NotNull Placeholder placeholders) {
-        if (logger != null && logger.debugEnabled) {
-            logger.log(context, LogType.DEBUG, message, placeholders);
+        Logger current = current();
+        if (current.debugEnabled) {
+            current.log(context, LogType.DEBUG, message, placeholders);
         }
     }
 
@@ -401,8 +445,9 @@ public abstract class Logger {
      * @param placeholders formatting placeholders
      */
     public static void debug(@Nullable String context, @NotNull Message message, @NotNull Placeholder placeholders) {
-        if (logger != null && logger.debugEnabled) {
-            logger.log(context, LogType.DEBUG, message, placeholders);
+        Logger current = current();
+        if (current.debugEnabled) {
+            current.log(context, LogType.DEBUG, message, placeholders);
         }
     }
 
@@ -445,8 +490,9 @@ public abstract class Logger {
      * @param placeholders formatting placeholders
      */
     public static void debug(@Nullable String context, @NotNull String message, @NotNull Throwable throwable, @NotNull Placeholder placeholders) {
-        if (logger != null && logger.debugEnabled) {
-            logger.log(context, LogType.DEBUG, throwable, message, placeholders);
+        Logger current = current();
+        if (current.debugEnabled) {
+            current.log(context, LogType.DEBUG, throwable, message, placeholders);
         }
     }
 
@@ -491,8 +537,9 @@ public abstract class Logger {
      * @param placeholders formatting placeholders
      */
     public static void debug(@Nullable String context, @NotNull Message message, @NotNull Throwable throwable, @NotNull Placeholder placeholders) {
-        if (logger != null && logger.debugEnabled) {
-            logger.log(context, LogType.DEBUG, throwable, message, placeholders);
+        Logger current = current();
+        if (current.debugEnabled) {
+            current.log(context, LogType.DEBUG, throwable, message, placeholders);
         }
     }
 
@@ -537,9 +584,7 @@ public abstract class Logger {
      * @param placeholders formatting placeholders
      */
     public static void warn(@Nullable String context, @NotNull String message, @NotNull Throwable throwable, @NotNull Placeholder placeholders) {
-        if (logger != null) {
-            logger.log(context, LogType.WARNING, throwable, message, placeholders);
-        }
+        current().log(context, LogType.WARNING, throwable, message, placeholders);
     }
 
     /**
@@ -583,9 +628,7 @@ public abstract class Logger {
      * @param placeholders formatting placeholders
      */
     public static void warn(@Nullable String context, @NotNull Message message, @NotNull Throwable throwable, @NotNull Placeholder placeholders) {
-        if (logger != null) {
-            logger.log(context, LogType.WARNING, throwable, message, placeholders);
-        }
+        current().log(context, LogType.WARNING, throwable, message, placeholders);
     }
 
     /**
@@ -629,9 +672,7 @@ public abstract class Logger {
      * @param placeholders formatting placeholders
      */
     public static void error(@Nullable String context, @NotNull String message, @NotNull Throwable throwable, @NotNull Placeholder placeholders) {
-        if (logger != null) {
-            logger.log(context, LogType.ERROR, throwable, message, placeholders);
-        }
+        current().log(context, LogType.ERROR, throwable, message, placeholders);
     }
 
     /**
@@ -675,9 +716,7 @@ public abstract class Logger {
      * @param placeholders formatting placeholders
      */
     public static void error(@Nullable String context, @NotNull Message message, @NotNull Throwable throwable, @NotNull Placeholder placeholders) {
-        if (logger != null) {
-            logger.log(context, LogType.ERROR, throwable, message, placeholders);
-        }
+        current().log(context, LogType.ERROR, throwable, message, placeholders);
     }
 
     /**
@@ -702,23 +741,39 @@ public abstract class Logger {
     }
 
     /**
+     * Logs a debug message using the global logger. The message is only built when debug is on.
+     *
+     * @param message builds the message to log
+     */
+    public static void debug(@NotNull Supplier<String> message) {
+        debug(null, message);
+    }
+
+    /**
+     * Logs a debug message using the global logger. The message is only built when debug is on.
+     *
+     * @param context the context to use
+     * @param message builds the message to log
+     */
+    public static void debug(@Nullable String context, @NotNull Supplier<String> message) {
+        current().logDebug(context, message);
+    }
+
+    /**
      * Sets whether debug mode is enabled for the global logger.
      *
      * @param enabled true to enable, false to disable
      */
     public static void setDebug(boolean enabled) {
-        if (logger != null) {
-            logger.setDebugEnabled(enabled);
-        }
+        current().setDebugEnabled(enabled);
     }
 
     /**
      * Toggles the debug mode for the global logger.
      */
     public static void toggleDebug() {
-        if (logger != null) {
-            logger.setDebugEnabled(!logger.isDebugEnabled());
-        }
+        Logger current = current();
+        current.setDebugEnabled(!current.isDebugEnabled());
     }
 
     /**
@@ -727,7 +782,7 @@ public abstract class Logger {
      * @return true if debug mode is enabled
      */
     public static boolean isDebug() {
-        return logger != null && logger.isDebugEnabled();
+        return current().isDebugEnabled();
     }
 
     /**
@@ -742,6 +797,29 @@ public abstract class Logger {
             return logger.prefixe(type);
         }
         return "[" + type.name() + "] ";
+    }
+
+    /**
+     * Logs a debug message using this logger instance. The message is only built when debug is on, and is a
+     * value: it is never parsed as tags.
+     *
+     * @param message builds the message to log
+     */
+    public void logDebug(@NotNull Supplier<String> message) {
+        this.logDebug(null, message);
+    }
+
+    /**
+     * Logs a debug message using this logger instance. The message is only built when debug is on, and is a
+     * value: it is never parsed as tags.
+     *
+     * @param context the context to use
+     * @param message builds the message to log
+     */
+    public void logDebug(@Nullable String context, @NotNull Supplier<String> message) {
+        if (this.debugEnabled) {
+            this.log(context, LogType.DEBUG, "%message%", Placeholder.of("message", message.get()));
+        }
     }
 
     /**
@@ -1347,7 +1425,7 @@ public abstract class Logger {
     protected void log(@Nullable String context, @NotNull LogType type, @NotNull String message, @NotNull Placeholder placeholders) {
         String fullPrefix = this.prefixe(type) + (context != null ? context + " " : "");
         String fullMessage = fullPrefix + message;
-        this.messageFormatter.sendMessage(Bukkit.getConsoleSender(), fullMessage, false, placeholders);
+        this.formatter().sendMessage(Bukkit.getConsoleSender(), fullMessage, false, placeholders);
     }
 
     /**
@@ -1360,9 +1438,8 @@ public abstract class Logger {
      * @param placeholders formatting placeholders
      */
     protected void log(@Nullable String context, @NotNull LogType type, @NotNull Throwable throwable, @NotNull String message, @NotNull Placeholder placeholders) {
-        String fullPrefix = this.prefixe(type) + (context != null ? context + " " : "");
-        String fullMessage = fullPrefix + message + "\n" + this.getErrorColor() + Throwables.getStackTraceAsString(throwable);
-        this.messageFormatter.sendMessage(Bukkit.getConsoleSender(), fullMessage, false, placeholders);
+        String line = (context != null ? context + " " : "") + message;
+        this.jul.log(level(type), this.formatter().formatPlain(line, null, placeholders), throwable);
     }
 
     /**
@@ -1379,7 +1456,7 @@ public abstract class Logger {
             if (adapter.messageType() == MessageType.TCHAT && adapter instanceof SimpleMessage sm) {
                 for (String msg : sm.messages()) {
                     String line = fullPrefix + msg;
-                    this.messageFormatter.sendMessageWithoutPrefix(Bukkit.getConsoleSender(), line, placeholders);
+                    this.formatter().sendMessageWithoutPrefix(Bukkit.getConsoleSender(), line, placeholders);
                 }
             }
         }
@@ -1395,9 +1472,82 @@ public abstract class Logger {
      * @param placeholders formatting placeholders
      */
     protected void log(@Nullable String context, @NotNull LogType type, @NotNull Throwable throwable, @NotNull Message message, @NotNull Placeholder placeholders) {
-        this.log(context, type, message, placeholders);
-        String stackTrace = "\n" + this.getErrorColor() + Throwables.getStackTraceAsString(throwable);
-        this.messageFormatter.sendMessageWithoutPrefix(Bukkit.getConsoleSender(), stackTrace);
+        List<String> lines = this.formatter().formatPlainLines(message, null, placeholders);
+        String text = (context != null ? context + " " : "") + String.join("\n", lines);
+        this.jul.log(level(type), text, throwable);
+    }
+
+    private @NotNull MessageFormatter<?, ?> formatter() {
+        MessageFormatter<?, ?> formatter = this.messageFormatter;
+        if (formatter == null) {
+            throw new IllegalStateException("This logger has no formatter");
+        }
+        return formatter;
+    }
+
+    /**
+     * The {@code java.util.logging} level of a log type. Debug lines are only logged when debug is on, so they
+     * use {@code INFO} to show with default handlers.
+     *
+     * @param type the log type
+     * @return the level
+     */
+    protected static @NotNull Level level(@NotNull LogType type) {
+        return switch (type) {
+            case ERROR -> Level.SEVERE;
+            case WARNING -> Level.WARNING;
+            case INFO, DEBUG -> Level.INFO;
+        };
+    }
+
+    /**
+     * Returns a {@code java.util.logging} logger whose records are written by this logger, for APIs that take one.
+     * {@code SEVERE} becomes an error, {@code WARNING} a warning, {@code INFO} an info line and lower levels debug
+     * lines (shown only when debug is on). The record text is a value, never parsed as tags.
+     *
+     * @return a new JUL logger that forwards here
+     */
+    public @NotNull java.util.logging.Logger toJul() {
+        java.util.logging.Logger view = java.util.logging.Logger.getAnonymousLogger();
+        view.setUseParentHandlers(false);
+        view.setLevel(Level.ALL);
+        view.addHandler(new ForwardingHandler(this));
+        return view;
+    }
+
+    private static final class ForwardingHandler extends Handler {
+        private static final SimpleFormatter TEXT = new SimpleFormatter();
+        private final Logger target;
+
+        private ForwardingHandler(@NotNull Logger target) {
+            this.target = target;
+        }
+
+        @Override
+        public void publish(@NotNull LogRecord record) {
+            int level = record.getLevel().intValue();
+            LogType type = level >= Level.SEVERE.intValue() ? LogType.ERROR
+                    : level >= Level.WARNING.intValue() ? LogType.WARNING
+                    : level >= Level.INFO.intValue() ? LogType.INFO
+                    : LogType.DEBUG;
+            if (type == LogType.DEBUG && !this.target.debugEnabled) {
+                return;
+            }
+            Placeholder text = Placeholder.of("message", TEXT.formatMessage(record));
+            if (record.getThrown() != null) {
+                this.target.log(null, type, record.getThrown(), "%message%", text);
+            } else {
+                this.target.log(null, type, "%message%", text);
+            }
+        }
+
+        @Override
+        public void flush() {
+        }
+
+        @Override
+        public void close() {
+        }
     }
 
     /**

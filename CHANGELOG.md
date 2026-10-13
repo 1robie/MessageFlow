@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- **Logger without a manager.** Static `Logger` calls made before a `MessageManager` exists (or after `close()`) go to a plain `java.util.logging` logger named `MessageFlow` instead of being dropped. `Logger.jul(java.util.logging.Logger)` makes such a logger for code that runs without a manager, such as unit tests: placeholders are replaced and tags removed.
+- **Exceptions** are logged through the plugin's `java.util.logging` logger with the exception attached to the record (log files and panels show a real stack trace), instead of a red stack trace in console text.
+- New: `Logger#toJul()`, a `java.util.logging.Logger` view that forwards to a MessageFlow logger, for APIs that require one. Record text is a value, never parsed as tags.
+- New: `Logger.debug(Supplier<String>)` and `Logger#logDebug(Supplier<String>)`: the message is only built when debug is on.
+- New: `MessageFormatter#formatPlain` and `#formatPlainLines`.
 - **Per-player languages.** `MessageManager#setPerPlayerLanguages(true)` loads every language file and sends each recipient the message in their client's language: the exact language (`fr_ca`), else the first registered language of the same language (`fr_*`), else the active language, which is the default language. The console uses the default language. A message missing from a language file falls back to the default language; missing keys are only added to the default language's file, and other language files are only created from bundled resources.
 - **Translator bridge.** `MessageManager#registerTranslator(keyPrefix)` renders `Component.translatable(key, args...)` server-side, in each receiver's language, for message keys starting with the prefix (argument `i` fills `%i%`). Works with the Adventure of Paper 1.20.6 (4.17) and of Paper 26 (5.x). `close()` removes it.
 - New: `MessageManager#message(key)`, `MessageFormatter#formatLines(List<MessageTypeAdapter>, Player, Placeholder)`, the `MessageLocalizer` interface (`MessageFormatter#setLocalizer`).

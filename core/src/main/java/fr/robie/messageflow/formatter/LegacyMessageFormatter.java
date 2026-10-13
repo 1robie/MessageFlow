@@ -62,6 +62,12 @@ public class LegacyMessageFormatter<T extends Plugin> extends MessageFormatter<T
     }
 
     @Override
+    protected @NotNull String plain(@NotNull String formatted) {
+        String stripped = org.bukkit.ChatColor.stripColor(formatted);
+        return stripped != null ? stripped : "";
+    }
+
+    @Override
     protected @NotNull String join(@NotNull List<String> lines) {
         return String.join("\n", lines);
     }

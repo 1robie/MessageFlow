@@ -316,7 +316,20 @@ Logger.LogType.DEBUG.setShowTypeName(true); // Show only for debug
 // 4. Instance-based logging
 Logger myLogger = Logger.getLogger();
 myLogger.logInfo("Local log message");
+
+// 5. Debug lines that are only built when debug is on
+Logger.debug("[tick]", () -> "Took " + nanos + " ns");
+
+// 6. Without a MessageManager (unit tests): plain lines to a java.util.logging logger
+Logger testLogger = Logger.jul(java.util.logging.Logger.getLogger("Test"));
+
+// 7. For an API that takes a java.util.logging.Logger
+someApi.load(path, myLogger.toJul());
 ```
+
+Exceptions go to the plugin's `java.util.logging` logger with the exception attached, so log files show a
+normal stack trace. Calls made before the `MessageManager` exists go to a `java.util.logging` logger named
+`MessageFlow`.
 
 ### 3. Sending Messages
 

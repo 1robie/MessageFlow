@@ -174,6 +174,11 @@ public class AdventureMessageFormatter<T extends Plugin> extends MessageFormatte
     }
 
     @Override
+    protected @NotNull String plain(@NotNull Component formatted) {
+        return PLAIN_SERIALIZER.serialize(formatted);
+    }
+
+    @Override
     protected @NotNull Component join(@NotNull List<Component> lines) {
         return lines.size() == 1 ? lines.getFirst() : Component.join(JoinConfiguration.newlines(), lines);
     }
