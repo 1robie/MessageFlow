@@ -285,6 +285,7 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
         this.formatter().clearCache();
         this.configurationManager.load();
         String defaultLanguage = normalize(this.languageConfiguration.getNormalizedLanguage(this.languageConfiguration.getActiveLanguage()));
+        Map<File, Synced> synced = new HashMap<>();
 
         for (LanguageEntry languageEntry : this.languageConfiguration.getLanguagesEntries()) {
             String lang = languageEntry.language();
@@ -302,11 +303,20 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
             }
 
             if (file.exists()) {
-                this.updateKeysIfNeeded(lang, relFile, file, writesDefaults);
+                synced.put(file, new Synced(this.updateKeysIfNeeded(lang, relFile, file, writesDefaults), writesDefaults));
             }
         }
 
-        this.loadLanguage(this.languageConfiguration.getActiveLanguage());
+        this.loadLanguage(this.languageConfiguration.getActiveLanguage(), synced);
+    }
+
+    /**
+     * A language file after its keys were synced, so a reload reads each file once.
+     *
+     * @param config       the file's content
+     * @param addedMissing whether missing keys were added
+     */
+    private record Synced(@NotNull YamlConfiguration config, boolean addedMissing) {
     }
 
     @Override
@@ -319,6 +329,10 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
 
     @Override
     public void loadLanguage(@NotNull E language) {
+        this.loadLanguage(language, new HashMap<>());
+    }
+
+    private void loadLanguage(@NotNull E language, @NotNull Map<File, Synced> synced) {
         Preconditions.checkNotNull(language, "language cannot be null");
 
         String lang = this.languageConfiguration.getNormalizedLanguage(language);
@@ -344,12 +358,16 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
         }
 
         if (file.exists()) {
-            this.updateKeysIfNeeded(lang, rel, file, true);
-            this.loadLanguageFileIntoMessages(file);
+            Synced known = synced.get(file);
+            YamlConfiguration config = known != null && known.addedMissing()
+                    ? known.config()
+                    : this.updateKeysIfNeeded(lang, rel, file, true);
+            synced.put(file, new Synced(config, true));
+            this.loadLanguageFileIntoMessages(config);
         }
 
         this.languageConfiguration.setActiveLanguage(language);
-        this.rebuildTranslations(normalize(lang));
+        this.rebuildTranslations(normalize(lang), synced);
     }
 
     /**
@@ -357,8 +375,9 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
      * {@link Translations} for the formatter.
      *
      * @param defaultLanguage the active language, now loaded into the messages
+     * @param synced          the language files already read
      */
-    private void rebuildTranslations(@NotNull String defaultLanguage) {
+    private void rebuildTranslations(@NotNull String defaultLanguage, @NotNull Map<File, Synced> synced) {
         Map<String, Message> byKey = new HashMap<>();
         for (Message m : this.messages.get()) {
             byKey.put(m.key(), m);
@@ -382,7 +401,8 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
             if (!file.exists()) {
                 continue;
             }
-            YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
+            Synced known = synced.get(file);
+            YamlConfiguration config = known != null ? known.config() : YamlConfiguration.loadConfiguration(file);
             Map<String, List<MessageTypeAdapter>> translated = new HashMap<>();
             for (Message m : this.messages.get()) {
                 Object raw = config.get(m.key());
@@ -481,10 +501,12 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
      * @param relPath the relative path to the language file
      * @param file    the language file to update
      * @param addMissing whether missing keys may be added (only to the default language with per-player languages)
+     * @return the file's content after the update
      */
-    private void updateKeysIfNeeded(@NotNull String lang, @NotNull String relPath, @NotNull File file, boolean addMissing) {
+    private @NotNull YamlConfiguration updateKeysIfNeeded(@NotNull String lang, @NotNull String relPath, @NotNull File file, boolean addMissing) {
         YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
-        YamlConfiguration bundled = this.loadBundledYaml(relPath);
+        YamlConfiguration bundled = null;
+        boolean bundledLoaded = false;
 
         boolean changed = false;
 
@@ -516,6 +538,10 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
                 if (config.contains(m.key())) {
                     continue;
                 }
+                if (!bundledLoaded) {
+                    bundled = this.loadBundledYaml(relPath);
+                    bundledLoaded = true;
+                }
                 Object fromBundled = bundled != null ? bundled.get(m.key()) : null;
                 config.set(m.key(), fromBundled != null ? fromBundled : toYamlValue(m.defaults()));
                 changed = true;
@@ -524,18 +550,19 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
 
         if (changed) {
             saveQuietly(config, file);
+            // Read it back so the values have the same types as a file loaded from disk.
+            return YamlConfiguration.loadConfiguration(file);
         }
+        return config;
     }
 
     /**
      * Loads a language file into all registered messages, parsing the YAML configuration
      * and populating the loaded state of each message.
      *
-     * @param file the language file to load
+     * @param config the language file's content
      */
-    private void loadLanguageFileIntoMessages(@NotNull File file) {
-        YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
-
+    private void loadLanguageFileIntoMessages(@NotNull YamlConfiguration config) {
         for (Message m : this.messages.get()) {
             Object raw = config.get(m.key());
             List<MessageTypeAdapter> adapters = raw == null ? null : this.parseMessage(m, raw, true);
@@ -669,7 +696,8 @@ public final class MessageManager<T extends Plugin, E> implements IMessageManage
     private static void saveQuietly(@NotNull YamlConfiguration config, @NotNull File file) {
         try {
             config.save(file);
-        } catch (IOException ignored) {
+        } catch (IOException exception) {
+            Logger.warn("Failed to save %file%", exception, Placeholder.of("file", file.getAbsolutePath()));
         }
     }
 

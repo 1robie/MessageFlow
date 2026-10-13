@@ -502,10 +502,10 @@ public abstract class MessageFormatter<T extends Plugin, V> {
             BiConsumer<A, B> hideAction,
             B bossbar
     ) {
-        this.plugin.getServer().getAsyncScheduler().runDelayed(this.plugin,
-                w -> players.forEach(player -> hideAction.accept(player, bossbar)),
-                durationTicks * 50L,
-                TimeUnit.MILLISECONDS
+        // On the main thread, like every other boss bar update.
+        this.plugin.getServer().getScheduler().runTaskLater(this.plugin,
+                () -> players.forEach(player -> hideAction.accept(player, bossbar)),
+                durationTicks
         );
     }
 
@@ -945,15 +945,17 @@ public abstract class MessageFormatter<T extends Plugin, V> {
             return;
         }
 
+        // Each recipient's language is looked up once, then reused by every language pass.
+        Map<CommandSender, String> languageOf = new HashMap<>();
         Set<String> languages = new LinkedHashSet<>();
         languages.add(localizer.defaultLanguage());
-        senders.forEach(sender -> languages.add(localizer.language(sender)));
+        senders.forEach(sender -> languages.add(languageOf.computeIfAbsent(sender, localizer::language)));
         if (message.loaded().stream().anyMatch(a -> a.broadcast() || a.messageType() == MessageType.BROADCAST)) {
-            Bukkit.getOnlinePlayers().forEach(player -> languages.add(localizer.language(player)));
+            Bukkit.getOnlinePlayers().forEach(player -> languages.add(languageOf.computeIfAbsent(player, localizer::language)));
         }
         for (String language : languages) {
             this.dispatch(localizer.adapters(message, language), senders,
-                    recipient -> language.equals(localizer.language(recipient)), prefix, placeholders);
+                    recipient -> language.equals(languageOf.computeIfAbsent(recipient, localizer::language)), prefix, placeholders);
         }
     }
 
